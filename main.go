@@ -19,15 +19,15 @@ const (
 )
 
 var PORT_START = 3100
-var NODE_MAP []int
+var NODE_MAP []*Node
 
 var currentmasterport int = 3100
 
 type Node struct {
 	Port   *int
-	Master *int
-	Rank   Rank
 	Pinged bool
+	Rank   Rank
+	Data   []byte
 }
 
 // need to connect to master
@@ -64,8 +64,8 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	if portInt != 0 {
 
 		//add to the node map
-		fmt.Println(connectionPort, " is trying to connect")
-		NODE_MAP = append(NODE_MAP, portInt)
+		fmt.Println(connectionPort, " has connected")
+		NODE_MAP = append(NODE_MAP, &Node{&portInt, false, FOLLOWER, []byte{}})
 	}
 
 	//write back to the client with the rank of the node its trying to connect to
@@ -85,18 +85,35 @@ func (node *Node) pickPort() {
 	}
 }
 
+func indexOfNodeInNodeMap(node *Node) int {
+	for i, n := range NODE_MAP {
+		if *n.Port == *node.Port {
+			return i
+		}
+	}
+	return -1
+}
+
+func getNodeDatas() [][]byte {
+	var nodedata [][]byte
+	for _, n := range NODE_MAP {
+		nodedata = append(nodedata, n.Data)
+	}
+	return nodedata
+}
 func (node *Node) ping() {
 
 	//while true
 	for true {
 
 		//print the rank of the node and wait for 2 secs
-		fmt.Println(node.Rank)
+		// fmt.Println(node.Rank, getNodeDatas())
+		fmt.Println("This node has data: ", node.Data)
 		time.Sleep(2 * time.Second)
 
 		//only send ping if its a master
 		if node.Rank == MASTER {
-			fmt.Println("SENDING PING")
+			// fmt.Println("SENDING PING")
 
 			//each port in the node map
 			for _, n := range NODE_MAP {
@@ -106,8 +123,17 @@ func (node *Node) ping() {
 				sendData := bytes.NewBuffer(jsonNodeMap)
 
 				//don't ping to itself
-				if n != *node.Port {
-					_, _ = http.Post("http://localhost:"+strconv.Itoa(n)+"/ping", "application/json", sendData)
+				if *n.Port != *node.Port {
+					resp, err := http.Post("http://localhost:"+strconv.Itoa(*n.Port)+"/ping", "application/json", sendData)
+
+					if err != nil {
+						indexOfNode := indexOfNodeInNodeMap(n)
+						NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
+						continue
+					}
+					if resp.Header.Get("pinged") == "true" {
+						fmt.Println("PING RECEIVED FROM ", *n.Port)
+					}
 				}
 			}
 		}
@@ -132,17 +158,23 @@ func (node *Node) checkForPing() {
 		if node.Pinged == false {
 
 			//node must be down
-			fmt.Println("NO PING FROM MASTER, MUST BE DOWN!!!", NODE_MAP)
+			fmt.Println("NO PING FROM MASTER, MUST BE DOWN!!!")
 
 			//if node is next in line to throne
-			if *node.Port == NODE_MAP[1] {
+			if *node.Port == *NODE_MAP[1].Port {
 
 				//set that node to master
 				node.Rank = MASTER
+				node.Data = NODE_MAP[0].Data
+
+				fmt.Println("IM THE MASTER NOW!!!")
 			}
 
 			//prune node map
 			NODE_MAP = NODE_MAP[1:]
+
+			//add data to master (top of list)
+			NODE_MAP[0].Data = node.Data
 
 			//wait for a second to keep time
 			time.Sleep(1 * time.Second)
@@ -159,21 +191,23 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		body, _ := ioutil.ReadAll(req.Body)
 
 		//move nodemap to local memory
-		var localnm []int
+		var localnm []*Node
 		json.Unmarshal(body, &localnm)
-		NODE_MAP = []int{}
+		NODE_MAP = []*Node{}
 		for _, j := range localnm {
 			NODE_MAP = append(NODE_MAP, j)
 		}
 
 		//currentmaster is top of list
-		currentmasterport = NODE_MAP[0]
+		currentmasterport = *NODE_MAP[0].Port
 
+		// the node map is ", NODE_MAP
 		//print to user
-		fmt.Println("Received ping from master!! ", currentmasterport, " the node map is ", NODE_MAP)
+		// fmt.Println("Received ping from master {", currentmasterport, "}")
 
 		//it has been successfully pinged
 		node.Pinged = true
+		w.Header().Add("pinged", "true")
 	}
 
 }
@@ -182,7 +216,7 @@ func main() {
 	//init node and set to master (true until proven otherwise)
 	var node Node
 	node.Rank = MASTER
-	masterport := 3100
+	masterport := -1
 
 	//check for current masters
 	for i := 0; i < 3; i++ {
@@ -206,6 +240,11 @@ func main() {
 		con.Close()
 
 	}
+
+	if masterport == -1 {
+		node.Data = []byte{0x64, 0x43, 0x10}
+		masterport = 3100
+	}
 	fmt.Println("The master is ", masterport)
 
 	//pick a port for this node to be on
@@ -213,9 +252,8 @@ func main() {
 
 	//this needs to be changed, basically, wait for port selection to be done
 	time.Sleep(3 * time.Second)
-
 	//add to local nodemap (will be replicated if its master)
-	NODE_MAP = append(NODE_MAP, *node.Port)
+	NODE_MAP = append(NODE_MAP, &node)
 
 	//if this node is not on the master port, then its a follower
 	if masterport != *node.Port {
