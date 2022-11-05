@@ -2,10 +2,10 @@ package main
 
 import (
 	"bytes"
+	"distributed_servers/logging"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net"
 	"net/http"
 	"strconv"
@@ -23,16 +23,17 @@ const (
 var PORT_START = 3100
 var NODE_MAP []*Node
 
-var currentmasterip string = ""
+var dataChanged bool = false
 
 type Node struct {
 	Ip        string
 	Pinged    time.Time
 	PingCount int
 	Rank      Rank
-	Data      []byte
+	Data      map[string]string
 }
 
+// utils
 // return the index of the node in the nodemap
 func indexOfNodeInNodeMap(node *Node) int {
 	for i, n := range NODE_MAP {
@@ -44,8 +45,8 @@ func indexOfNodeInNodeMap(node *Node) int {
 }
 
 // return the data stored in the nodemap
-func getNodeDatas() [][]byte {
-	var nodedata [][]byte
+func getNodeDatas() []map[string]string {
+	var nodedata []map[string]string
 	for _, n := range NODE_MAP {
 		nodedata = append(nodedata, n.Data)
 	}
@@ -61,7 +62,54 @@ func getNodeIps() []string {
 	return nodeips
 }
 
-// need to connect to master
+// check if data in transit has changed from the node data
+func hasDataChanged(d1 map[string]string, d2 map[string]string) bool {
+	if len(d1) != len(d2) {
+		// fmt.Print("LENGTH DIFF")
+		return true
+	}
+	for _, k := range d1 {
+		if v, exists := d2[k]; exists {
+			if v != d1[k] {
+				return true
+			}
+			return false
+		}
+	}
+	return false
+}
+
+func getNodeMapWithoutData() []*Node {
+	var newmap []*Node
+	for _, n := range NODE_MAP {
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, map[string]string{}})
+	}
+	return newmap
+}
+
+func nodeMapPointertoMem() []Node {
+	var newmap []Node
+	for _, n := range NODE_MAP {
+		newmap = append(newmap, Node{n.Ip, n.Pinged, n.PingCount, n.Rank, n.Data})
+	}
+	return newmap
+}
+func getAllDataToPrint(data map[string]string) string {
+	retdata := ""
+	for v := range data {
+		retdata += data[v] + ","
+	}
+	return retdata
+}
+func getLocalIp() string {
+	conn, _ := net.Dial("udp", "8.8.8.8:80")
+
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return strings.Split(localAddr.String(), ":")[0]
+}
+
+// ping connections
 func (node *Node) tryListen(ip string) {
 
 	//wait for 500 milliseconds
@@ -73,7 +121,7 @@ func (node *Node) tryListen(ip string) {
 		portstr = strings.Split(ip, ":")[0]
 	}
 
-	fmt.Println("trying on " + portstr)
+	logging.Log("trying on "+portstr, logging.INFO)
 	l, err := net.Listen("tcp", portstr)
 
 	//if theres an error in connecting, stop
@@ -83,7 +131,7 @@ func (node *Node) tryListen(ip string) {
 
 	//if there's no error set the nodes port to the current port
 	node.Ip = ip
-	fmt.Println("connected on " + portstr)
+	logging.Log("connected on "+portstr, logging.GOOD)
 
 	//serve http requests on this port
 	http.Serve(l, nil)
@@ -102,55 +150,26 @@ func (node *Node) pickPort(ip string) {
 	}
 }
 
-// check if data in transit has changed from the node data
-func hasDataChanged(d1 []byte, d2 []byte) bool {
-	if len(d1) != len(d2) {
-		return true
-	}
-	for i, d := range d1 {
-		if d != d2[i] {
-			return true
-		}
-	}
-	return false
-}
-
-func getNodeMapWithoutData() []*Node {
-	var newmap []*Node
-	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, []byte{}})
-	}
-	return newmap
-}
-
-func nodeMapPointertoMem() []Node {
-	var newmap []Node
-	for _, n := range NODE_MAP {
-		newmap = append(newmap, Node{n.Ip, n.Pinged, n.PingCount, n.Rank, n.Data})
-	}
-	return newmap
-}
-
 func (node *Node) ping() {
 
-	var previoussend []Node = nodeMapPointertoMem()
 	//while true
 	for true {
 
 		//print the rank of the node and wait for 2 secs
-		fmt.Println(node.Rank)
+		logging.Log(string(node.Rank)+" at "+node.Ip, logging.INFO)
 		// ,
 		time.Sleep(2 * time.Second)
+
 		//only send ping if its a master
 		if node.Rank == MASTER {
 			// fmt.Println("Data stored: ", node.Data)
 			jsonNodeMap, _ := json.Marshal(NODE_MAP)
 			//check if the data has changed from the data on the map
-			// fmt.Println(previoussend, node.Data)
-			if !hasDataChanged(previoussend[0].Data, node.Data) {
-				jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
+			if dataChanged {
+				fmt.Println("DATA CHANGED")
+				dataChanged = false
 			} else {
-				previoussend = nodeMapPointertoMem()
+				jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
 			}
 
 			for _, n := range NODE_MAP {
@@ -159,42 +178,47 @@ func (node *Node) ping() {
 				if n.Ip != node.Ip {
 					//marshall so we're able to send over TCP
 					if n.PingCount == 0 {
-						fmt.Println("SENDING MAP TO FIRST JOINER")
+						logging.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
 						jsonNodeMap, _ = json.Marshal(NODE_MAP)
 					}
 					sendData := bytes.NewBuffer(jsonNodeMap)
-					fmt.Println("PINGING "+"http://"+n.Ip, " NODEMAP ", getNodeIps())
-					resp, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+					//set timeout to 2 seconds
+					c := &http.Client{
+						Timeout: 2 * time.Second,
+					}
+					logging.Log("PINGING "+"http://"+n.Ip, logging.INFO)
+					resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 					n.PingCount++
 
 					if err != nil {
-						fmt.Println(err)
+						logging.Log(err.Error(), logging.WARNING)
 						indexOfNode := indexOfNodeInNodeMap(n)
 						NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
 						continue
 					}
 					if resp.Header.Get("pinged") == "true" {
-						fmt.Println("PING RECEIVED FROM ", n.Ip)
+						logging.Log("PING RECEIVED FROM "+n.Ip, logging.GOOD)
 					}
 				}
 			}
 
-			if node.PingCount%10 == 0 {
-				rn := rand.Intn(100)
-				newdata := []byte{}
-				for i := 0; i < rn; i++ {
-					r := rand.Intn(40)
-					newdata = append(newdata, byte(r))
-				}
-				node.Data = newdata
-			}
+			// if node.PingCount%5 == 0 {
+			// 	rn := rand.Intn(100)
+			// 	newdata := make(map[string]string)
+			// 	for i := 0; i < rn; i++ {
+			// 		r := byte(rand.Intn(40))
+			// 		newdata[strconv.Itoa(i)] = string(r)
+			// 	}
+			// 	node.Data = newdata
+			// 	// fmt.Println("NEWDATA ", nodeD)
+			// }
 			node.PingCount++
 
 		}
 	}
 }
 
-func (node *Node) checkForPing() {
+func (node *Node) checkForPingFromMaster() {
 
 	//while true
 	for true {
@@ -204,41 +228,37 @@ func (node *Node) checkForPing() {
 			return
 		}
 
-		//reset pinged value and wait for 2 seconds
-		// node.Pinged = false
-		// time.Sleep(2 * time.Second)
-		// fmt.Println(NODE_MAP)
 		//if the ping hasnt changed (eg ping didnt set it to true)
 		// fmt.Println(time.Now().Sub(node.Pinged).Seconds())
 		if time.Now().Sub(node.Pinged).Seconds() > 2.5 {
 
 			//node must be down
-			fmt.Println("NO PING FROM MASTER, MUST BE DOWN!!!", node.Ip, NODE_MAP[1].Ip)
+			logging.Log("NO PING FROM MASTER, MUST BE DOWN!!!", logging.INFO)
 
 			//if node is next in line to throne
+			//NEED TO CHECK IF NODE MAP IS CORRECT
 			if node.Ip == NODE_MAP[1].Ip {
 
 				//set that node to master
 				node.Rank = MASTER
 				node.Data = NODE_MAP[0].Data
 
-				fmt.Println("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!!")
+				logging.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!!", logging.GOOD)
 
 			} else {
 				node.Pinged = time.Now()
+				//sub 2 seconds from this
 			}
 
 			//update node map
 			NODE_MAP = NODE_MAP[1:]
 			NODE_MAP[0] = node
-			fmt.Println("UPDATING NODE MAP", getNodeIps())
-			//wait for a second to keep time
-			// time.Sleep(1 * time.Second)
+			// fmt.Println("UPDATING NODE MAP", getNodeIps())
 		}
-
 	}
 }
 
+// handlers
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 	//only receive ping if its a follower
@@ -251,6 +271,11 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		var localnm []*Node
 		json.Unmarshal(body, &localnm)
 
+		//add the changed node map
+		if len(NODE_MAP) != len(localnm) {
+			NODE_MAP = append(NODE_MAP, localnm[len(localnm)-1])
+		}
+
 		if len(localnm[0].Data) == 0 {
 
 			// fmt.Println("data is empty, must not have changed")
@@ -259,15 +284,13 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 			w.Header().Add("pinged", "true")
 			return
 		}
-		fmt.Println("UPDATED DATA ON THIS NODE", localnm[0].Data)
-		// fmt.Println("data mustve changed", localnm[0].Data)
+
+		logging.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
+
 		NODE_MAP = []*Node{}
 		for _, j := range localnm {
 			NODE_MAP = append(NODE_MAP, j)
 		}
-
-		//currentmaster is top of list
-		currentmasterip = NODE_MAP[0].Ip
 
 		//it has been successfully pinged
 		node.Pinged = time.Now()
@@ -282,10 +305,9 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 
 	//if port isnt 0 (there is a valid port)
 	if ip != "" {
-
 		//add to the node map
-		fmt.Println(ip, " has connected")
-		NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, []byte{}})
+		logging.Log(ip+" has connected", logging.GOOD)
+		NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}})
 	}
 
 	//write back to the client with the rank of the node its trying to connect to
@@ -298,15 +320,43 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 
 func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 	if node.Rank == MASTER {
-		fmt.Println("RECEIVED DATA UPDATE: ", req.Header.Get("data"))
+
+		if req.Method == "POST" {
+
+			//TODO send multiple key and values
+
+			var dataToSet []string
+			body, _ := ioutil.ReadAll(req.Body)
+			json.Unmarshal(body, &dataToSet)
+
+			setKey := dataToSet[0]
+			setVal := dataToSet[1]
+			node.Data[setKey] = setVal
+
+			dataChanged = true
+			w.Header().Set("response", "done")
+			return
+		}
+
+		datagetkey := req.Header.Get("key")
+
+		if datagetkey != "" {
+			dataToSend := node.Data[datagetkey]
+			w.Header().Set("val", dataToSend)
+		}
+
 	}
 }
 
+// main func
 func main() {
 
-	//init node and set to master (true until proven otherwise)
+	//init node and set to follower (true until proven otherwise)
 	var node Node
 	node.Rank = FOLLOWER
+
+	//set ips
+	localip := getLocalIp()
 	connectoip := ""
 	masterip := ""
 
@@ -314,50 +364,29 @@ func main() {
 	fmt.Scanf("%s", &connectoip)
 	if connectoip == "" {
 		//get ip of machine
-		connectoip = "localhost"
-		masterip = "localhost:3100"
+		//THIS IS THE IP TO CONNECT TO
+		connectoip = localip
+		masterip = localip + ":3100"
 	} else {
+
+		//connect to server
 		resp, err := http.Get("http://" + connectoip + "/connect")
-
 		if err == nil && resp.Header.Get("rank") == "MASTER" {
-
 			masterip = connectoip
-
 		} else {
-			fmt.Println("THAT IS NOT A MASTER")
+			logging.Log("THAT IS NOT A MASTER", logging.ERROR)
 			return
 		}
 	}
-	go node.pickPort("localhost")
 
-	// //check for current masters
-	// for i := 0; i < 3; i++ {
+	//pick a port for this node to be on you local ip
+	go node.pickPort(localip)
+	logging.Log("The master is "+masterip, logging.INFO)
 
-	// 	//check whether is port is already open
-	// 	con, err := net.DialTimeout("tcp", connectoip+":"+strconv.Itoa(PORT_START+i), 100*time.Millisecond)
-
-	// 	//if it is, continue
-	// 	if err != nil {
-	// 		continue
-	// 	}
-
-	// 	//check whether the open port is a master
-	// 	resp, err := http.Get("http://localhost:" + strconv.Itoa(PORT_START+i) + "/connect")
-
-	// 	if err == nil && resp.Header.Get("rank") == "MASTER" {
-
-	// 		masterip = masterip + ":" + strconv.Itoa(PORT_START+i)
-
-	// 		break
-	// 	}
-
-	// 	//close each connection (only for checking)
-	// 	con.Close()
-
-	// }
-	fmt.Println("The master is ", masterip)
-
-	//pick a port for this node to be on
+	//handle incoming connection
+	http.HandleFunc("/connect", node.connectHandler)
+	http.HandleFunc("/ping", node.pingHandler)
+	http.HandleFunc("/data", node.dataHandler)
 
 	//this needs to be changed, basically, wait for port selection to be done
 	time.Sleep(3 * time.Second)
@@ -367,26 +396,25 @@ func main() {
 	//if this node is not on the master port, then its a follower
 	if masterip == node.Ip {
 		node.Rank = MASTER
-		node.Data = []byte{0x64, 0x43, 0x10}
+		node.Data = map[string]string{}
+		node.Data["testkey"] = "hello this is a test"
+		node.Data["testkey2"] = "hello this is a second test"
+
 	}
 
 	//connect to port
 	if node.Rank == FOLLOWER {
-		fmt.Println("TRYING TO CONNECT TO ", "http://"+masterip)
+		logging.Log("TRYING TO CONNECT TO "+"http://"+masterip, logging.INFO)
 		_, err := http.Get("http://" + *&masterip + "/connect?ip=" + node.Ip)
 		if err != nil {
-			fmt.Println(err)
+			logging.Log(err.Error(), logging.WARNING)
 		}
 	}
 
-	//http handlers
-	http.HandleFunc("/connect", node.connectHandler)
-	http.HandleFunc("/ping", node.pingHandler)
-	http.HandleFunc("/data", node.dataHandler)
-	node.Pinged = time.Now()
 	//ping handling
+	node.Pinged = time.Now()
 	go node.ping()
-	go node.checkForPing()
+	go node.checkForPingFromMaster()
 
 	for true {
 	}
@@ -396,3 +424,4 @@ func main() {
 
 // NEED TO WAIT FOR MASTER TO COME ONLINE
 // GET DATA FROM MASTER (for some api or sdk)
+// SOMETIMES 2 MASTERS are ONLINE AT ONCE
