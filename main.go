@@ -126,6 +126,7 @@ func (node *Node) tryListen(ip string) {
 
 	//if theres an error in connecting, stop
 	if err != nil {
+		// defer l.Close()
 		return
 	}
 
@@ -164,13 +165,18 @@ func (node *Node) ping() {
 	for true {
 
 		//print the rank of the node and wait for 2 secs
-		logging.Log(string(node.Rank)+" at "+node.Ip, logging.INFO)
+		logging.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
 		// ,
-		time.Sleep(2 * time.Second)
+		time.Sleep(4 * time.Second)
 
 		//only send ping if its a master
+
+		if len(NODE_MAP) == 1 {
+			continue
+		}
 		if node.Rank == MASTER {
-			// fmt.Println("Data stored: ", node.Data)
+
+			fmt.Println("Data stored: ", node.Data)
 			jsonNodeMap, _ := json.Marshal(NODE_MAP)
 			//check if the data has changed from the data on the map
 			if dataChanged {
@@ -179,7 +185,7 @@ func (node *Node) ping() {
 			} else {
 				jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
 			}
-
+			//need to check numbers
 			for _, n := range NODE_MAP {
 
 				//don't ping to itself
@@ -204,8 +210,10 @@ func (node *Node) ping() {
 						NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
 						continue
 					}
+					//need to do master resilience here
 					if resp.Header.Get("pinged") == "true" {
 						logging.Log("PING RECEIVED FROM "+n.Ip, logging.GOOD)
+						c.CloseIdleConnections()
 					}
 				}
 			}
@@ -220,6 +228,8 @@ func (node *Node) checkForNoPingFromMaster() {
 
 	//while true
 	for true {
+
+		time.Sleep(4 * time.Second)
 
 		//if its master, break
 		if node.Rank == MASTER {
@@ -243,7 +253,7 @@ func (node *Node) checkForNoPingFromMaster() {
 
 				waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
 				logging.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
-				go node.ping()
+				// go node.ping()
 			} else {
 				node.Pinged = time.Now()
 				//sub 2 seconds from this
@@ -272,9 +282,9 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		json.Unmarshal(body, &localnm)
 
 		//add the changed node map
-		if len(NODE_MAP) != len(localnm) {
-			NODE_MAP = append(NODE_MAP, localnm[len(localnm)-1])
-		}
+		// if len(NODE_MAP) <= len(localnm) {
+		NODE_MAP = localnm
+		// }
 
 		if len(localnm[0].Data) == 0 {
 
@@ -415,15 +425,12 @@ func main() {
 
 	//ping handling
 	node.Pinged = time.Now()
-	if node.Rank == MASTER {
-		go node.ping()
-	} else {
-		go node.showNodeInfo()
-	}
 
+	go node.ping()
 	go node.checkForNoPingFromMaster()
 
 	for true {
+		time.Sleep(150 * time.Millisecond)
 	}
 }
 
