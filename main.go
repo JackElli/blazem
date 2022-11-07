@@ -94,6 +94,15 @@ func nodeMapPointertoMem() []Node {
 	}
 	return newmap
 }
+
+func alreadyInNodeMap(ip string) bool {
+	for _, n := range NODE_MAP {
+		if n.Ip == ip {
+			return true
+		}
+	}
+	return false
+}
 func getAllDataToPrint(data map[string]string) string {
 	retdata := ""
 	for v := range data {
@@ -198,7 +207,7 @@ func (node *Node) ping() {
 					sendData := bytes.NewBuffer(jsonNodeMap)
 					//set timeout to 2 seconds
 					c := &http.Client{
-						Timeout: 2 * time.Second,
+						Timeout: 3 * time.Second,
 					}
 
 					logging.Log("PINGING "+"http://"+n.Ip, logging.INFO)
@@ -207,9 +216,13 @@ func (node *Node) ping() {
 
 					if err != nil {
 						logging.Log(err.Error(), logging.WARNING)
-						indexOfNode := indexOfNodeInNodeMap(n)
-						NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
-						continue
+						logging.Log("PINGING again "+"http://"+n.Ip, logging.INFO)
+						resp, err = c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+						if err != nil {
+							indexOfNode := indexOfNodeInNodeMap(n)
+							NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
+							continue
+						}
 					}
 					//need to do master resilience here
 					if resp.Header.Get("pinged") == "true" {
@@ -284,12 +297,13 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		json.Unmarshal(body, &localnm)
 
 		//add the changed node map
-		// if len(NODE_MAP) <= len(localnm) {
+
+		currentMasterData := NODE_MAP[0].Data
 		NODE_MAP = localnm
-		// }
 
 		if len(localnm[0].Data) == 0 {
-
+			NODE_MAP[0].Data = currentMasterData
+			// fmt.Println(getNodeDatas())
 			// fmt.Println("data is empty, must not have changed")
 			node.Pinged = time.Now()
 			// fmt.Println("PINGED")
@@ -310,6 +324,9 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		node.Pinged = time.Now()
 		w.Header().Add("pinged", "true")
 		// fmt.Println("sent ping back")
+	} else {
+		fmt.Println("SOMETHINGS GONE WRONG! ")
+		node.Rank = FOLLOWER
 	}
 
 	//NEED TO ENFORCE MASTER RESILIENCE (if two masters exist, pick one)
@@ -324,7 +341,9 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	if ip != "" {
 		//add to the node map
 		logging.Log(ip+" has connected", logging.GOOD)
-		NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}})
+		if !alreadyInNodeMap(ip) {
+			NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}})
+		}
 	}
 
 	//write back to the client with the rank of the node its trying to connect to
