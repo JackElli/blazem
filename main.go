@@ -164,13 +164,12 @@ func (node *Node) ping() {
 	//while true
 	for true {
 
-		//print the rank of the node and wait for 2 secs
-		logging.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
-		// ,
 		time.Sleep(4 * time.Second)
 
-		//only send ping if its a master
-
+		//print the rank of the node and wait for 2 secs
+		if node.Rank == MASTER {
+			logging.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
+		}
 		if len(NODE_MAP) == 1 {
 			continue
 		}
@@ -185,6 +184,7 @@ func (node *Node) ping() {
 			} else {
 				jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
 			}
+
 			//need to check numbers
 			for _, n := range NODE_MAP {
 
@@ -200,6 +200,7 @@ func (node *Node) ping() {
 					c := &http.Client{
 						Timeout: 2 * time.Second,
 					}
+
 					logging.Log("PINGING "+"http://"+n.Ip, logging.INFO)
 					resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 					n.PingCount++
@@ -229,8 +230,6 @@ func (node *Node) checkForNoPingFromMaster() {
 	//while true
 	for true {
 
-		time.Sleep(4 * time.Second)
-
 		//if its master, break
 		if node.Rank == MASTER {
 			return
@@ -238,10 +237,10 @@ func (node *Node) checkForNoPingFromMaster() {
 
 		//if the ping hasnt changed (eg ping didnt set it to true)
 		// fmt.Println(time.Now().Sub(node.Pinged).Seconds())
-		if time.Now().Sub(node.Pinged).Seconds() > 5 {
+		if time.Now().Sub(node.Pinged).Seconds() > 10 {
 
 			//node must be down
-			logging.Log("NO PING FROM MASTER, MUST BE DOWN!!!", logging.INFO)
+			logging.Log("NO PING FROM MASTER!!!", logging.INFO)
 
 			//if node is next in line to throne
 			//NEED TO CHECK IF NODE MAP IS CORRECT
@@ -264,6 +263,7 @@ func (node *Node) checkForNoPingFromMaster() {
 			NODE_MAP[0] = node
 			// fmt.Println("UPDATING NODE MAP", getNodeIps())
 		}
+		time.Sleep(3 * time.Second)
 	}
 }
 
@@ -272,6 +272,8 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 	//only receive ping if its a follower
 	if node.Rank == FOLLOWER {
+		//print the rank of the node and wait for 2 secs
+		logging.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
 		// fmt.Println("GOT PING")
 
 		//fetch data of ping (nodemap)
