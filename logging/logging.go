@@ -2,6 +2,7 @@ package logging
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -14,10 +15,30 @@ const (
 	WARNING LOG_TYPE = "[WRN]"
 )
 
-func getNiceTime() string {
+type Logger struct {
+	LogFileHandle *os.File
+}
+
+func (logger *Logger) getNiceTime() string {
 	nicetime := time.Now().Format("2006-01-02 15:04:05")
 	return nicetime
 }
-func Log(str string, logType LOG_TYPE) {
-	fmt.Println(string(logType) + " " + getNiceTime() + "\t " + str)
+func LogFile(logfilepath string) *Logger {
+	//need to be in append mode
+	logfile, err := os.OpenFile(logfilepath+"jserver.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println(err)
+		err = os.MkdirAll(logfilepath, os.ModePerm)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		logfile, err = os.Create(logfilepath + "jserver.log")
+	}
+	return &Logger{LogFileHandle: logfile}
+}
+func (logger *Logger) Log(str string, logType LOG_TYPE) {
+	log := string(logType) + " " + logger.getNiceTime() + "\t " + str
+	logger.LogFileHandle.Write([]byte(log + "\n"))
+	fmt.Println(log)
 }

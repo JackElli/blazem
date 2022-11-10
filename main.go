@@ -20,8 +20,11 @@ const (
 	FOLLOWER Rank = "FOLLOWER"
 )
 
+// global vars will clean up
 var PORT_START = 3100
 var NODE_MAP []*Node
+
+var logger logging.Logger
 
 var dataChanged bool = false
 
@@ -103,6 +106,7 @@ func alreadyInNodeMap(ip string) bool {
 	}
 	return false
 }
+
 func getAllDataToPrint(data map[string]string) string {
 	retdata := ""
 	for v := range data {
@@ -110,6 +114,7 @@ func getAllDataToPrint(data map[string]string) string {
 	}
 	return retdata
 }
+
 func getLocalIp() string {
 	conn, _ := net.Dial("udp", "8.8.8.8:80")
 
@@ -130,7 +135,7 @@ func (node *Node) tryListen(ip string) {
 		portstr = strings.Split(ip, ":")[0]
 	}
 
-	logging.Log("trying on "+portstr, logging.INFO)
+	logger.Log("trying on "+portstr, logging.INFO)
 	l, err := net.Listen("tcp", portstr)
 
 	//if theres an error in connecting, stop
@@ -141,7 +146,7 @@ func (node *Node) tryListen(ip string) {
 
 	//if there's no error set the nodes port to the current port
 	node.Ip = ip
-	logging.Log("connected on "+portstr, logging.GOOD)
+	logger.Log("connected on "+portstr, logging.GOOD)
 
 	//serve http requests on this port
 	http.Serve(l, nil)
@@ -160,12 +165,74 @@ func (node *Node) pickPort(ip string) {
 	}
 }
 
-func (node *Node) showNodeInfo() {
-	for node.Rank == FOLLOWER {
-		logging.Log(string(node.Rank)+" at "+node.Ip, logging.INFO)
-		// ,
-		time.Sleep(5 * time.Second)
+func checkIfDataChanged() []byte {
+	var jsonNodeMap []byte
+	if dataChanged {
+		logger.Log("DATA CHANGED", logging.INFO)
+		jsonNodeMap, _ = json.Marshal(NODE_MAP)
+		dataChanged = false
+	} else {
+		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
 	}
+	return jsonNodeMap
+}
+
+func (n *Node) pingRetry(resp *http.Response, c *http.Client, sendData *bytes.Buffer) *http.Response {
+	logger.Log("PINGING again "+"http://"+n.Ip, logging.INFO)
+	fmt.Println(c, sendData)
+	resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+	// resp = resps
+	// fmt.Println(resps.Header.Get("pinged"))
+	if err != nil {
+		indexOfNode := indexOfNodeInNodeMap(n)
+		NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
+		return nil
+	}
+	return resp
+}
+
+func (n *Node) receivedPing(resp *http.Response, c *http.Client) {
+	//need to do master resilience here
+	if resp.Header.Get("pinged") == "true" {
+		logger.Log("PING RECEIVED FROM "+n.Ip, logging.GOOD)
+		c.CloseIdleConnections()
+	}
+}
+
+func (node *Node) pingEachConnection(jsonNodeMap []byte) {
+	for _, n := range NODE_MAP {
+
+		//don't ping to itself
+		if n.Ip == node.Ip {
+			continue
+		}
+		//marshall so we're able to send over TCP
+		if n.PingCount == 0 {
+			logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
+			jsonNodeMap, _ = json.Marshal(NODE_MAP)
+		}
+		sendData := bytes.NewBuffer(jsonNodeMap)
+		//set timeout to 2 seconds
+		c := &http.Client{
+			Timeout: 2500 * time.Millisecond,
+		}
+		//ping connection
+		logger.Log("PINGING "+"http://"+n.Ip, logging.INFO)
+		resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		//increase connection ping count
+		n.PingCount++
+		//retry logic
+		if err != nil {
+			logger.Log(err.Error(), logging.WARNING)
+			retry := n.pingRetry(resp, c, sendData)
+			if retry == nil {
+				continue
+			}
+			resp = retry
+		}
+		n.receivedPing(resp, c)
+	}
+	node.PingCount++
 }
 
 func (node *Node) ping() {
@@ -174,67 +241,21 @@ func (node *Node) ping() {
 	for true {
 
 		time.Sleep(4 * time.Second)
-
 		//print the rank of the node and wait for 2 secs
 		if node.Rank == MASTER {
-			logging.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
+			logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
 		}
 		if len(NODE_MAP) == 1 {
 			continue
 		}
-		if node.Rank == MASTER {
-
-			fmt.Println("Data stored: ", node.Data)
-			jsonNodeMap, _ := json.Marshal(NODE_MAP)
-			//check if the data has changed from the data on the map
-			if dataChanged {
-				logging.Log("DATA CHANGED", logging.INFO)
-				dataChanged = false
-			} else {
-				jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
-			}
-
-			//need to check numbers
-			for _, n := range NODE_MAP {
-
-				//don't ping to itself
-				if n.Ip != node.Ip {
-					//marshall so we're able to send over TCP
-					if n.PingCount == 0 {
-						logging.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
-						jsonNodeMap, _ = json.Marshal(NODE_MAP)
-					}
-					sendData := bytes.NewBuffer(jsonNodeMap)
-					//set timeout to 2 seconds
-					c := &http.Client{
-						Timeout: 3 * time.Second,
-					}
-
-					logging.Log("PINGING "+"http://"+n.Ip, logging.INFO)
-					resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
-					n.PingCount++
-
-					if err != nil {
-						logging.Log(err.Error(), logging.WARNING)
-						logging.Log("PINGING again "+"http://"+n.Ip, logging.INFO)
-						resp, err = c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
-						if err != nil {
-							indexOfNode := indexOfNodeInNodeMap(n)
-							NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
-							continue
-						}
-					}
-					//need to do master resilience here
-					if resp.Header.Get("pinged") == "true" {
-						logging.Log("PING RECEIVED FROM "+n.Ip, logging.GOOD)
-						c.CloseIdleConnections()
-					}
-				}
-			}
-
-			node.PingCount++
-
+		if node.Rank == FOLLOWER {
+			continue
 		}
+		// fmt.Println("Data stored: ", node.Data)
+		//check if the data has changed from the data on the map
+		jsonNodeMap := checkIfDataChanged()
+		//need to check numbers
+		node.pingEachConnection(jsonNodeMap)
 	}
 }
 
@@ -253,7 +274,7 @@ func (node *Node) checkForNoPingFromMaster() {
 		if time.Now().Sub(node.Pinged).Seconds() > 10 {
 
 			//node must be down
-			logging.Log("NO PING FROM MASTER!!!", logging.INFO)
+			logger.Log("NO PING FROM MASTER!!!", logging.INFO)
 
 			//if node is next in line to throne
 			//NEED TO CHECK IF NODE MAP IS CORRECT
@@ -264,7 +285,7 @@ func (node *Node) checkForNoPingFromMaster() {
 				node.Data = NODE_MAP[0].Data
 
 				waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
-				logging.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
+				logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
 				// go node.ping()
 			} else {
 				node.Pinged = time.Now()
@@ -286,7 +307,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	//only receive ping if its a follower
 	if node.Rank == FOLLOWER {
 		//print the rank of the node and wait for 2 secs
-		logging.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
+		logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
 		// fmt.Println("GOT PING")
 
 		//fetch data of ping (nodemap)
@@ -313,7 +334,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		logging.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
+		logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
 
 		NODE_MAP = []*Node{}
 		for _, j := range localnm {
@@ -330,8 +351,8 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	//NEED TO ENFORCE MASTER RESILIENCE (if two masters exist, pick one)
-
 }
+
 func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 
 	//find the port of client trying to connect
@@ -340,7 +361,7 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	//if port isnt 0 (there is a valid port)
 	if ip != "" {
 		//add to the node map
-		logging.Log(ip+" has connected", logging.GOOD)
+		logger.Log(ip+" has connected", logging.GOOD)
 		if !alreadyInNodeMap(ip) {
 			NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}})
 		}
@@ -392,6 +413,10 @@ func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 // main func
 func main() {
 
+	//setup file for logging
+	logfile := "logging/"
+	logger = *logging.LogFile(logfile)
+
 	//init node and set to follower (true until proven otherwise)
 	var node Node
 	node.Rank = FOLLOWER
@@ -411,19 +436,19 @@ func main() {
 		masterip = localip + ":3100"
 	} else {
 		//connect to server
-		logging.Log("TRYING TO CONNECT TO "+"http://"+connectoip, logging.INFO)
+		logger.Log("TRYING TO CONNECT TO "+"http://"+connectoip, logging.INFO)
 		resp, err := http.Get("http://" + connectoip + "/connect?ip=" + node.Ip)
 		if err == nil && resp.Header.Get("rank") == "MASTER" {
 			masterip = connectoip
 			// fmt.Println("Yes")
 		} else {
-			logging.Log("THAT IS NOT A MASTER", logging.ERROR)
+			logger.Log("THAT IS NOT A MASTER", logging.ERROR)
 			return
 		}
 	}
 
 	//pick a port for this node to be on you local ip
-	logging.Log("The master is "+masterip, logging.INFO)
+	logger.Log("The master is "+masterip, logging.INFO)
 
 	//handle incoming connection (MAYBE MAKE THIS ASYNC)
 	http.HandleFunc("/connect", node.connectHandler)
@@ -463,3 +488,6 @@ func main() {
 //BUG WHY NEW MASTER WHEN NODE NOT DOWN???
 
 //NEED TO DO DISK PERSISTENCE
+
+// DISTRIBUTED COMPUTING, ADDITION OF NUMBERS ON 3 CPUS??
+// CLEAN CODE
