@@ -261,44 +261,35 @@ func (node *Node) ping() {
 
 func (node *Node) checkForNoPingFromMaster() {
 
-	//while true
-	for true {
-
-		//if its master, break
-		if node.Rank == MASTER {
-			return
-		}
-
-		//if the ping hasnt changed (eg ping didnt set it to true)
-		// fmt.Println(time.Now().Sub(node.Pinged).Seconds())
-		if time.Now().Sub(node.Pinged).Seconds() > 10 {
-
-			//node must be down
-			logger.Log("NO PING FROM MASTER!!!", logging.INFO)
-
-			//if node is next in line to throne
-			//NEED TO CHECK IF NODE MAP IS CORRECT
-			if node.Ip == NODE_MAP[1].Ip {
-
-				//set that node to master
-				node.Rank = MASTER
-				node.Data = NODE_MAP[0].Data
-
-				waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
-				logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
-				// go node.ping()
-			} else {
-				node.Pinged = time.Now()
-				//sub 2 seconds from this
-			}
-
-			//update node map
-			NODE_MAP = NODE_MAP[1:]
-			NODE_MAP[0] = node
-			// fmt.Println("UPDATING NODE MAP", getNodeIps())
-		}
-		time.Sleep(3 * time.Second)
+	if node.Rank == MASTER {
+		return
 	}
+	time.Sleep(5 * time.Second)
+	timeSinceLastPingAbs := time.Now().Sub(node.Pinged).Seconds()
+	if timeSinceLastPingAbs < 1 {
+		return
+	}
+	fmt.Println("First check")
+	//check for retry
+	time.Sleep(4 * time.Second)
+	timeSinceLastPingAbs = time.Now().Sub(node.Pinged).Seconds()
+	if timeSinceLastPingAbs < 8 {
+		return
+	}
+
+	logger.Log("NO PING FROM MASTER!!!", logging.INFO)
+
+	if node.Ip != NODE_MAP[1].Ip {
+		return
+	}
+	//set that node to master
+	node.Rank = MASTER
+	node.Data = NODE_MAP[0].Data
+	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
+	logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
+	//update node map
+	NODE_MAP = NODE_MAP[1:]
+	NODE_MAP[0] = node
 }
 
 // handlers
@@ -309,6 +300,8 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		//print the rank of the node and wait for 2 secs
 		logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
 		// fmt.Println("GOT PING")
+		go node.checkForNoPingFromMaster()
+		//need to check for ping here (start )
 
 		//fetch data of ping (nodemap)
 		body, _ := ioutil.ReadAll(req.Body)
@@ -346,7 +339,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		w.Header().Add("pinged", "true")
 		// fmt.Println("sent ping back")
 	} else {
-		fmt.Println("SOMETHINGS GONE WRONG! ")
+		fmt.Println("SOMETHINGS GONE WRONG!")
 		node.Rank = FOLLOWER
 	}
 
@@ -473,7 +466,6 @@ func main() {
 	node.Pinged = time.Now()
 
 	go node.ping()
-	go node.checkForNoPingFromMaster()
 
 	for true {
 		time.Sleep(150 * time.Millisecond)
