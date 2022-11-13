@@ -407,7 +407,7 @@ func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		if datagetall != "" {
 			dataToSend := getAllDataToPrint(node.Data)
-			w.Header().Set("val", strings.Join(dataToSend, ","))
+			// w.Header().Set("val", strings.Join(dataToSend, ","))
 			json.NewEncoder(w).Encode(dataToSend)
 		}
 
