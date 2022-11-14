@@ -35,6 +35,7 @@ type Node struct {
 	PingCount int
 	Rank      Rank
 	Data      map[string]string
+	Active    bool
 }
 
 // utils
@@ -86,7 +87,7 @@ func hasDataChanged(d1 map[string]string, d2 map[string]string) bool {
 func getNodeMapWithoutData() []*Node {
 	var newmap []*Node
 	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, map[string]string{}})
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, map[string]string{}, true})
 	}
 	return newmap
 }
@@ -94,7 +95,7 @@ func getNodeMapWithoutData() []*Node {
 func nodeMapPointertoMem() []Node {
 	var newmap []Node
 	for _, n := range NODE_MAP {
-		newmap = append(newmap, Node{n.Ip, n.Pinged, n.PingCount, n.Rank, n.Data})
+		newmap = append(newmap, Node{n.Ip, n.Pinged, n.PingCount, n.Rank, n.Data, true})
 	}
 	return newmap
 }
@@ -204,7 +205,7 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 	for _, n := range NODE_MAP {
 
 		//don't ping to itself
-		if n.Ip == node.Ip {
+		if n.Ip == node.Ip || n.Active == false {
 			continue
 		}
 		//marshall so we're able to send over TCP
@@ -213,13 +214,8 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 			jsonNodeMap, _ = json.Marshal(NODE_MAP)
 		}
 		sendData := bytes.NewBuffer(jsonNodeMap)
-		//set timeout to 2 seconds
-		// c := &http.Client{
-		// 	Timeout: 2500 * time.Millisecond,
-		// }
 		//ping connection
 		logger.Log("PINGING "+n.Ip, logging.INFO)
-		// resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 		_, err := net.DialTimeout("tcp", n.Ip, 1500*time.Millisecond)
 		//increase connection ping count
 		n.PingCount++
@@ -228,12 +224,14 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 			_, err := net.DialTimeout("tcp", n.Ip, 2000*time.Millisecond)
 			if err != nil {
 				logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
-				indexOfNode := indexOfNodeInNodeMap(n)
-				NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
+				//dont remove node, just make it inactive
+				// indexOfNode := indexOfNodeInNodeMap(n)
+				// NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
+				n.Active = false
 				continue
 			}
 		}
-		logger.Log("PINGING RECEIVED FROM "+n.Ip, logging.INFO)
+		logger.Log("PING RECEIVED FROM "+n.Ip, logging.INFO)
 		_, err = http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 	}
 	node.PingCount++
@@ -264,6 +262,8 @@ func (node *Node) ping() {
 }
 
 func (node *Node) checkForNoPingFromMaster() {
+
+	//THIS NEEDS TO BE BETTER
 
 	//master shouldnt be checking
 	if node.Rank == MASTER {
@@ -359,7 +359,12 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 		//add to the node map
 		logger.Log(ip+" has connected", logging.GOOD)
 		if !alreadyInNodeMap(ip) {
-			NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}})
+			NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}, true})
+		} else {
+			//already in map
+			indexOfNode := indexOfNodeInNodeMap(&Node{ip, time.Now(), 0, FOLLOWER, nil, true})
+			NODE_MAP[indexOfNode].Active = true
+			//set to active
 		}
 	}
 
@@ -522,3 +527,5 @@ func main() {
 
 // DISTRIBUTED COMPUTING, ADDITION OF NUMBERS ON 3 CPUS??
 // CLEAN CODE
+
+//MIGHT WANT TO CHANGE IT SO WE CHECK EVERY MINUTE RATHER THAN 4 SECONDS
