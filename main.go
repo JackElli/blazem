@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -213,24 +214,27 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 		}
 		sendData := bytes.NewBuffer(jsonNodeMap)
 		//set timeout to 2 seconds
-		c := &http.Client{
-			Timeout: 2500 * time.Millisecond,
-		}
+		// c := &http.Client{
+		// 	Timeout: 2500 * time.Millisecond,
+		// }
 		//ping connection
-		logger.Log("PINGING "+"http://"+n.Ip, logging.INFO)
-		resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		logger.Log("PINGING "+n.Ip, logging.INFO)
+		// resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		_, err := net.DialTimeout("tcp", n.Ip, 1500*time.Millisecond)
 		//increase connection ping count
 		n.PingCount++
 		//retry logic
 		if err != nil {
-			logger.Log(err.Error(), logging.WARNING)
-			retry := n.pingRetry(resp, c, sendData)
-			if retry == nil {
+			_, err := net.DialTimeout("tcp", n.Ip, 2000*time.Millisecond)
+			if err != nil {
+				logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
+				indexOfNode := indexOfNodeInNodeMap(n)
+				NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
 				continue
 			}
-			resp = retry
 		}
-		n.receivedPing(resp, c)
+		logger.Log("PINGING RECEIVED FROM "+n.Ip, logging.INFO)
+		_, err = http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 	}
 	node.PingCount++
 }
@@ -266,7 +270,7 @@ func (node *Node) checkForNoPingFromMaster() {
 		return
 	}
 	//wait for 5 seconds after ping
-	time.Sleep(5 * time.Second)
+	time.Sleep(4100 * time.Millisecond)
 	timeSinceLastPingAbs := time.Now().Sub(node.Pinged).Seconds()
 	// if there has been a ping in that time, good!
 	if timeSinceLastPingAbs < 1 {
@@ -303,10 +307,9 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	if node.Rank == FOLLOWER {
 		//print the rank of the node and wait for 2 secs
 		logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(getNodeIps(), " "), logging.INFO)
-
+		node.Pinged = time.Now()
 		//need to check for ping here (start )
 		go node.checkForNoPingFromMaster()
-
 		//fetch data of ping (nodemap)
 		body, _ := ioutil.ReadAll(req.Body)
 
@@ -322,11 +325,10 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 			NODE_MAP[0].Data = currentMasterData
 			// fmt.Println(getNodeDatas())
 			// fmt.Println("data is empty, must not have changed")
-			node.Pinged = time.Now()
+
 			// fmt.Println("PINGED")
 			w.Header().Add("pinged", "true")
 			// fmt.Println("sent ping back")
-
 			return
 		}
 
@@ -336,9 +338,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		for _, j := range localnm {
 			NODE_MAP = append(NODE_MAP, j)
 		}
-
 		//it has been successfully pinged
-		node.Pinged = time.Now()
 		w.Header().Add("pinged", "true")
 		// fmt.Println("sent ping back")
 	} else {
@@ -390,7 +390,8 @@ func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 			setVal := dataToSet[1]
 			dataType := dataToSet[2]
 
-			value := "{\"data\":\"" + setVal + "\", \"type\":\"" + dataType + "\"}"
+			//ADD DATE OF ENTRY
+			value := "{\"data\":\"" + setVal + "\", \"type\":\"" + dataType + "\", \"date\":\"" + time.Now().String() + "\"}"
 			node.Data[setKey] = value
 
 			dataChanged = true
@@ -411,6 +412,26 @@ func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 			json.NewEncoder(w).Encode(dataToSend)
 		}
 
+	}
+}
+
+func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, all")
+
+	nodeMapResp := getNodeIps()
+
+	json.NewEncoder(w).Encode(nodeMapResp)
+}
+
+func webHandler(w http.ResponseWriter, req *http.Request) {
+	tmpl, err := template.ParseFiles("statictest/index.html")
+
+	err = tmpl.Execute(w, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -458,6 +479,14 @@ func main() {
 	http.HandleFunc("/connect", node.connectHandler)
 	http.HandleFunc("/ping", node.pingHandler)
 	http.HandleFunc("/data", node.dataHandler)
+	http.HandleFunc("/nodemap", nodeMapHandler)
+
+	//web stuff
+	styles := http.FileServer(http.Dir("./statictest/css"))
+	scripts := http.FileServer(http.Dir("./statictest/js"))
+	http.HandleFunc("/", webHandler)
+	http.Handle("/styles/", http.StripPrefix("/styles/", styles))
+	http.Handle("/scripts/", http.StripPrefix("/scripts/", scripts))
 
 	//this needs to be changed, basically, wait for port selection to be done
 	// time.Sleep(3 * time.Second)
@@ -468,8 +497,8 @@ func main() {
 	if masterip == node.Ip {
 		node.Rank = MASTER
 		node.Data = map[string]string{}
-		node.Data["testkey"] = "{\"data\":\"hello this is a test\", \"type\":\"text\"}"
-		node.Data["testkey2"] = "{\"data\":\"hello asd\", \"type\":\"text\"}"
+		node.Data["testkey"] = "{\"data\":\"hello this is a test\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
+		node.Data["testkey2"] = "{\"data\":\"hello asd\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
 	}
 
 	//ping handling
