@@ -49,6 +49,15 @@ func indexOfNodeInNodeMap(node *Node) int {
 	return -1
 }
 
+func indexOfNodeIpInNodeMap(ip string) int {
+	for i, n := range NODE_MAP {
+		if n.Ip == ip {
+			return i
+		}
+	}
+	return -1
+}
+
 // return the data stored in the nodemap
 func getNodeDatas() []map[string]string {
 	var nodedata []map[string]string
@@ -61,8 +70,10 @@ func getNodeDatas() []map[string]string {
 // return the data stored in the nodemap
 func getNodeIps() []string {
 	var nodeips []string
+
 	for _, n := range NODE_MAP {
-		nodeips = append(nodeips, n.Ip)
+		node := n.Ip + ":" + strconv.FormatBool(n.Active)
+		nodeips = append(nodeips, node)
 	}
 	return nodeips
 }
@@ -179,26 +190,14 @@ func (node *Node) pickPort(ip string) {
 	}
 }
 
-func (n *Node) pingRetry(resp *http.Response, c *http.Client, sendData *bytes.Buffer) *http.Response {
-	logger.Log("PINGING again "+"http://"+n.Ip, logging.INFO)
-	fmt.Println(c, sendData)
-	resp, err := c.Post("http://"+n.Ip+"/ping", "application/json", sendData)
-	// resp = resps
-	// fmt.Println(resps.Header.Get("pinged"))
+func (n *Node) pingRetry() bool {
+	_, err := net.DialTimeout("tcp", n.Ip, 2000*time.Millisecond)
 	if err != nil {
-		indexOfNode := indexOfNodeInNodeMap(n)
-		NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
-		return nil
+		logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
+		n.Active = false
+		return false
 	}
-	return resp
-}
-
-func (n *Node) receivedPing(resp *http.Response, c *http.Client) {
-	//need to do master resilience here
-	if resp.Header.Get("pinged") == "true" {
-		logger.Log("PING RECEIVED FROM "+n.Ip, logging.GOOD)
-		c.CloseIdleConnections()
-	}
+	return true
 }
 
 func (node *Node) pingEachConnection(jsonNodeMap []byte) {
@@ -216,29 +215,27 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 		sendData := bytes.NewBuffer(jsonNodeMap)
 		//ping connection
 		logger.Log("PINGING "+n.Ip, logging.INFO)
-		_, err := net.DialTimeout("tcp", n.Ip, 1500*time.Millisecond)
+		p, err := net.DialTimeout("tcp", n.Ip, 1500*time.Millisecond)
 		//increase connection ping count
 		n.PingCount++
 		//retry logic
 		if err != nil {
-			_, err := net.DialTimeout("tcp", n.Ip, 2000*time.Millisecond)
-			if err != nil {
-				logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
-				//dont remove node, just make it inactive
-				// indexOfNode := indexOfNodeInNodeMap(n)
-				// NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
-				n.Active = false
+			if !n.pingRetry() {
 				continue
 			}
 		}
 		logger.Log("PING RECEIVED FROM "+n.Ip, logging.INFO)
 		_, err = http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		p.Close()
 	}
 	node.PingCount++
 }
 
 func (node *Node) ping() {
 
+	if node.Rank == FOLLOWER {
+		return
+	}
 	//while true
 	for true {
 
@@ -298,6 +295,8 @@ func (node *Node) checkForNoPingFromMaster() {
 	//update node map
 	NODE_MAP = NODE_MAP[1:]
 	NODE_MAP[0] = node
+	//start pinging again
+	go node.ping()
 }
 
 // handlers
@@ -323,12 +322,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 		if len(localnm[0].Data) == 0 {
 			NODE_MAP[0].Data = currentMasterData
-			// fmt.Println(getNodeDatas())
-			// fmt.Println("data is empty, must not have changed")
-
-			// fmt.Println("PINGED")
 			w.Header().Add("pinged", "true")
-			// fmt.Println("sent ping back")
 			return
 		}
 
@@ -420,15 +414,48 @@ func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+type WebNodeMap struct {
+	Ip     string
+	Active bool
+}
+
 func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, all")
 
-	nodeMapResp := getNodeIps()
+	nodeMapResp := []WebNodeMap{}
+	for _, n := range NODE_MAP {
+		nodeMapResp = append(nodeMapResp, WebNodeMap{n.Ip, n.Active})
+	}
 
 	json.NewEncoder(w).Encode(nodeMapResp)
+}
+
+func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, ip")
+
+	//only do this if master
+	if node.Rank == FOLLOWER {
+		return
+	}
+	nodeIpToRemove := req.URL.Query().Get("ip")
+	if nodeIpToRemove == "" {
+		nodeIpToRemove = req.Header.Get("ip")
+	}
+
+	//this needs to be a function
+	indexOfNode := indexOfNodeIpInNodeMap(nodeIpToRemove)
+	if indexOfNode == -1 {
+		return
+	}
+	logger.Log("removed node: "+nodeIpToRemove+" from the nodemap", logging.GOOD)
+	NODE_MAP = append(NODE_MAP[:indexOfNode], NODE_MAP[indexOfNode+1:]...)
+	json.NewEncoder(w).Encode("removed node")
+
 }
 
 func webHandler(w http.ResponseWriter, req *http.Request) {
@@ -450,6 +477,7 @@ func main() {
 	//init node and set to follower (true until proven otherwise)
 	var node Node
 	node.Rank = FOLLOWER
+	node.Active = true
 
 	//set ips
 	localip := getLocalIp()
@@ -484,6 +512,7 @@ func main() {
 	http.HandleFunc("/connect", node.connectHandler)
 	http.HandleFunc("/ping", node.pingHandler)
 	http.HandleFunc("/data", node.dataHandler)
+	http.HandleFunc("/removenode", node.removeNodeHandler)
 	http.HandleFunc("/nodemap", nodeMapHandler)
 
 	//web stuff
