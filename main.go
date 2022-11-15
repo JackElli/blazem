@@ -215,7 +215,7 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 		sendData := bytes.NewBuffer(jsonNodeMap)
 		//ping connection
 		logger.Log("PINGING "+n.Ip, logging.INFO)
-		p, err := net.DialTimeout("tcp", n.Ip, 1500*time.Millisecond)
+		_, err := net.DialTimeout("tcp", n.Ip, 1500*time.Millisecond)
 		//increase connection ping count
 		n.PingCount++
 		//retry logic
@@ -226,7 +226,7 @@ func (node *Node) pingEachConnection(jsonNodeMap []byte) {
 		}
 		logger.Log("PING RECEIVED FROM "+n.Ip, logging.INFO)
 		_, err = http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
-		p.Close()
+		// p.Close()
 	}
 	node.PingCount++
 }
@@ -356,8 +356,11 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 			NODE_MAP = append(NODE_MAP, &Node{ip, time.Now(), 0, FOLLOWER, map[string]string{}, true})
 		} else {
 			//already in map
-			indexOfNode := indexOfNodeInNodeMap(&Node{ip, time.Now(), 0, FOLLOWER, nil, true})
+
+			indexOfNode := indexOfNodeIpInNodeMap(ip)
 			NODE_MAP[indexOfNode].Active = true
+			//resend data
+			NODE_MAP[indexOfNode].PingCount = 0
 			//set to active
 		}
 	}
@@ -558,3 +561,5 @@ func main() {
 // CLEAN CODE
 
 //MIGHT WANT TO CHANGE IT SO WE CHECK EVERY MINUTE RATHER THAN 4 SECONDS
+
+//THERES A BUG SOMEWHERE WITH NULLPOINTER
