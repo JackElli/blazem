@@ -5,7 +5,6 @@ import (
 	"distributed_servers/global"
 	"distributed_servers/logging"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -19,10 +18,13 @@ type WebNodeMap struct {
 	Active bool
 }
 type JsonData struct {
-	Data string
-	Type string
-	Date time.Time
+	Folder string
+	Data   string
+	Type   string
+	Date   time.Time
 }
+
+var connectedFromWebUI bool
 
 // handlers
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
@@ -59,11 +61,34 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		//it has been successfully pinged
 		w.Header().Add("pinged", "true")
-		// fmt.Println("sent ping back")
 	} else {
-		fmt.Println("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!")
+		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!", logging.WARNING)
 		node.Rank = global.FOLLOWER
-		node.PingCount = 0
+
+		//this sends the data to node that joined the web ui
+		//NEED TO FIX!!!
+		body, _ := ioutil.ReadAll(req.Body)
+
+		//move nodemap to local memory
+		var localnm []*global.Node
+		json.Unmarshal(body, &localnm)
+
+		//add the changed node map
+		currentMasterData := global.NODE_MAP[0].Data
+		global.NODE_MAP = localnm
+
+		if len(localnm[0].Data) == 0 {
+			global.NODE_MAP[0].Data = currentMasterData
+			w.Header().Add("pinged", "true")
+			return
+		}
+
+		global.Logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
+
+		global.NODE_MAP = []*global.Node{}
+		for _, j := range localnm {
+			global.NODE_MAP = append(global.NODE_MAP, j)
+		}
 	}
 }
 
@@ -101,7 +126,8 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write(sendData.Bytes())
 }
 
-func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
+// this needs to change
+func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 	if node.Rank == global.MASTER {
 
 		w.Header().Set("Content-Type", "application/json")
@@ -111,36 +137,22 @@ func (node *Node) dataHandler(w http.ResponseWriter, req *http.Request) {
 		if req.Method == "POST" {
 
 			//TODO send multiple key and values
-
 			var dataToSet []string
 			body, _ := ioutil.ReadAll(req.Body)
 			json.Unmarshal(body, &dataToSet)
 
-			setKey := dataToSet[0]
-			setVal := dataToSet[1]
-			dataType := dataToSet[2]
+			setFolder := dataToSet[0]
+			setKey := dataToSet[1]
+			setVal := dataToSet[2]
+			dataType := dataToSet[3]
 
-			value := "{\"data\":\"" + setVal + "\", \"type\":\"" + dataType + "\", \"date\":\"" + time.Now().String() + "\"}"
+			value := "{\"folder\":\"" + setFolder + "\",\"data\":\"" + setVal + "\", \"type\":\"" + dataType + "\", \"date\":\"" + time.Now().String() + "\"}"
 			node.Data[setKey] = value
 
 			global.DataChanged = true
 			w.Header().Set("response", "done")
 			return
 		}
-
-		datagetkey := req.Header.Get("key")
-		datagetall := req.Header.Get("all")
-
-		if datagetkey != "" {
-			dataToSend := node.Data[datagetkey]
-			w.Header().Set("val", dataToSend)
-		}
-		if datagetall != "" {
-			dataToSend := global.GetAllDataToPrint(node.Data)
-
-			json.NewEncoder(w).Encode(dataToSend)
-		}
-
 	}
 }
 
@@ -165,7 +177,10 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, key")
 
-		dataKey := req.Header.Get("key")
+		dataKey := req.URL.Query().Get("key")
+		if dataKey == "" {
+			dataKey = req.Header.Get("key")
+		}
 
 		getData := global.NODE_MAP[0].Data[dataKey]
 
@@ -204,6 +219,57 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+type Data struct {
+	Folder string
+	Data   string
+	Type   string
+	Date   time.Time
+}
+
+func isInArr(arr []string, needle string) bool {
+	for _, s := range arr {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func (node *Node) FolderHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+	//get folders
+	var folders []string
+	for _, d := range node.Data {
+		var data Data
+		json.Unmarshal([]byte(d), &data)
+		if !isInArr(folders, data.Folder) {
+			folders = append(folders, data.Folder)
+		}
+	}
+	json.NewEncoder(w).Encode(folders)
+}
+
+func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+
+	folder := req.URL.Query().Get("folder")
+	dataInFolder := []Data{}
+	for _, d := range node.Data {
+		var data Data
+		json.Unmarshal([]byte(d), &data)
+		if data.Folder == folder {
+			dataInFolder = append(dataInFolder, data)
+		}
+	}
+	json.NewEncoder(w).Encode(dataInFolder)
+
+}
+
 func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -224,6 +290,9 @@ func SetupHandlers(node *Node) {
 	http.HandleFunc("/ping", node.pingHandler)
 	http.HandleFunc("/getalldata", node.getAllDataHandler)
 	http.HandleFunc("/getdata", node.getDataHandler)
+	http.HandleFunc("/getdatainfolder", node.getDataInFolderHandler)
+	http.HandleFunc("/setdata", node.setDataHandler)
+	http.HandleFunc("/folders", node.FolderHandler)
 	http.HandleFunc("/removenode", node.removeNodeHandler)
 	http.HandleFunc("/nodemap", nodeMapHandler)
 }

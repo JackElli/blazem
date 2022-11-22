@@ -13,6 +13,7 @@ func webHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
 func SetupWebend() {
 	//web stuff
 	styles := http.FileServer(http.Dir("./statictest/css"))

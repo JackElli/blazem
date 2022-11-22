@@ -38,7 +38,9 @@ func LogFile(logfilepath string) *Logger {
 	return &Logger{LogFileHandle: logfile}
 }
 func (logger *Logger) Log(str string, logType LOG_TYPE) {
-	log := string(logType) + " " + logger.getNiceTime() + "\t " + str
-	logger.LogFileHandle.Write([]byte(log + "\n"))
-	fmt.Println(log)
+	go func() {
+		log := string(logType) + " " + logger.getNiceTime() + "\t " + str
+		logger.LogFileHandle.Write([]byte(log + "\n"))
+		fmt.Println(log)
+	}()
 }

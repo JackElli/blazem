@@ -93,6 +93,36 @@ func (node *Node) pickPort(ip string) {
 	}
 }
 
+func (node *Node) connectToIp(masterip *string, localip string) {
+	var connectoip string = ""
+	fmt.Println("Type in ip to connect, or enter if master.")
+	fmt.Scanf("%s", &connectoip)
+
+	if connectoip == "" {
+		//get ip of machine
+		//THIS IS THE IP TO CONNECT TO
+		connectoip = localip + ":3100"
+		*masterip = localip + ":3100"
+	} else {
+		//connect to server
+		global.Logger.Log("TRYING TO CONNECT TO "+"http://"+connectoip, logging.INFO)
+		resp, err := http.Get("http://" + connectoip + "/connect?ip=" + node.Ip)
+		if err == nil && resp.Header.Get("rank") == "MASTER" {
+			*masterip = connectoip
+		} else {
+			global.Logger.Log("THAT IS NOT A MASTER", logging.ERROR)
+			return
+		}
+	}
+}
+
+func (node *Node) setNodeMasterAttrs() {
+	node.Rank = global.MASTER
+	node.Data = map[string]string{}
+	node.Data["testkey"] = "{\"folder\":\"text\",\"data\":\"hello this is a test\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
+	node.Data["testkey2"] = "{\"folder\":\"text\",\"data\":\"hello asd\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
+}
+
 // main func
 func main() {
 
@@ -102,37 +132,18 @@ func main() {
 
 	//init node and set to follower (true until proven otherwise)
 	var node Node
+
+	var masterip string = ""
+
 	node.Rank = global.FOLLOWER
 	node.Active = true
-
 	//set ips
 	localip := getLocalIp()
-	connectoip := ""
-	masterip := ""
-
+	//this needs to be async as port should be on other thread
 	go node.pickPort(localip)
 
 	time.Sleep(2 * time.Second)
-	fmt.Println("Type in ip to connect, or enter if master.")
-	fmt.Scanf("%s", &connectoip)
-
-	if connectoip == "" {
-		//get ip of machine
-		//THIS IS THE IP TO CONNECT TO
-		connectoip = localip + ":3100"
-		masterip = localip + ":3100"
-	} else {
-		//connect to server
-		global.Logger.Log("TRYING TO CONNECT TO "+"http://"+connectoip, logging.INFO)
-		resp, err := http.Get("http://" + connectoip + "/connect?ip=" + node.Ip)
-		if err == nil && resp.Header.Get("rank") == "MASTER" {
-			masterip = connectoip
-		} else {
-			global.Logger.Log("THAT IS NOT A MASTER", logging.ERROR)
-			return
-		}
-	}
-
+	node.connectToIp(&masterip, localip)
 	global.Logger.Log("The master is "+masterip, logging.INFO)
 
 	//setup endpoints
@@ -144,10 +155,7 @@ func main() {
 
 	//if this node is not on the master port, then its a follower
 	if masterip == node.Ip {
-		node.Rank = global.MASTER
-		node.Data = map[string]string{}
-		node.Data["testkey"] = "{\"data\":\"hello this is a test\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
-		node.Data["testkey2"] = "{\"data\":\"hello asd\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
+		node.setNodeMasterAttrs()
 	}
 
 	//ping handling
@@ -177,3 +185,5 @@ func main() {
 //THERES A BUG SOMEWHERE WITH NULLPOINTER
 
 //SWITCH FROM FDS (FULL DATA SYNC) TO DDS (DELTA DATA SYNC)
+
+//CHECK NODE IS NOT ON TWO CLUSTERS
