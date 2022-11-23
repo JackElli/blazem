@@ -7,7 +7,6 @@ import (
 
 func webHandler(w http.ResponseWriter, req *http.Request) {
 	tmpl, err := template.ParseFiles("statictest/index.html")
-
 	err = tmpl.Execute(w, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

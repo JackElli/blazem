@@ -17,12 +17,6 @@ type WebNodeMap struct {
 	Ip     string
 	Active bool
 }
-type JsonData struct {
-	Folder string
-	Data   string
-	Type   string
-	Date   time.Time
-}
 
 var connectedFromWebUI bool
 
@@ -106,7 +100,7 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 		//add to the node map
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 		if !global.AlreadyInNodeMap(ip) {
-			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(), PingCount: 0, Rank: global.FOLLOWER, Data: map[string]string{}, Active: true})
+			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(), PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true})
 		} else {
 			//already in map
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
@@ -141,15 +135,22 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			body, _ := ioutil.ReadAll(req.Body)
 			json.Unmarshal(body, &dataToSet)
 
+			//this will change eventually
 			setFolder := dataToSet[0]
 			setKey := dataToSet[1]
 			setVal := dataToSet[2]
 			dataType := dataToSet[3]
 
-			value := "{\"folder\":\"" + setFolder + "\",\"data\":\"" + setVal + "\", \"type\":\"" + dataType + "\", \"date\":\"" + time.Now().String() + "\"}"
-			node.Data[setKey] = value
+			value := global.JsonData{
+				Folder: setFolder,
+				Data:   setVal,
+				Type:   dataType,
+				Date:   time.Now(),
+			}
 
+			node.Data[setKey] = value
 			global.DataChanged = true
+
 			w.Header().Set("response", "done")
 			return
 		}
@@ -184,10 +185,10 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 
 		getData := global.NODE_MAP[0].Data[dataKey]
 
-		var dataToSend JsonData
-		json.Unmarshal([]byte(getData), &dataToSend)
+		// var dataToSend JsonData
+		// json.Unmarshal([]byte(getData), &dataToSend)
 
-		json.NewEncoder(w).Encode(dataToSend.Data)
+		json.NewEncoder(w).Encode(getData)
 
 	}
 }
@@ -219,22 +220,6 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
-type Data struct {
-	Folder string
-	Data   string
-	Type   string
-	Date   time.Time
-}
-
-func isInArr(arr []string, needle string) bool {
-	for _, s := range arr {
-		if s == needle {
-			return true
-		}
-	}
-	return false
-}
-
 func (node *Node) FolderHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -242,10 +227,8 @@ func (node *Node) FolderHandler(w http.ResponseWriter, req *http.Request) {
 	//get folders
 	var folders []string
 	for _, d := range node.Data {
-		var data Data
-		json.Unmarshal([]byte(d), &data)
-		if !isInArr(folders, data.Folder) {
-			folders = append(folders, data.Folder)
+		if !isInArr(folders, d.Folder) {
+			folders = append(folders, d.Folder)
 		}
 	}
 	json.NewEncoder(w).Encode(folders)
@@ -258,16 +241,25 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 
 	folder := req.URL.Query().Get("folder")
-	dataInFolder := []Data{}
+	var dataInFolder []global.JsonData
 	for _, d := range node.Data {
-		var data Data
-		json.Unmarshal([]byte(d), &data)
-		if data.Folder == folder {
-			dataInFolder = append(dataInFolder, data)
+		// var data Data
+		// json.Unmarshal([]byte(d), &data)
+		if d.Folder == folder {
+			dataInFolder = append(dataInFolder, d)
 		}
 	}
 	json.NewEncoder(w).Encode(dataInFolder)
 
+}
+
+func isInArr(arr []string, needle string) bool {
+	for _, s := range arr {
+		if s == needle {
+			return true
+		}
+	}
+	return false
 }
 
 func nodeMapHandler(w http.ResponseWriter, req *http.Request) {

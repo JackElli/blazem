@@ -27,8 +27,8 @@ func indexOfNodeInNodeMap(node *global.Node) int {
 }
 
 // return the data stored in the nodemap
-func getNodeDatas() []map[string]string {
-	var nodedata []map[string]string
+func getNodeDatas() []global.NodeData {
+	var nodedata []global.NodeData
 	for _, n := range global.NODE_MAP {
 		nodedata = append(nodedata, n.Data)
 	}
@@ -107,20 +107,37 @@ func (node *Node) connectToIp(masterip *string, localip string) {
 		//connect to server
 		global.Logger.Log("TRYING TO CONNECT TO "+"http://"+connectoip, logging.INFO)
 		resp, err := http.Get("http://" + connectoip + "/connect?ip=" + node.Ip)
+
 		if err == nil && resp.Header.Get("rank") == "MASTER" {
 			*masterip = connectoip
 		} else {
 			global.Logger.Log("THAT IS NOT A MASTER", logging.ERROR)
 			return
 		}
+		defer resp.Body.Close()
 	}
 }
 
 func (node *Node) setNodeMasterAttrs() {
 	node.Rank = global.MASTER
-	node.Data = map[string]string{}
-	node.Data["testkey"] = "{\"folder\":\"text\",\"data\":\"hello this is a test\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
-	node.Data["testkey2"] = "{\"folder\":\"text\",\"data\":\"hello asd\", \"type\":\"text\", \"date\":\"" + time.Now().String() + "\"}"
+	node.Data = global.NodeData{}
+
+	testData1 := global.JsonData{
+		Folder: "text",
+		Data:   "hello this is a test",
+		Type:   "text",
+		Date:   time.Now(),
+	}
+
+	testData2 := global.JsonData{
+		Folder: "text",
+		Data:   "hello asd",
+		Type:   "text",
+		Date:   time.Now(),
+	}
+
+	node.Data["testkey"] = testData1
+	node.Data["testkey2"] = testData2
 }
 
 // main func
@@ -187,3 +204,5 @@ func main() {
 //SWITCH FROM FDS (FULL DATA SYNC) TO DDS (DELTA DATA SYNC)
 
 //CHECK NODE IS NOT ON TWO CLUSTERS
+
+//change code to allocate mem before array swap

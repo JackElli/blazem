@@ -12,7 +12,15 @@ import (
 	"time"
 )
 
+type JsonData struct {
+	Folder string
+	Data   string
+	Type   string
+	Date   time.Time
+}
+
 type Rank string
+type NodeData map[string]JsonData
 
 const (
 	MASTER   Rank = "MASTER"
@@ -30,7 +38,7 @@ type Node struct {
 	Pinged    time.Time
 	PingCount int
 	Rank      Rank
-	Data      map[string]string
+	Data      NodeData
 	Active    bool
 }
 
@@ -83,12 +91,13 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 					return
 				}
 			}
-			_, err = http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+			resp, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+			if err == nil {
+				defer resp.Body.Close()
+			}
 			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
 			if loopn.Active == false {
 				loopn.Active = true
-				// //-1 just in case
-				// loopn.PingCount = -1
 			}
 		}(n)
 	}
@@ -124,19 +133,6 @@ func (node *Node) Ping() {
 	}
 }
 
-func (node *Node) isNextInLine() bool {
-	//get next true value
-	for _, n := range NODE_MAP {
-		if n.Active == false {
-			continue
-		}
-		if n.Ip == node.Ip {
-			return true
-		}
-	}
-	return false
-}
-
 func (node *Node) CheckForNoPingFromMaster() {
 
 	//master shouldnt be checking
@@ -165,6 +161,23 @@ func (node *Node) CheckForNoPingFromMaster() {
 		return
 	}
 	//set that node to master
+	node.setToMaster()
+}
+
+func (node *Node) isNextInLine() bool {
+	//get next true value
+	for _, n := range NODE_MAP {
+		if n.Active == false {
+			continue
+		}
+		if n.Ip == node.Ip {
+			return true
+		}
+	}
+	return false
+}
+
+func (node *Node) setToMaster() {
 	node.Rank = MASTER
 	node.Data = NODE_MAP[0].Data
 	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
@@ -174,27 +187,6 @@ func (node *Node) CheckForNoPingFromMaster() {
 	NODE_MAP[0] = node
 	//start pinging again
 	go node.Ping()
-}
-
-// this needs improving, need to check data not just endpoint
-func checkIfDataChanged() []byte {
-	var jsonNodeMap []byte
-	if DataChanged {
-		Logger.Log("DATA CHANGED", logging.INFO)
-		jsonNodeMap, _ = json.Marshal(NODE_MAP)
-		DataChanged = false
-	} else {
-		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
-	}
-	return jsonNodeMap
-}
-
-func getNodeMapWithoutData() []*Node {
-	var newmap []*Node
-	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, map[string]string{}, n.Active})
-	}
-	return newmap
 }
 
 // return the ips stored in the nodemap
@@ -226,10 +218,31 @@ func IndexOfNodeIpInNodeMap(ip string) int {
 	return -1
 }
 
-func GetAllDataToPrint(data map[string]string) []string {
+func GetAllDataToPrint(data NodeData) []string {
 	var retdata []string
 	for v := range data {
-		retdata = append(retdata, data[v])
+		retdata = append(retdata, data[v].Data)
 	}
 	return retdata
+}
+
+// this needs improving, need to check data not just endpoint
+func checkIfDataChanged() []byte {
+	var jsonNodeMap []byte
+	if DataChanged {
+		Logger.Log("DATA CHANGED", logging.INFO)
+		jsonNodeMap, _ = json.Marshal(NODE_MAP)
+		DataChanged = false
+	} else {
+		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
+	}
+	return jsonNodeMap
+}
+
+func getNodeMapWithoutData() []*Node {
+	var newmap []*Node
+	for _, n := range NODE_MAP {
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, NodeData{}, n.Active})
+	}
+	return newmap
 }
