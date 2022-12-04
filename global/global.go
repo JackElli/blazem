@@ -42,15 +42,24 @@ type Node struct {
 	Active    bool
 }
 
-func (n *Node) PingRetry() bool {
-	Logger.Log("PINGING AGAIN", logging.INFO)
-	_, err := net.DialTimeout("tcp", n.Ip, 2000*time.Millisecond)
-	if err != nil {
+func (n *Node) PingRetry(amountOfRetries int) bool {
+	//needs to ping every second while in retry logic
+	//only rety 3 times
+	time.Sleep(750 * time.Millisecond)
+	if amountOfRetries == 3 {
 		Logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
 		n.Active = false
 		n.PingCount = 0
 		return false
 	}
+
+	Logger.Log("PINGING AGAIN", logging.INFO)
+	_, err := net.DialTimeout("tcp", n.Ip, 500*time.Millisecond)
+	if err != nil {
+		// fmt.Println("error")
+		return n.PingRetry(amountOfRetries + 1)
+	}
+
 	return true
 }
 
@@ -61,6 +70,8 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 			//ping non active node every 8 seconds
 			if loopn.Active == false {
 				//2n and 2n+1 (all cases)
+				//maybe a better way would be to send a ping to master
+				//if node comes back
 				if time.Now().Second()%7 != 0 && time.Now().Second()%8 != 0 {
 					return
 				}
@@ -71,7 +82,7 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				return
 			}
 			//send all data to new joiner
-			if loopn.PingCount == 0 {
+			if loopn.PingCount == 0 && loopn.Active == true {
 				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
 				//marshall so we're able to send over TCP
 				jsonNodeMap, _ = json.Marshal(NODE_MAP)
@@ -80,21 +91,21 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 
 			//ping connection
 			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
-			_, err := net.DialTimeout("tcp", loopn.Ip, 1500*time.Millisecond)
-
-			//increase connection ping count
-			loopn.PingCount++
-
+			_, err := net.DialTimeout("tcp", loopn.Ip, 500*time.Millisecond)
 			//retry logic
 			if err != nil {
-				if !loopn.PingRetry() {
+				if !loopn.PingRetry(0) {
 					return
 				}
 			}
+
 			resp, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
 			if err == nil {
 				defer resp.Body.Close()
 			}
+
+			//increase connection ping count
+			loopn.PingCount++
 			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
 			if loopn.Active == false {
 				loopn.Active = true
@@ -107,23 +118,17 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 func (node *Node) Ping() {
 	//while true
 	for true {
-
+		time.Sleep(4 * time.Second)
 		//break out if follower (shouldnt be pinging if follower)
 		if node.Rank == FOLLOWER {
 			return
 		}
-
-		time.Sleep(4 * time.Second)
 
 		if node.Rank == MASTER {
 			Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(GetNodeIps(), " "), logging.INFO)
 		}
 
 		if len(NODE_MAP) == 1 {
-			continue
-		}
-
-		if node.Rank == FOLLOWER {
 			continue
 		}
 

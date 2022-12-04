@@ -17,11 +17,17 @@ type WebNodeMap struct {
 	Ip     string
 	Active bool
 }
+type SendData struct {
+	Key  string
+	Data global.JsonData
+}
 
 var connectedFromWebUI bool
 
 // handlers
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
+
+	global.Logger.Log("PING RECEIVED", logging.INFO)
 
 	//only receive ping if its a follower
 	if node.Rank == global.FOLLOWER {
@@ -43,7 +49,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 		if len(localnm[0].Data) == 0 {
 			global.NODE_MAP[0].Data = currentMasterData
-			w.Header().Add("pinged", "true")
 			return
 		}
 
@@ -53,8 +58,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		for _, j := range localnm {
 			global.NODE_MAP = append(global.NODE_MAP, j)
 		}
-		//it has been successfully pinged
-		w.Header().Add("pinged", "true")
 	} else {
 		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!", logging.WARNING)
 		node.Rank = global.FOLLOWER
@@ -73,7 +76,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 		if len(localnm[0].Data) == 0 {
 			global.NODE_MAP[0].Data = currentMasterData
-			w.Header().Add("pinged", "true")
 			return
 		}
 
@@ -84,6 +86,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 			global.NODE_MAP = append(global.NODE_MAP, j)
 		}
 	}
+
 }
 
 func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
@@ -152,6 +155,7 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			global.DataChanged = true
 
 			w.Header().Set("response", "done")
+			json.NewEncoder(w).Encode("done")
 			return
 		}
 	}
@@ -185,10 +189,9 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 
 		getData := global.NODE_MAP[0].Data[dataKey]
 
-		// var dataToSend JsonData
-		// json.Unmarshal([]byte(getData), &dataToSend)
+		sendData := SendData{dataKey, getData}
 
-		json.NewEncoder(w).Encode(getData)
+		json.NewEncoder(w).Encode(sendData)
 
 	}
 }
@@ -241,13 +244,18 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
 
 	folder := req.URL.Query().Get("folder")
-	var dataInFolder []global.JsonData
-	for _, d := range node.Data {
-		// var data Data
-		// json.Unmarshal([]byte(d), &data)
-		if d.Folder == folder {
-			dataInFolder = append(dataInFolder, d)
+
+	var dataInFolder []SendData
+	numOfItems := 0
+	for key, data := range node.Data {
+		if numOfItems == 40 {
+			break
 		}
+		if data.Folder == folder {
+			sendData := SendData{key, data}
+			dataInFolder = append(dataInFolder, sendData)
+		}
+		numOfItems++
 	}
 	json.NewEncoder(w).Encode(dataInFolder)
 
@@ -282,7 +290,7 @@ func SetupHandlers(node *Node) {
 	http.HandleFunc("/ping", node.pingHandler)
 	http.HandleFunc("/getalldata", node.getAllDataHandler)
 	http.HandleFunc("/getdata", node.getDataHandler)
-	http.HandleFunc("/getdatainfolder", node.getDataInFolderHandler)
+	go http.HandleFunc("/getdatainfolder", node.getDataInFolderHandler)
 	http.HandleFunc("/setdata", node.setDataHandler)
 	http.HandleFunc("/folders", node.FolderHandler)
 	http.HandleFunc("/removenode", node.removeNodeHandler)

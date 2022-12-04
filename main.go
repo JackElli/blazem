@@ -5,7 +5,6 @@ import (
 	"distributed_servers/global"
 	"distributed_servers/logging"
 	"distributed_servers/webend"
-	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -38,7 +37,8 @@ func getNodeDatas() []global.NodeData {
 func nodeMapPointertoMem() []global.Node {
 	var newmap []global.Node
 	for _, n := range global.NODE_MAP {
-		newmap = append(newmap, global.Node{Ip: n.Ip, Pinged: n.Pinged, PingCount: n.PingCount, Rank: n.Rank, Data: n.Data, Active: true})
+		newmap = append(newmap, global.Node{Ip: n.Ip, Pinged: n.Pinged,
+			PingCount: n.PingCount, Rank: n.Rank, Data: n.Data, Active: true})
 	}
 	return newmap
 }
@@ -54,8 +54,8 @@ func getLocalIp() string {
 // ping connections
 func (node *Node) tryListen(ip string) {
 
-	//wait for 500 milliseconds
-	time.Sleep(500 * time.Millisecond)
+	// //wait for 500 milliseconds
+	// time.Sleep(500 * time.Millisecond)
 
 	//listen on selected port
 	portstr := ip
@@ -74,7 +74,7 @@ func (node *Node) tryListen(ip string) {
 
 	//if there's no error set the nodes port to the current port
 	node.Ip = ip
-	global.Logger.Log("connected on "+portstr, logging.GOOD)
+	global.Logger.Log("Blazem started up on "+ip, logging.INFO)
 
 	//serve http requests on this port
 	http.Serve(l, nil)
@@ -82,39 +82,16 @@ func (node *Node) tryListen(ip string) {
 
 func (node *Node) pickPort(ip string) {
 
+	connectIp := ""
 	//for each node, try to listen
 	for i := 0; i < 3; i++ {
-		node.tryListen(ip + ":" + strconv.Itoa(global.PORT_START+i))
+		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
+		node.tryListen(connectIp)
 
 		//if theres an error, break out
 		if node.Ip != "" {
 			break
 		}
-	}
-}
-
-func (node *Node) connectToIp(masterip *string, localip string) {
-	var connectoip string = ""
-	fmt.Println("Type in ip to connect, or enter if master.")
-	fmt.Scanf("%s", &connectoip)
-
-	if connectoip == "" {
-		//get ip of machine
-		//THIS IS THE IP TO CONNECT TO
-		connectoip = localip + ":3100"
-		*masterip = localip + ":3100"
-	} else {
-		//connect to server
-		global.Logger.Log("TRYING TO CONNECT TO "+"http://"+connectoip, logging.INFO)
-		resp, err := http.Get("http://" + connectoip + "/connect?ip=" + node.Ip)
-
-		if err == nil && resp.Header.Get("rank") == "MASTER" {
-			*masterip = connectoip
-		} else {
-			global.Logger.Log("THAT IS NOT A MASTER", logging.ERROR)
-			return
-		}
-		defer resp.Body.Close()
 	}
 }
 
@@ -159,10 +136,6 @@ func main() {
 	//this needs to be async as port should be on other thread
 	go node.pickPort(localip)
 
-	time.Sleep(2 * time.Second)
-	node.connectToIp(&masterip, localip)
-	global.Logger.Log("The master is "+masterip, logging.INFO)
-
 	//setup endpoints
 	endpoints.SetupHandlers((*endpoints.Node)(&node))
 	webend.SetupWebend()
@@ -206,3 +179,5 @@ func main() {
 //CHECK NODE IS NOT ON TWO CLUSTERS
 
 //change code to allocate mem before array swap
+
+//allow file uploads (binary objs)
