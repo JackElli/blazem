@@ -13,6 +13,7 @@ import (
 )
 
 type JsonData struct {
+	Key    string
 	Folder string
 	Data   string
 	Type   string

@@ -100,6 +100,7 @@ func (node *Node) setNodeMasterAttrs() {
 	node.Data = global.NodeData{}
 
 	testData1 := global.JsonData{
+		Key:    "testkey",
 		Folder: "text",
 		Data:   "hello this is a test",
 		Type:   "text",
@@ -107,6 +108,7 @@ func (node *Node) setNodeMasterAttrs() {
 	}
 
 	testData2 := global.JsonData{
+		Key:    "testkey2",
 		Folder: "text",
 		Data:   "hello asd",
 		Type:   "text",

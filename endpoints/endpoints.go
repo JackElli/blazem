@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 )
@@ -123,6 +124,7 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			dataType := dataToSet[3]
 
 			value := global.JsonData{
+				Key:    setKey,
 				Folder: setFolder,
 				Data:   setVal,
 				Type:   dataType,
@@ -223,17 +225,32 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 
 	folder := req.URL.Query().Get("folder")
 
+	//need to sort data by date
+	//breaking change, as added new JSON field
+	nodeData := make([]global.JsonData, len(node.Data))
+
+	dataInd := 0
+	for _, d := range node.Data {
+		nodeData[dataInd] = d
+		dataInd++
+	}
+
+	sort.Slice(nodeData, func(i, j int) bool {
+		return nodeData[i].Date.Unix() > nodeData[j].Date.Unix()
+	})
+
 	var dataInFolder []SendData
 	numOfItems := 0
-	for key, data := range node.Data {
+	for i, data := range nodeData {
+		key := nodeData[i].Key
 		if numOfItems == 40 {
 			break
 		}
 		if data.Folder == folder {
 			sendData := SendData{key, data}
 			dataInFolder = append(dataInFolder, sendData)
+			numOfItems++
 		}
-		numOfItems++
 	}
 	json.NewEncoder(w).Encode(dataInFolder)
 
