@@ -29,6 +29,17 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 	global.Logger.Log("PING RECEIVED", logging.INFO)
 
+	//fetch data of ping (nodemap)
+	body, _ := ioutil.ReadAll(req.Body)
+
+	//move nodemap to local memory
+	var localnm []*global.Node
+	json.Unmarshal(body, &localnm)
+
+	//add the changed node map
+	currentMasterData := global.NODE_MAP[0].Data
+	global.NODE_MAP = localnm
+
 	//only receive ping if its a follower
 	if node.Rank == global.FOLLOWER {
 		//print the rank of the node and wait for 2 secs
@@ -36,55 +47,22 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		node.Pinged = time.Now()
 		//need to check for ping here (start )
 		go (*global.Node)(node).CheckForNoPingFromMaster()
-		//fetch data of ping (nodemap)
-		body, _ := ioutil.ReadAll(req.Body)
 
-		//move nodemap to local memory
-		var localnm []*global.Node
-		json.Unmarshal(body, &localnm)
-
-		//add the changed node map
-		currentMasterData := global.NODE_MAP[0].Data
-		global.NODE_MAP = localnm
-
-		if len(localnm[0].Data) == 0 {
-			global.NODE_MAP[0].Data = currentMasterData
-			return
-		}
-
-		global.Logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
-
-		global.NODE_MAP = []*global.Node{}
-		for _, j := range localnm {
-			global.NODE_MAP = append(global.NODE_MAP, j)
-		}
 	} else {
 		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!", logging.WARNING)
 		node.Rank = global.FOLLOWER
+	}
 
-		//this sends the data to node that joined the web ui
-		//NEED TO FIX!!!
-		body, _ := ioutil.ReadAll(req.Body)
+	if len(localnm[0].Data) == 0 {
+		global.NODE_MAP[0].Data = currentMasterData
+		return
+	}
 
-		//move nodemap to local memory
-		var localnm []*global.Node
-		json.Unmarshal(body, &localnm)
+	global.Logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
 
-		//add the changed node map
-		currentMasterData := global.NODE_MAP[0].Data
-		global.NODE_MAP = localnm
-
-		if len(localnm[0].Data) == 0 {
-			global.NODE_MAP[0].Data = currentMasterData
-			return
-		}
-
-		global.Logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
-
-		global.NODE_MAP = []*global.Node{}
-		for _, j := range localnm {
-			global.NODE_MAP = append(global.NODE_MAP, j)
-		}
+	global.NODE_MAP = []*global.Node{}
+	for _, j := range localnm {
+		global.NODE_MAP = append(global.NODE_MAP, j)
 	}
 
 }
