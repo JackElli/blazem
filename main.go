@@ -133,6 +133,7 @@ func main() {
 
 	node.Rank = global.FOLLOWER
 	node.Active = true
+	node.Paused = false
 	//set ips
 	localip := getLocalIp()
 	//this needs to be async as port should be on other thread

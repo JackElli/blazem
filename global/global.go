@@ -5,7 +5,6 @@ import (
 	"distributed_servers/logging"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,26 +39,26 @@ type Node struct {
 	PingCount int
 	Rank      Rank
 	Data      NodeData
+	Paused    bool
 	Active    bool
 }
 
-func (n *Node) PingRetry(amountOfRetries int) bool {
+func (n *Node) PingRetry(amountOfRetries int, sendData *bytes.Buffer) bool {
 	//needs to ping every second while in retry logic
 	//only rety 3 times
-	time.Sleep(750 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	if amountOfRetries == 3 {
 		Logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
 		n.Active = false
 		n.PingCount = 0
 		return false
 	}
-
-	Logger.Log("PINGING AGAIN", logging.INFO)
-	_, err := net.DialTimeout("tcp", n.Ip, 500*time.Millisecond)
+	resp, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 	if err != nil {
-		// fmt.Println("error")
-		return n.PingRetry(amountOfRetries + 1)
+		Logger.Log("PINGING AGAIN", logging.INFO)
+		return n.PingRetry(amountOfRetries+1, sendData)
 	}
+	defer resp.Body.Close()
 
 	return true
 }
@@ -69,7 +68,7 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 		go func(loopn *Node) {
 
 			//ping non active node every 8 seconds
-			if loopn.Active == false {
+			if loopn.Paused == true {
 				//2n and 2n+1 (all cases)
 				//maybe a better way would be to send a ping to master
 				//if node comes back
@@ -92,22 +91,23 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 
 			//ping connection
 			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
-			_, err := net.DialTimeout("tcp", loopn.Ip, 500*time.Millisecond)
+			resp, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+
 			//retry logic
 			if err != nil {
-				if !loopn.PingRetry(0) {
+				loopn.Paused = true
+				if !loopn.PingRetry(0, sendData) {
 					return
 				}
 			}
-
-			resp, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
-			if err == nil {
-				defer resp.Body.Close()
-			}
+			defer resp.Body.Close()
 
 			//increase connection ping count
 			loopn.PingCount++
 			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
+			if loopn.Paused == true {
+				loopn.Paused = false
+			}
 			if loopn.Active == false {
 				loopn.Active = true
 			}
@@ -236,7 +236,7 @@ func GetAllDataToPrint(data NodeData) []string {
 func checkIfDataChanged() []byte {
 	var jsonNodeMap []byte
 	if DataChanged {
-		Logger.Log("DATA CHANGED", logging.INFO)
+		// Logger.Log("DATA CHANGED", logging.INFO)
 		jsonNodeMap, _ = json.Marshal(NODE_MAP)
 		DataChanged = false
 	} else {
@@ -248,7 +248,7 @@ func checkIfDataChanged() []byte {
 func getNodeMapWithoutData() []*Node {
 	var newmap []*Node
 	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, NodeData{}, n.Active})
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, NodeData{}, n.Paused, n.Active})
 	}
 	return newmap
 }

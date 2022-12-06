@@ -36,7 +36,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	//move nodemap to local memory
 	var localnm []*global.Node
 	json.Unmarshal(body, &localnm)
-
 	//add the changed node map
 	currentMasterData := global.NODE_MAP[0].Data
 	global.NODE_MAP = localnm
@@ -45,7 +44,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	if node.Rank == global.FOLLOWER {
 		//print the rank of the node and wait for 2 secs
 		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(global.GetNodeIps(), " "), logging.INFO)
-		node.Pinged = time.Now()
 		//need to check for ping here (start )
 		go (*global.Node)(node).CheckForNoPingFromMaster()
 
@@ -53,6 +51,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!", logging.WARNING)
 		node.Rank = global.FOLLOWER
 	}
+	node.Pinged = time.Now()
 
 	if len(localnm[0].Data) == 0 {
 		global.NODE_MAP[0].Data = currentMasterData
@@ -286,7 +285,7 @@ func SetupHandlers(node *Node) {
 	http.HandleFunc("/getalldata", node.getAllDataHandler)
 	http.HandleFunc("/getdata", node.getDataHandler)
 	go http.HandleFunc("/getdatainfolder", node.getDataInFolderHandler)
-	http.HandleFunc("/setdata", node.setDataHandler)
+	go http.HandleFunc("/setdata", node.setDataHandler)
 	http.HandleFunc("/folders", node.FolderHandler)
 	http.HandleFunc("/removenode", node.removeNodeHandler)
 	http.HandleFunc("/nodemap", nodeMapHandler)
