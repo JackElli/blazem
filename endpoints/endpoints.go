@@ -6,6 +6,7 @@ import (
 	"distributed_servers/logging"
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"sort"
 	"strings"
@@ -216,6 +217,40 @@ func (node *Node) FolderHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(folders)
 }
 
+func getHexKey() string {
+	pos := "0123456789abcdef"
+	key := ""
+	for i := 0; i < 16; i++ {
+		key += string(pos[rand.Intn(len(pos)-1)])
+	}
+	return key
+}
+
+func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+	//get folders
+	folder := req.URL.Query().Get("folder")
+	if folder == "" {
+		folder = req.Header.Get("folder")
+	}
+
+	key := getHexKey()
+	value := global.JsonData{
+		Key:    "_firstdoc_" + key,
+		Folder: folder,
+		Data:   "_firstdoc",
+		Type:   "text",
+		Date:   time.Now(),
+	}
+
+	node.Data[key] = value
+	global.DataChanged = true
+
+	json.NewEncoder(w).Encode("done")
+}
+
 func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -286,6 +321,7 @@ func SetupHandlers(node *Node) {
 	http.HandleFunc("/getdata", node.getDataHandler)
 	go http.HandleFunc("/getdatainfolder", node.getDataInFolderHandler)
 	go http.HandleFunc("/setdata", node.setDataHandler)
+	http.HandleFunc("/addfolder", node.addFolderHandler)
 	http.HandleFunc("/folders", node.FolderHandler)
 	http.HandleFunc("/removenode", node.removeNodeHandler)
 	http.HandleFunc("/nodemap", nodeMapHandler)

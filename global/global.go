@@ -43,32 +43,37 @@ type Node struct {
 	Active    bool
 }
 
-func (n *Node) PingRetry(amountOfRetries int, sendData *bytes.Buffer) bool {
+func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 	//needs to ping every second while in retry logic
 	//only rety 3 times
-	time.Sleep(500 * time.Millisecond)
-	if amountOfRetries == 3 {
-		Logger.Log("Cannot connect to "+n.Ip, logging.WARNING)
-		n.Active = false
-		n.PingCount = 0
+
+	if n == nil || n.Active == false {
 		return false
 	}
-	resp, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
-	if err != nil {
-		Logger.Log("PINGING AGAIN", logging.INFO)
-		return n.PingRetry(amountOfRetries+1, sendData)
-	}
-	defer resp.Body.Close()
 
-	return true
+	for i := 0; i < 3; i++ {
+		time.Sleep(500 * time.Millisecond)
+		_, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		if err == nil {
+			return true
+		}
+		Logger.Log("PINGING AGAIN", logging.INFO)
+	}
+	return false
 }
 
 func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 	for _, n := range NODE_MAP {
 		go func(loopn *Node) {
 
+			//don't ping to itself
+			if loopn.Ip == node.Ip {
+				return
+			}
+
 			//ping non active node every 8 seconds
-			if loopn.Paused == true {
+			if loopn.Active == false {
+
 				//2n and 2n+1 (all cases)
 				//maybe a better way would be to send a ping to master
 				//if node comes back
@@ -77,31 +82,31 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				}
 			}
 
-			//don't ping to itself
-			if loopn.Ip == node.Ip {
-				return
-			}
-			//send all data to new joiner
-			if loopn.PingCount == 0 && loopn.Active == true {
-				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
-				//marshall so we're able to send over TCP
-				jsonNodeMap, _ = json.Marshal(NODE_MAP)
-			}
 			sendData := bytes.NewBuffer(jsonNodeMap)
 
 			//ping connection
 			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
-			resp, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+			_, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
 
 			//retry logic
 			if err != nil {
 				loopn.Paused = true
-				if !loopn.PingRetry(0, sendData) {
+				if !loopn.PingRetry(sendData) {
+					Logger.Log("Cannot connect to "+loopn.Ip, logging.WARNING)
+					loopn.Active = false
+					loopn.PingCount = 0
 					return
 				}
 			}
-			defer resp.Body.Close()
-
+			// defer resp.Body.Close()
+			//send all data to new joiner
+			if loopn.Paused == true || (loopn.PingCount == 0 && loopn.Active == true) {
+				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
+				//marshall so we're able to send over TCP
+				jsonNodeMap, _ = json.Marshal(NODE_MAP)
+				sendData := bytes.NewBuffer(jsonNodeMap)
+				_, err = http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+			}
 			//increase connection ping count
 			loopn.PingCount++
 			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
