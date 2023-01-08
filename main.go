@@ -133,7 +133,6 @@ func main() {
 
 	node.Rank = global.FOLLOWER
 	node.Active = true
-	node.Paused = false
 	//set ips
 	localip := getLocalIp()
 	//this needs to be async as port should be on other thread
@@ -155,32 +154,10 @@ func main() {
 	node.Pinged = time.Now()
 	go (*global.Node)(&node).Ping()
 
+	// (*global.Node)(&node).SaveDataJson()
+
 	//like a game loop
 	for true {
 		time.Sleep(150 * time.Millisecond)
 	}
 }
-
-//TODO
-
-// NEED TO WAIT FOR MASTER TO COME ONLINE
-// GET DATA FROM MASTER (for some api or sdk)
-
-//BUG WHY NEW MASTER WHEN NODE NOT DOWN???
-
-//NEED TO DO DISK PERSISTENCE
-
-// DISTRIBUTED COMPUTING, ADDITION OF NUMBERS ON 3 CPUS??
-// CLEAN CODE
-
-//MIGHT WANT TO CHANGE IT SO WE CHECK EVERY MINUTE RATHER THAN 4 SECONDS
-
-//THERES A BUG SOMEWHERE WITH NULLPOINTER
-
-//SWITCH FROM FDS (FULL DATA SYNC) TO DDS (DELTA DATA SYNC)
-
-//CHECK NODE IS NOT ON TWO CLUSTERS
-
-//change code to allocate mem before array swap
-
-//allow file uploads (binary objs)
