@@ -23,18 +23,23 @@ import (
 type Node global.Node
 
 type WebNodeMap struct {
-	Ip     string
-	Active bool
+	Ip     string `json:"ip"`
+	Active bool   `json:"active"`
 }
 
 type SendData struct {
-	Key  string
-	Data global.JsonData
+	Key  string          `json:"key"`
+	Data global.JsonData `json:"data"`
 }
 
 type Stats struct {
-	Cpu float64
-	Ram float64
+	Cpu float64 `json:"cpu"`
+	Ram float64 `json:"ram"`
+}
+
+type SendQueryData struct {
+	Docs      []SendData `json:"docs"`
+	TimeTaken int64      `json:"timeTaken"`
 }
 
 func getHexKey() string {
@@ -220,6 +225,9 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 
 // this needs to change
 func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
+
+	// This could be done using sockets rather than
+	// http requests
 	if node.Rank == global.MASTER {
 
 		writeHeaders(w, []string{"all"})
@@ -247,7 +255,8 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 
 			node.Data[setKey] = value
 			global.DataChanged = true
-			//add to index
+			// add to index
+			// needs to be incremental
 			(*global.Node)(node).SaveDataJson()
 			json.NewEncoder(w).Encode("done")
 			return
@@ -388,15 +397,12 @@ func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 
 	os := runtime.GOOS
 
-	stats := Stats{}
-
-	switch os {
-	case "windows":
-		stats = getWindowsStats()
-		break
-	case "linux":
-		stats = getLinuxStats()
+	osStats := map[string]func() Stats{
+		"windows": getWindowsStats,
+		"linux":   getLinuxStats,
 	}
+
+	stats := osStats[os]()
 
 	json.NewEncoder(w).Encode(stats)
 }
@@ -431,7 +437,7 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		queryVal = req.Header.Get("query")
 	}
 	query.LoadIntoMemory("index/primary.json")
-	queryResult, _, _, _ := query.Execute(queryVal, "")
+	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
 
 	dataToSend := make([]SendData, 0)
 
@@ -445,7 +451,7 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
 	}
 
-	json.NewEncoder(w).Encode(dataToSend)
+	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
 }
 
 func SetupHandlers(node *Node) {

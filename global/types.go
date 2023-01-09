@@ -15,11 +15,11 @@ type Node struct {
 }
 
 type JsonData struct {
-	Key    string
-	Folder string
-	Data   string
-	Type   string
-	Date   time.Time
+	Key    string    `json:"key"`
+	Folder string    `json:"folder"`
+	Data   string    `json:"data"`
+	Type   string    `json:"type"`
+	Date   time.Time `json:"date"`
 }
 
 type Rank string

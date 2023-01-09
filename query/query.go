@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -15,6 +14,13 @@ import (
 
 type QueryType int
 type MathOp int
+
+type FileType string
+
+const (
+	F FileType = "file"
+	U FileType = "url"
+)
 
 const (
 	SELECT QueryType = 0
@@ -53,7 +59,7 @@ func printResults(resultMap []map[string]interface{}) {
 
 // tonise uses regex to split the query string
 func tokenise(querystr string) []string {
-	return regexp.MustCompile("(?i)([a-z-_.]*[><=/][0-9]+)|[a-z-_.,]*[a-z-_.,]*([=/~]*'[a-z-_.0-9 ]+')*").FindAllString(querystr, 100)
+	return regexp.MustCompile("(?i)([a-z-_.]*[><=/][0-9]+)|[a-z-_.,]*[a-z-_.,]*([=/~]*\"[a-z-_.0-9 ]+\")*").FindAllString(querystr, 100)
 }
 
 // decodeTokens gets each token and decides what it is
@@ -131,13 +137,6 @@ func decodeQuery(querystr string) ([]map[string]interface{}, []string) {
 
 }
 
-type FileType string
-
-const (
-	F FileType = "file"
-	U FileType = "url"
-)
-
 func LoadIntoMemory(filepath string) string {
 	// //map of data to return
 	var fileType FileType
@@ -152,7 +151,7 @@ func LoadIntoMemory(filepath string) string {
 	var fdata []byte
 
 	if fileType == F {
-		fdata, _ = os.ReadFile(filepath)
+		fdata, _ = ioutil.ReadFile(filepath)
 	} else {
 		request, _ := http.Get(filepath)
 		fdata, _ = ioutil.ReadAll(request.Body)
@@ -409,27 +408,17 @@ func createIndex() {
 }
 
 // Execute public and executes the query
-func Execute(querystr string, tablename string) ([]map[string]interface{}, time.Duration, int, []string) {
-	fmt.Println("------------------")
-	fmt.Println(querystr)
-	fmt.Println("------------------")
+func Execute(querystr string, tablename string) ([]map[string]interface{}, int64, int, []string) {
+
 	// set start time to now
 	start := time.Now()
 	// decode the query
 	decodedData, err := decodeQuery(querystr)
 	elapsed := time.Since(start)
-	// print the results
-	// printResults(decodedData)
-	return decodedData, elapsed, len(decodedData), err
+	fmt.Println("------------------")
+	fmt.Println(querystr, "executed in", elapsed.Milliseconds(), "ms")
+	fmt.Println("------------------")
+	return decodedData, elapsed.Milliseconds(), len(decodedData), err
 	// calc the time taken
 	// fmt.Println("Program took ", elapsed, " to get ", len(decodedData), " docs")
 }
-
-// GROUP BY!!! COUNT!!! MATHS!!!
-// INDEXES
-// PRESETS
-// EXPORT, COULD UPDATE API??? API AUTOMATIC INTEGRATION
-//COUCHBASE INTEGRATION
-//BUGS
-///BUG number conversions (havent tested this)
-// PANIC BREAKOUT METHOD
