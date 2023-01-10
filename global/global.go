@@ -23,7 +23,8 @@ func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 
 	for i := 0; i < 3; i++ {
 		time.Sleep(500 * time.Millisecond)
-		_, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		_, err := http.Post("http://"+n.Ip+"/ping",
+			"application/json", sendData)
 		if err == nil {
 			return true
 		}
@@ -47,7 +48,8 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				//2n and 2n+1 (all cases)
 				//maybe a better way would be to send a ping to master
 				//if node comes back
-				if time.Now().Second()%7 != 0 && time.Now().Second()%8 != 0 {
+				if time.Now().Second()%7 != 0 &&
+					time.Now().Second()%8 != 0 {
 					return
 				}
 			}
@@ -56,12 +58,14 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 
 			//ping connection
 			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
-			_, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+			_, err := http.Post("http://"+loopn.Ip+"/ping",
+				"application/json", sendData)
 
 			//retry logic
 			if err != nil {
 				if !loopn.PingRetry(sendData) {
-					Logger.Log("Cannot connect to "+loopn.Ip, logging.WARNING)
+					Logger.Log("Cannot connect to "+loopn.Ip,
+						logging.WARNING)
 					loopn.Active = false
 					loopn.PingCount = 0
 					return
@@ -70,15 +74,18 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 			//send all data to new joiner
 			//TODO check if data is the same on nodes
 			if loopn.PingCount == 0 {
-				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
+				Logger.Log("SENDING MAP TO FIRST JOINER",
+					logging.INFO)
 				//marshall so we're able to send over TCP
 				jsonNodeMap, _ = json.Marshal(NODE_MAP)
 				sendData := bytes.NewBuffer(jsonNodeMap)
-				_, err = http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+				_, err = http.Post("http://"+loopn.Ip+"/ping",
+					"application/json", sendData)
 			}
 			//increase connection ping count
 			loopn.PingCount++
-			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
+			Logger.Log("PING RECEIVED FROM "+loopn.Ip,
+				logging.INFO)
 
 			if loopn.Active == false {
 				loopn.Active = true
@@ -98,7 +105,9 @@ func (node *Node) Ping() {
 		}
 
 		if node.Rank == MASTER {
-			Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(GetNodeIps(), " "), logging.INFO)
+			Logger.Log(string(node.Rank)+" at "+node.Ip+
+				" nodemap: "+strings.Join(GetNodeIps(), " "),
+				logging.INFO)
 		}
 
 		if len(NODE_MAP) == 1 {
@@ -124,7 +133,8 @@ func (node *Node) CheckForNoPingFromMaster() {
 	if timeSinceLastPingAbs < 1 {
 		return
 	}
-	Logger.Log("Slow response first check at "+fmt.Sprintf("%f", timeSinceLastPingAbs)+"s", logging.WARNING)
+	Logger.Log("Slow response first check at "+
+		fmt.Sprintf("%f", timeSinceLastPingAbs)+"s", logging.WARNING)
 	//if not, check for retry ping
 	time.Sleep(4100 * time.Millisecond)
 	timeSinceLastPingAbs = time.Now().Sub(node.Pinged).Seconds()
@@ -147,7 +157,8 @@ func (node *Node) SaveDataJson() {
 		return
 	}
 
-	primaryIndex, err := os.OpenFile("index/primary.json", os.O_CREATE|os.O_WRONLY, 0644)
+	primaryIndex, err := os.OpenFile("index/primary.json",
+		os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println(err)
 		err = os.MkdirAll("index/", os.ModePerm)
@@ -249,7 +260,8 @@ func checkIfDataChanged() []byte {
 func getNodeMapWithoutData() []*Node {
 	var newmap []*Node
 	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, NodeData{}, n.Active})
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank,
+			NodeData{}, n.Active})
 	}
 	return newmap
 }
