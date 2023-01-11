@@ -102,7 +102,7 @@ func checkParamHolds(ok bool, paramsplit []string,
 
 // executeQuery is the query chain
 func executeQuery(queryType QueryType, whereParams []string,
-	fetchKeys []string, jsondata []interface{},
+	fetchKeys []string, jsondata map[string]interface{},
 	all bool) []map[string]interface{} {
 	var newmap []map[string]interface{}
 

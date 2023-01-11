@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +39,16 @@ type Stats struct {
 type SendQueryData struct {
 	Docs      []SendData `json:"docs"`
 	TimeTaken int64      `json:"timeTaken"`
+}
+
+var connectedFromWebUI bool
+
+func writeHeaders(w http.ResponseWriter, extras []string) {
+
+	extra := strings.Join(extras, ",")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
 }
 
 func getHexKey() string {
@@ -140,14 +149,25 @@ func getLinuxStats() Stats {
 	return Stats{cpuused, ramperc}
 }
 
-var connectedFromWebUI bool
+func isInArr(arr []string, needle string) bool {
+	for _, s := range arr {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
 
-func writeHeaders(w http.ResponseWriter, extras []string) {
+func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 
-	extra := strings.Join(extras, ",")
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
+	writeHeaders(w, []string{"all"})
+
+	nodeMapResp := []WebNodeMap{}
+	for _, n := range global.NODE_MAP {
+		nodeMapResp = append(nodeMapResp, WebNodeMap{n.Ip, n.Active})
+	}
+
+	json.NewEncoder(w).Encode(nodeMapResp)
 }
 
 // handlers
@@ -168,7 +188,8 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	//only receive ping if its a follower
 	if node.Rank == global.FOLLOWER {
 		//print the rank of the node and wait for 2 secs
-		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(global.GetNodeIps(), " "), logging.INFO)
+		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+
+			strings.Join(global.GetNodeIps(), " "), logging.INFO)
 		//need to check for ping here (start )
 		go (*global.Node)(node).CheckForNoPingFromMaster()
 
@@ -203,7 +224,8 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 		//add to the node map
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 		if !global.AlreadyInNodeMap(ip) {
-			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(), PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true})
+			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
+				PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true})
 		} else {
 			//already in map
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
@@ -221,78 +243,6 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	sendData := bytes.NewBuffer(jsonNodeMap)
 
 	w.Write(sendData.Bytes())
-}
-
-// this needs to change
-func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
-
-	// This could be done using sockets rather than
-	// http requests
-	if node.Rank == global.MASTER {
-
-		writeHeaders(w, []string{"all"})
-
-		if req.Method == "POST" {
-
-			//TODO send multiple key and values
-			var dataToSet []string
-			body, _ := ioutil.ReadAll(req.Body)
-			json.Unmarshal(body, &dataToSet)
-
-			//this will change eventually
-			setFolder := dataToSet[0]
-			setKey := dataToSet[1]
-			setVal := dataToSet[2]
-			dataType := dataToSet[3]
-
-			value := global.JsonData{
-				Key:    setKey,
-				Folder: setFolder,
-				Data:   setVal,
-				Type:   dataType,
-				Date:   time.Now(),
-			}
-
-			node.Data[setKey] = value
-			global.DataChanged = true
-			// add to index
-			// needs to be incremental
-			(*global.Node)(node).SaveDataJson()
-			json.NewEncoder(w).Encode("done")
-			return
-		}
-	}
-}
-
-func (node *Node) getAllDataHandler(w http.ResponseWriter, req *http.Request) {
-	if node.Rank == global.MASTER {
-
-		writeHeaders(w, nil)
-
-		dataToSend := global.GetAllDataToPrint(node.Data)
-
-		json.NewEncoder(w).Encode(dataToSend)
-
-	}
-}
-
-func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
-	if node.Rank == global.MASTER {
-
-		writeHeaders(w, []string{"key"})
-
-		dataKey := req.URL.Query().Get("key")
-		if dataKey == "" {
-			dataKey = req.Header.Get("key")
-		}
-
-		getData := global.NODE_MAP[0].Data[dataKey]
-
-		sendData := SendData{dataKey, getData}
-
-		json.NewEncoder(w).Encode(sendData)
-
-	}
 }
 
 func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
@@ -355,43 +305,6 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode("done")
 }
 
-func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
-
-	writeHeaders(w, nil)
-
-	folder := req.URL.Query().Get("folder")
-
-	//need to sort data by date
-	//breaking change, as added new JSON field
-	nodeData := make([]global.JsonData, len(node.Data))
-
-	dataInd := 0
-	for _, d := range node.Data {
-		nodeData[dataInd] = d
-		dataInd++
-	}
-
-	sort.Slice(nodeData, func(i, j int) bool {
-		return nodeData[i].Date.Unix() > nodeData[j].Date.Unix()
-	})
-
-	var dataInFolder []SendData
-	numOfItems := 0
-	for i, data := range nodeData {
-		key := nodeData[i].Key
-		if numOfItems == 40 {
-			break
-		}
-		if data.Folder == folder {
-			sendData := SendData{key, data}
-			dataInFolder = append(dataInFolder, sendData)
-			numOfItems++
-		}
-	}
-	json.NewEncoder(w).Encode(dataInFolder)
-
-}
-
 func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, nil)
 
@@ -405,27 +318,6 @@ func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 	stats := osStats[os]()
 
 	json.NewEncoder(w).Encode(stats)
-}
-
-func isInArr(arr []string, needle string) bool {
-	for _, s := range arr {
-		if s == needle {
-			return true
-		}
-	}
-	return false
-}
-
-func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
-
-	writeHeaders(w, []string{"all"})
-
-	nodeMapResp := []WebNodeMap{}
-	for _, n := range global.NODE_MAP {
-		nodeMapResp = append(nodeMapResp, WebNodeMap{n.Ip, n.Active})
-	}
-
-	json.NewEncoder(w).Encode(nodeMapResp)
 }
 
 func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
@@ -455,19 +347,34 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func SetupHandlers(node *Node) {
-	//handle incoming connection (MAYBE MAKE THIS ASYNC)
-	http.HandleFunc("/connect", node.connectHandler)
-	http.HandleFunc("/ping", node.pingHandler)
-	http.HandleFunc("/getalldata", node.getAllDataHandler)
-	http.HandleFunc("/getdata", node.getDataHandler)
-	http.HandleFunc("/addfolder", node.addFolderHandler)
-	http.HandleFunc("/folders", node.folderHandler)
-	http.HandleFunc("/removenode", node.removeNodeHandler)
-	http.HandleFunc("/nodemap", nodeMapHandler)
-	http.HandleFunc("/stats", node.statsHandler)
 
-	http.HandleFunc("/getquery", node.queryHandler)
+	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
+		"sync": {
+			"connect":    node.connectHandler,
+			"ping":       node.pingHandler,
+			"getalldata": node.getAllDataHandler,
+			"getdata":    node.getDataHandler,
+			"addfolder":  node.addFolderHandler,
+			"folders":    node.folderHandler,
+			"removenode": node.removeNodeHandler,
+			"stats":      node.statsHandler,
+			"nodemap":    nodeMapHandler,
+			"getquery":   node.queryHandler,
+		},
+		"async": {
+			"getdatainfolder": node.getDataInFolderHandler,
+			"setdata":         node.setDataHandler,
+		},
+	}
 
-	go http.HandleFunc("/getdatainfolder", node.getDataInFolderHandler)
-	go http.HandleFunc("/setdata", node.setDataHandler)
+	//sync
+	for fncType, handlerMap := range handlers {
+		for end, fnc := range handlerMap {
+			if fncType == "sync" {
+				http.HandleFunc("/"+end, fnc)
+				continue
+			}
+			go http.HandleFunc("/"+end, fnc)
+		}
+	}
 }

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -152,36 +151,6 @@ func (node *Node) CheckForNoPingFromMaster() {
 	node.setToMaster()
 }
 
-func (node *Node) SaveDataJson() {
-	if node.Rank != MASTER {
-		return
-	}
-
-	primaryIndex, err := os.OpenFile("index/primary.json",
-		os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println(err)
-		err = os.MkdirAll("index/", os.ModePerm)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		primaryIndex, err = os.Create("index/primary.json")
-	}
-
-	//put into format jaql will understand (for now)
-	var jsonArr []interface{}
-
-	for _, nd := range node.Data {
-		// d, _ := json.Marshal(nd)
-		jsonArr = append(jsonArr, nd)
-	}
-
-	writeData, err := json.Marshal(jsonArr)
-
-	primaryIndex.Write(writeData)
-}
-
 // return the ips stored in the nodemap
 func GetNodeIps() []string {
 	var nodeips []string
@@ -240,6 +209,8 @@ func (node *Node) setToMaster() {
 	//update node map
 	NODE_MAP = NODE_MAP[1:]
 	NODE_MAP[0] = node
+	//update index
+	node.SaveDataJson()
 	//start pinging again
 	go node.Ping()
 }

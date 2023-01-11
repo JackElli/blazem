@@ -9,27 +9,27 @@ import (
 
 // loadTable turns JSON input to one
 // we can understand
-func loadTable(i interface{}) ([]interface{}, error) {
-	var m map[string]interface{}
+func loadTable(i interface{}) (map[string]interface{}, error) {
+	// var m map[string]interface{}
 	var ok bool = false
 
-	_, ok = i.([]interface{})
+	_, ok = i.(map[string]interface{})
 	if ok {
-		return i.([]interface{}), nil
+		return i.(map[string]interface{}), nil
 	}
-	m = i.(map[string]interface{})
-	for !ok {
-		for key, _ := range m {
-			if _, gok := m[key].(map[string]interface{}); gok {
-				m = m[key].(map[string]interface{})
-			}
-			if _, fok := m[key].([]interface{}); fok {
-				return m[key].([]interface{}), nil
-			}
+	// m = i.(map[string]interface{})
+	// for !ok {
+	// 	for key, _ := range m {
+	// 		if _, gok := m[key].(map[string]interface{}); gok {
+	// 			m = m[key].(map[string]interface{})
+	// 		}
+	// 		if _, fok := m[key].([]interface{}); fok {
+	// 			return m[key].([]interface{}), nil
+	// 		}
 
-		}
-	}
-	return i.([]interface{}), nil
+	// 	}
+	// }
+	return nil, nil
 }
 
 // LoadIntoMemory loads file or API into mem
@@ -43,7 +43,7 @@ func LoadIntoMemory(filepath string) string {
 		fileType = F
 	}
 	UploadFileName = filepath
-	// // this is var for getting data from file
+	// this is var for getting data from file
 	var i interface{}
 	var fdata []byte
 

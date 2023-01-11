@@ -118,13 +118,17 @@ func (node *Node) setNodeMasterAttrs() {
 	node.Data["testkey"] = testData1
 	node.Data["testkey2"] = testData2
 }
+func setupLogger() {
+	//setup file for logging
+	logfile := "logging/"
+	global.Logger = *logging.LogFile(logfile)
+}
 
 // main func
 func main() {
 
-	//setup file for logging
-	logfile := "logging/"
-	global.Logger = *logging.LogFile(logfile)
+	// setup the logger
+	setupLogger()
 
 	//init node and set to follower (true until proven otherwise)
 	var node Node
@@ -149,6 +153,9 @@ func main() {
 	if masterip == node.Ip {
 		node.setNodeMasterAttrs()
 	}
+
+	// create primary index
+	(*global.Node)(&node).SaveDataJson()
 
 	//ping handling
 	node.Pinged = time.Now()
