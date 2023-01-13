@@ -31,6 +31,7 @@ func (node *Node) AppendDataJson(key string, value JsonData) {
 
 }
 
+// This needs a lot of work
 func (node *Node) ReplaceDataJson(key string, value JsonData) {
 	readPrimaryIndex, _ := os.Open("index/primary.json")
 	writePrimaryIndex, _ := os.OpenFile("index/primary.json",
@@ -85,13 +86,6 @@ func (node *Node) ReplaceDataJson(key string, value JsonData) {
 		lineNum++
 
 	}
-
-	//
-	// writeData := string(writeDataJson)[1:]
-
-	// indexOfDoc := strings.Index(string(readPrimaryIndex), key)
-	//
-
 }
 
 func (node *Node) SaveDataJson() {
