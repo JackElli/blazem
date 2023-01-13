@@ -31,12 +31,15 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			setVal := dataToSet[2]
 			dataType := dataToSet[3]
 
-			value := global.JsonData{
-				Key:    setKey,
-				Folder: setFolder,
-				Data:   setVal,
-				Type:   dataType,
-				Date:   time.Now(),
+			// changed to map[string]interface{}
+			// to add to mem index
+			// and if we want custom JSON later
+			value := map[string]interface{}{
+				"key":    setKey,
+				"folder": setFolder,
+				"data":   setVal,
+				"type":   dataType,
+				"date":   time.Now(),
 			}
 
 			node.Data[setKey] = value
@@ -95,7 +98,7 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	getData := global.NODE_MAP[0].Data[dataKey]
-	sendData := SendData{dataKey, getData}
+	sendData := SendData{dataKey, getData.(global.JsonData)}
 	json.NewEncoder(w).Encode(sendData)
 
 }
@@ -107,26 +110,26 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 
 	//need to sort data by date
 	//breaking change, as added new JSON field
-	nodeData := make([]global.JsonData, len(node.Data))
+	nodeData := make([]map[string]interface{}, len(node.Data))
 
 	dataInd := 0
 	for _, d := range node.Data {
-		nodeData[dataInd] = d
+		nodeData[dataInd] = d.(map[string]interface{})
 		dataInd++
 	}
 
 	sort.Slice(nodeData, func(i, j int) bool {
-		return nodeData[i].Date.Unix() > nodeData[j].Date.Unix()
+		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
 	})
 
 	var dataInFolder []SendData
 	numOfItems := 0
 	for i, data := range nodeData {
-		key := nodeData[i].Key
+		key := nodeData[i]["key"].(string)
 		if numOfItems == 40 {
 			break
 		}
-		if data.Folder == folder {
+		if data["folder"] == folder {
 			sendData := SendData{key, data}
 			dataInFolder = append(dataInFolder, sendData)
 			numOfItems++

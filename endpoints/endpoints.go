@@ -275,8 +275,8 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	//get folders
 	var folders = make([]string, 0)
 	for _, d := range node.Data {
-		if !isInArr(folders, d.Folder) {
-			folders = append(folders, d.Folder)
+		if !isInArr(folders, d.(map[string]interface{})["folder"].(string)) {
+			folders = append(folders, d.(map[string]interface{})["folder"].(string))
 		}
 	}
 	json.NewEncoder(w).Encode(folders)
@@ -292,11 +292,11 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 
 	key := getHexKey()
 	value := global.JsonData{
-		Key:    "_firstdoc_" + key,
-		Folder: folder,
-		Data:   "_firstdoc",
-		Type:   "text",
-		Date:   time.Now(),
+		"Key":    "_firstdoc_" + key,
+		"Folder": folder,
+		"Data":   "_firstdoc",
+		"Type":   "text",
+		"Date":   time.Now(),
 	}
 
 	node.Data[key] = value
@@ -322,13 +322,16 @@ func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 
 func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
+	// we dont even need to index!!!!
+	// we just feed the node data in!!!!!
+
 	writeHeaders(w, []string{"query"})
 
 	queryVal := req.URL.Query().Get("query")
 	if queryVal == "" {
 		queryVal = req.Header.Get("query")
 	}
-	query.LoadIntoMemory("index/primary.json")
+	query.LoadIntoMemory(global.Node(*node))
 	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
 
 	dataToSend := make([]SendData, 0)
@@ -339,7 +342,7 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		var getJSON global.JsonData
 		json.Unmarshal(dataJSON, &getJSON)
 
-		dataToSend = append(dataToSend, SendData{getJSON.Key, getJSON})
+		dataToSend = append(dataToSend, SendData{getJSON["key"].(string), getJSON})
 
 	}
 

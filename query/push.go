@@ -102,8 +102,11 @@ func checkParamHolds(ok bool, paramsplit []string,
 
 // executeQuery is the query chain
 func executeQuery(queryType QueryType, whereParams []string,
-	fetchKeys []string, jsondata map[string]interface{},
+	fetchKeys []string, jsondata interface{},
 	all bool) []map[string]interface{} {
+
+	var newjsondata = jsondata.(map[string]interface{})
+	// jsondata = jsondata.(map[string]interface{})
 	var newmap []map[string]interface{}
 
 	switch queryType {
@@ -113,7 +116,7 @@ func executeQuery(queryType QueryType, whereParams []string,
 		//filter
 		if len(whereParams) > 0 {
 			// for each document
-			for _, doc := range jsondata {
+			for _, doc := range newjsondata {
 				// this is seeing if the doc matches the query
 				holds := 1
 				//could be better
@@ -135,7 +138,7 @@ func executeQuery(queryType QueryType, whereParams []string,
 				}
 			}
 		} else {
-			for _, doc := range jsondata {
+			for _, doc := range newjsondata {
 				wherejson = append(wherejson, doc.(map[string]interface{}))
 			}
 		}
