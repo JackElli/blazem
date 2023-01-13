@@ -291,12 +291,12 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	key := getHexKey()
-	value := global.JsonData{
-		"Key":    "_firstdoc_" + key,
-		"Folder": folder,
-		"Data":   "_firstdoc",
-		"Type":   "text",
-		"Date":   time.Now(),
+	value := map[string]interface{}{
+		"key":    "_firstdoc_" + key,
+		"folder": folder,
+		"data":   "_firstdoc",
+		"type":   "text",
+		"date":   time.Now(),
 	}
 
 	node.Data[key] = value
