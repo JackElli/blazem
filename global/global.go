@@ -11,41 +11,10 @@ import (
 	"time"
 )
 
-type JsonData struct {
-	Key    string
-	Folder string
-	Data   string
-	Type   string
-	Date   time.Time
-}
-
-type Rank string
-type NodeData map[string]JsonData
-
-const (
-	MASTER   Rank = "MASTER"
-	FOLLOWER Rank = "FOLLOWER"
-)
-
-// global vars will clean up
-var PORT_START = 3100
-var NODE_MAP []*Node
-var Logger logging.Logger
-var DataChanged bool = false
-
-type Node struct {
-	Ip        string
-	Pinged    time.Time
-	PingCount int
-	Rank      Rank
-	Data      NodeData
-	Paused    bool
-	Active    bool
-}
-
+// PingRetry retries the ping 3 times and if
+// afer 3 pings there's no response,
+// node is 'paused'
 func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
-	//needs to ping every second while in retry logic
-	//only rety 3 times
 
 	if n == nil || n.Active == false {
 		return false
@@ -53,7 +22,8 @@ func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 
 	for i := 0; i < 3; i++ {
 		time.Sleep(500 * time.Millisecond)
-		_, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
+		_, err := http.Post("http://"+n.Ip+"/ping",
+			"application/json", sendData)
 		if err == nil {
 			return true
 		}
@@ -77,7 +47,8 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				//2n and 2n+1 (all cases)
 				//maybe a better way would be to send a ping to master
 				//if node comes back
-				if time.Now().Second()%7 != 0 && time.Now().Second()%8 != 0 {
+				if time.Now().Second()%7 != 0 &&
+					time.Now().Second()%8 != 0 {
 					return
 				}
 			}
@@ -86,33 +57,35 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 
 			//ping connection
 			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
-			_, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+			_, err := http.Post("http://"+loopn.Ip+"/ping",
+				"application/json", sendData)
 
 			//retry logic
 			if err != nil {
-				loopn.Paused = true
 				if !loopn.PingRetry(sendData) {
-					Logger.Log("Cannot connect to "+loopn.Ip, logging.WARNING)
+					Logger.Log("Cannot connect to "+loopn.Ip,
+						logging.WARNING)
 					loopn.Active = false
 					loopn.PingCount = 0
 					return
 				}
 			}
-			// defer resp.Body.Close()
 			//send all data to new joiner
-			if loopn.Paused == true || (loopn.PingCount == 0 && loopn.Active == true) {
-				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
+			//TODO check if data is the same on nodes
+			if loopn.PingCount == 0 {
+				Logger.Log("SENDING MAP TO FIRST JOINER",
+					logging.INFO)
 				//marshall so we're able to send over TCP
 				jsonNodeMap, _ = json.Marshal(NODE_MAP)
 				sendData := bytes.NewBuffer(jsonNodeMap)
-				_, err = http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
+				_, err = http.Post("http://"+loopn.Ip+"/ping",
+					"application/json", sendData)
 			}
 			//increase connection ping count
 			loopn.PingCount++
-			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
-			if loopn.Paused == true {
-				loopn.Paused = false
-			}
+			Logger.Log("PING RECEIVED FROM "+loopn.Ip,
+				logging.INFO)
+
 			if loopn.Active == false {
 				loopn.Active = true
 			}
@@ -131,7 +104,9 @@ func (node *Node) Ping() {
 		}
 
 		if node.Rank == MASTER {
-			Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(GetNodeIps(), " "), logging.INFO)
+			Logger.Log(string(node.Rank)+" at "+node.Ip+
+				" nodemap: "+strings.Join(GetNodeIps(), " "),
+				logging.INFO)
 		}
 
 		if len(NODE_MAP) == 1 {
@@ -157,7 +132,8 @@ func (node *Node) CheckForNoPingFromMaster() {
 	if timeSinceLastPingAbs < 1 {
 		return
 	}
-	Logger.Log("Slow response first check at "+fmt.Sprintf("%f", timeSinceLastPingAbs)+"s", logging.WARNING)
+	Logger.Log("Slow response first check at "+
+		fmt.Sprintf("%f", timeSinceLastPingAbs)+"s", logging.WARNING)
 	//if not, check for retry ping
 	time.Sleep(4100 * time.Millisecond)
 	timeSinceLastPingAbs = time.Now().Sub(node.Pinged).Seconds()
@@ -173,31 +149,6 @@ func (node *Node) CheckForNoPingFromMaster() {
 	}
 	//set that node to master
 	node.setToMaster()
-}
-
-func (node *Node) isNextInLine() bool {
-	//get next true value
-	for _, n := range NODE_MAP {
-		if n.Active == false {
-			continue
-		}
-		if n.Ip == node.Ip {
-			return true
-		}
-	}
-	return false
-}
-
-func (node *Node) setToMaster() {
-	node.Rank = MASTER
-	node.Data = NODE_MAP[0].Data
-	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
-	Logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
-	//update node map
-	NODE_MAP = NODE_MAP[1:]
-	NODE_MAP[0] = node
-	//start pinging again
-	go node.Ping()
 }
 
 // return the ips stored in the nodemap
@@ -237,6 +188,33 @@ func GetAllDataToPrint(data NodeData) []string {
 	return retdata
 }
 
+func (node *Node) isNextInLine() bool {
+	//get next true value
+	for _, n := range NODE_MAP {
+		if n.Active == false {
+			continue
+		}
+		if n.Ip == node.Ip {
+			return true
+		}
+	}
+	return false
+}
+
+func (node *Node) setToMaster() {
+	node.Rank = MASTER
+	node.Data = NODE_MAP[0].Data
+	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
+	Logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
+	//update node map
+	NODE_MAP = NODE_MAP[1:]
+	NODE_MAP[0] = node
+	//update index
+	node.SaveDataJson()
+	//start pinging again
+	go node.Ping()
+}
+
 // this needs improving, need to check data not just endpoint
 func checkIfDataChanged() []byte {
 	var jsonNodeMap []byte
@@ -253,7 +231,8 @@ func checkIfDataChanged() []byte {
 func getNodeMapWithoutData() []*Node {
 	var newmap []*Node
 	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank, NodeData{}, n.Paused, n.Active})
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank,
+			NodeData{}, n.Active})
 	}
 	return newmap
 }
