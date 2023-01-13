@@ -273,7 +273,7 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, nil)
 	//get folders
-	var folders []string
+	var folders = make([]string, 0)
 	for _, d := range node.Data {
 		if !isInArr(folders, d.Folder) {
 			folders = append(folders, d.Folder)
@@ -353,6 +353,7 @@ func SetupHandlers(node *Node) {
 			"connect":    node.connectHandler,
 			"ping":       node.pingHandler,
 			"getalldata": node.getAllDataHandler,
+			"deletedoc":  node.deleteDocHandler,
 			"getdata":    node.getDataHandler,
 			"addfolder":  node.addFolderHandler,
 			"folders":    node.folderHandler,

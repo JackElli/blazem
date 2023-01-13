@@ -59,6 +59,18 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
+	writeHeaders(w, []string{})
+
+	docKey := req.URL.Query().Get("key")
+
+	delete(node.Data, docKey)
+	global.DataChanged = true
+
+	json.NewEncoder(w).Encode("done")
+
+}
+
 func (node *Node) getAllDataHandler(w http.ResponseWriter, req *http.Request) {
 	if node.Rank == global.MASTER {
 
