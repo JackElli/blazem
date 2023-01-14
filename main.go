@@ -99,20 +99,20 @@ func (node *Node) setNodeMasterAttrs() {
 	node.Rank = global.MASTER
 	node.Data = global.NodeData{}
 
-	testData1 := global.JsonData{
-		Key:    "testkey",
-		Folder: "text",
-		Data:   "hello this is a test",
-		Type:   "text",
-		Date:   time.Now(),
+	testData1 := map[string]interface{}{
+		"key":    "testkey",
+		"folder": "text",
+		"value":  "hello this is a test",
+		"type":   "text",
+		"date":   time.Now(),
 	}
 
-	testData2 := global.JsonData{
-		Key:    "testkey2",
-		Folder: "text",
-		Data:   "hello asd",
-		Type:   "text",
-		Date:   time.Now(),
+	testData2 := map[string]interface{}{
+		"key":    "testkey2",
+		"folder": "text",
+		"value":  "hello asd",
+		"type":   "text",
+		"date":   time.Now(),
 	}
 
 	node.Data["testkey"] = testData1

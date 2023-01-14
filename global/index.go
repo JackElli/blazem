@@ -10,16 +10,16 @@ import (
 )
 
 func IsDocInIndex(key string) bool {
-	var primaryData map[string]interface{}
-	primaryIndex, _ := ioutil.ReadFile("index/primary.json")
-	json.Unmarshal(primaryIndex, &primaryData)
-	_, ok := primaryData[key]
+	var data map[string]interface{}
+	backup, _ := ioutil.ReadFile("backup/primary.json")
+	json.Unmarshal(backup, &data)
+	_, ok := data[key]
 	return ok
 }
 
 func (node *Node) AppendDataJson(key string, value JsonData) {
-	readPrimaryIndex, _ := ioutil.ReadFile("index/primary.json")
-	writePrimaryIndex, _ := os.OpenFile("index/primary.json",
+	readBackup, _ := ioutil.ReadFile("backup/primary.json")
+	writeBackup, _ := os.OpenFile("backup/primary.json",
 		os.O_WRONLY, 0644)
 
 	data := make(map[string]JsonData)
@@ -27,17 +27,17 @@ func (node *Node) AppendDataJson(key string, value JsonData) {
 	writeDataJson, _ := json.Marshal(data)
 
 	writeData := ",\n" + string(writeDataJson)[1:]
-	writePrimaryIndex.WriteAt([]byte(writeData), (int64)(len(readPrimaryIndex)-1))
+	writeBackup.WriteAt([]byte(writeData), (int64)(len(readBackup)-1))
 
 }
 
 // This needs a lot of work
 func (node *Node) ReplaceDataJson(key string, value JsonData) {
-	readPrimaryIndex, _ := os.Open("index/primary.json")
-	writePrimaryIndex, _ := os.OpenFile("index/primary.json",
+	readBackup, _ := os.Open("backup/primary.json")
+	writeBackup, _ := os.OpenFile("backup/primary.json",
 		os.O_WRONLY, 0644)
 
-	fileScanner := bufio.NewScanner(readPrimaryIndex)
+	fileScanner := bufio.NewScanner(readBackup)
 	fileScanner.Split(bufio.ScanLines)
 
 	data := make(map[string]JsonData)
@@ -47,7 +47,7 @@ func (node *Node) ReplaceDataJson(key string, value JsonData) {
 	indToWrite := 1
 	lineNum := 0
 	var fileBytes []byte
-	readPrimaryIndex.Read(fileBytes)
+	readBackup.Read(fileBytes)
 
 	numOfLines := len(strings.Split(string(fileBytes), "\n"))
 
@@ -56,14 +56,10 @@ func (node *Node) ReplaceDataJson(key string, value JsonData) {
 		lineText := fileScanner.Text()
 		checkKey := "\"" + key + "\""
 
-		// diff := lineSize - len(writeDataJson)
 		if strings.Contains(lineText, checkKey) {
 			// doc is on this line
-			// fmt.Println("writing at ", indToWrite)
 			writeData := ""
-			// if lineNum == 0 {
-			// 	writeData += "{"
-			// }
+
 			writeData += string(writeDataJson)[:len(writeDataJson)-1]
 			writeData = writeData[1:]
 			if lineNum != numOfLines {
@@ -78,13 +74,12 @@ func (node *Node) ReplaceDataJson(key string, value JsonData) {
 			// this but it will still work
 			nothingData := strings.Repeat(" ", lineSize)
 			//clear line
-			writePrimaryIndex.WriteAt([]byte(nothingData), (int64)(indToWrite))
+			writeBackup.WriteAt([]byte(nothingData), (int64)(indToWrite))
 			//write data
-			writePrimaryIndex.WriteAt([]byte(writeData), (int64)(indToWrite))
+			writeBackup.WriteAt([]byte(writeData), (int64)(indToWrite))
 		}
 		indToWrite += lineSize
 		lineNum++
-
 	}
 }
 
@@ -93,20 +88,20 @@ func (node *Node) SaveDataJson() {
 		return
 	}
 
-	primaryIndex, err := os.OpenFile("index/primary.json",
+	backup, err := os.OpenFile("backup/primary.json",
 		os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println(err)
-		err = os.MkdirAll("index/", os.ModePerm)
+		err = os.MkdirAll("backup/", os.ModePerm)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		primaryIndex, err = os.Create("index/primary.json")
+		backup, err = os.Create("backup/primary.json")
 	}
 
 	writeDataJson, err := json.Marshal(node.Data)
 	writeData := strings.ReplaceAll(string(writeDataJson), "},\"", "},\n\"")
 
-	primaryIndex.Write([]byte(writeData))
+	backup.Write([]byte(writeData))
 }

@@ -10,20 +10,20 @@ type Node struct {
 	Pinged    time.Time
 	PingCount int
 	Rank      Rank
-	Data      NodeData
+	Data      map[string]interface{}
 	Active    bool
 }
 
-type JsonData struct {
-	Key    string    `json:"key"`
-	Folder string    `json:"folder"`
-	Data   string    `json:"data"`
-	Type   string    `json:"type"`
-	Date   time.Time `json:"date"`
-}
-
+//	type JsonData struct {
+//		Key    string    `json:"key"`
+//		Folder string    `json:"folder"`
+//		Data   string    `json:"data"`
+//		Type   string    `json:"type"`
+//		Date   time.Time `json:"date"`
+//	}
+type JsonData map[string]interface{}
 type Rank string
-type NodeData map[string]JsonData
+type NodeData map[string]interface{}
 
 const (
 	MASTER   Rank = "MASTER"

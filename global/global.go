@@ -183,7 +183,7 @@ func IndexOfNodeIpInNodeMap(ip string) int {
 func GetAllDataToPrint(data NodeData) []string {
 	var retdata []string
 	for v := range data {
-		retdata = append(retdata, data[v].Data)
+		retdata = append(retdata, data[v].(JsonData)["data"].(string))
 	}
 	return retdata
 }
