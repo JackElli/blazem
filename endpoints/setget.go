@@ -37,7 +37,7 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			value := map[string]interface{}{
 				"key":    setKey,
 				"folder": setFolder,
-				"data":   setVal,
+				"value":  setVal,
 				"type":   dataType,
 				"date":   time.Now(),
 			}

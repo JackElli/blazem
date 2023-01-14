@@ -102,7 +102,7 @@ func (node *Node) setNodeMasterAttrs() {
 	testData1 := map[string]interface{}{
 		"key":    "testkey",
 		"folder": "text",
-		"data":   "hello this is a test",
+		"value":  "hello this is a test",
 		"type":   "text",
 		"date":   time.Now(),
 	}
@@ -110,7 +110,7 @@ func (node *Node) setNodeMasterAttrs() {
 	testData2 := map[string]interface{}{
 		"key":    "testkey2",
 		"folder": "text",
-		"data":   "hello asd",
+		"value":  "hello asd",
 		"type":   "text",
 		"date":   time.Now(),
 	}

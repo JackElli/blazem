@@ -322,9 +322,6 @@ func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 
 func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
-	// we dont even need to index!!!!
-	// we just feed the node data in!!!!!
-
 	writeHeaders(w, []string{"query"})
 
 	queryVal := req.URL.Query().Get("query")

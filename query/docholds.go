@@ -1,60 +1,72 @@
 package query
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
+	"time"
 )
 
 // checkIfDocHolds checks if the document matches the query
-func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue string, holds *int) {
-	// parse float, will return string if its not number
+func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds *int) {
 
-	//NEED TO CHECK FOR MULTIPLE TYPES
-	intVar, _ := strconv.ParseFloat(wherevalue, 64)
-	if intVar == 0 { //not an number
-		if mathOp == EQ {
-			if v != wherevalue {
+	// v is opcode
+	// wherevalue is operand
+
+	// REMEMBER holds is 1 by default
+	// we need to prove that it
+	// does not hold
+
+	// definitely change
+	// this to factory
+
+	var doesWhereCast bool
+	opType := fmt.Sprintf("%T", v)
+	switch opType {
+	case "time.Time":
+		_, doesWhereCast = wherevalue.(time.Time)
+	case "float64":
+		_, doesWhereCast = wherevalue.(float64)
+	case "string":
+		_, doesWhereCast = wherevalue.(string)
+	}
+
+	// check if doesnt cast
+	if (mathOp == EQ || mathOp == NE) && !doesWhereCast {
+		*holds = *holds & 0
+		return
+	}
+
+	if mathOp == EQ && v != wherevalue {
+		*holds = *holds & 0
+		return
+	}
+
+	// Not equals
+	if mathOp == NE && v == wherevalue {
+		*holds = *holds & 0
+		return
+	}
+
+	// TODO add > and <
+
+	if mathOp == LIKE {
+		switch opType {
+		case "time.Time":
+			if !strings.Contains(v.(time.Time).String(), wherevalue.(string)) {
 				*holds = *holds & 0
+				return
 			}
-		} else if mathOp == NE {
-			if v == wherevalue {
+		case "float64":
+			if !strings.Contains(fmt.Sprintf("%g", v.(float64)), wherevalue.(string)) {
 				*holds = *holds & 0
+				return
 			}
-		} else {
-			//like
-			if !strings.Contains(v.(string), wherevalue) {
+		case "string":
+			if !strings.Contains(v.(string), wherevalue.(string)) {
 				*holds = *holds & 0
+				return
 			}
 		}
 
-	} else { //must be a number
-		var vNumVar float64
-		if _, ok := v.(string); ok {
-			vNumVar, _ = strconv.ParseFloat(v.(string), 64)
-		} else {
-			//possible a float
-			vNumVar = v.(float64)
-		}
-
-		switch mathOp {
-		case EQ:
-			if vNumVar == intVar {
-				*holds = *holds & 1
-			} else {
-				*holds = *holds & 0
-			}
-		case LT:
-			if vNumVar < intVar {
-				*holds = *holds & 1
-			} else {
-				*holds = *holds & 0
-			}
-		case GT:
-			if vNumVar > intVar {
-				*holds = *holds & 1
-			} else {
-				*holds = *holds & 0
-			}
-		}
 	}
 }
