@@ -127,18 +127,25 @@ func setupLogger() {
 // main func
 func main() {
 
+	//init node and set to follower (true until proven otherwise)
+	var node Node = Node{
+		Ip:            "",
+		Pinged:        time.Now(),
+		PingCount:     0,
+		Rank:          global.FOLLOWER,
+		Data:          map[string]interface{}{},
+		Active:        true,
+		RecentQueries: map[string]time.Time{},
+		Rules:         map[string][]global.Task{},
+	}
+
 	// setup the logger
 	setupLogger()
 
-	//init node and set to follower (true until proven otherwise)
-	var node Node
-
 	var masterip string = ""
-
-	node.Rank = global.FOLLOWER
-	node.Active = true
 	//set ips
 	localip := getLocalIp()
+
 	//this needs to be async as port should be on other thread
 	go node.pickPort(localip)
 
@@ -154,14 +161,11 @@ func main() {
 		node.setNodeMasterAttrs()
 	}
 
-	// create primary index
+	// create backup
 	(*global.Node)(&node).SaveDataJson()
 
 	//ping handling
-	node.Pinged = time.Now()
 	go (*global.Node)(&node).Ping()
-
-	// (*global.Node)(&node).SaveDataJson()
 
 	//like a game loop
 	for true {

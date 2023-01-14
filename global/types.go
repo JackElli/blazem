@@ -6,24 +6,23 @@ import (
 )
 
 type Node struct {
-	Ip        string
-	Pinged    time.Time
-	PingCount int
-	Rank      Rank
-	Data      map[string]interface{}
-	Active    bool
+	Ip            string
+	Pinged        time.Time
+	PingCount     int
+	Rank          Rank
+	Data          map[string]interface{}
+	Active        bool
+	RecentQueries map[string]time.Time
+	Rules         map[string][]Task
 }
 
-//	type JsonData struct {
-//		Key    string    `json:"key"`
-//		Folder string    `json:"folder"`
-//		Data   string    `json:"data"`
-//		Type   string    `json:"type"`
-//		Date   time.Time `json:"date"`
-//	}
-type JsonData map[string]interface{}
 type Rank string
+type JsonData map[string]interface{}
 type NodeData map[string]interface{}
+type Task struct {
+	Fnct func(string)
+	Data string
+}
 
 const (
 	MASTER   Rank = "MASTER"

@@ -329,6 +329,8 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		queryVal = req.Header.Get("query")
 	}
 	query.LoadIntoMemory(global.Node(*node))
+
+	// TODO error handling
 	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
 
 	dataToSend := make([]SendData, 0)
@@ -338,33 +340,88 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		dataJSON, _ := json.Marshal(res)
 		var getJSON global.JsonData
 		json.Unmarshal(dataJSON, &getJSON)
-
 		dataToSend = append(dataToSend, SendData{getJSON["key"].(string), getJSON})
 
 	}
 
+	node.RecentQueries[queryVal] = time.Now()
+
 	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
+}
+
+func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Request) {
+	writeHeaders(w, []string{})
+
+	dataToSend := node.RecentQueries
+
+	json.NewEncoder(w).Encode(dataToSend)
+}
+
+type JSONTask struct {
+	Type string
+	Data string
+}
+
+var taskFncDecoder = map[string]func(string){
+	"query": func(string) {
+
+	},
+	"export": func(string) {},
+}
+
+func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
+	writeHeaders(w, []string{})
+
+	var tasks []JSONTask
+
+	body, _ := ioutil.ReadAll(req.Body)
+	json.Unmarshal(body, &tasks)
+
+	// will do this is a strange order
+	var taskForRule = make([]global.Task, 0)
+
+	for _, task := range tasks {
+		taskForRule = append(taskForRule, global.Task{
+			Fnct: taskFncDecoder[task.Type],
+			Data: task.Data,
+		})
+	}
+
+	node.Rules["test"] = taskForRule
+
+	json.NewEncoder(w).Encode("done")
+
+}
+
+func (node *Node) runRuleHandler(w http.ResponseWriter, req *http.Request) {
+	writeHeaders(w, []string{"ruleId"})
+
+	ruleId := req.URL.Query().Get("ruleId")
+	rule := node.Rules[ruleId]
+	fmt.Println(rule)
 }
 
 func SetupHandlers(node *Node) {
 
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
 		"sync": {
-			"connect":    node.connectHandler,
-			"ping":       node.pingHandler,
-			"getalldata": node.getAllDataHandler,
-			"deletedoc":  node.deleteDocHandler,
-			"getdata":    node.getDataHandler,
-			"addfolder":  node.addFolderHandler,
-			"folders":    node.folderHandler,
-			"removenode": node.removeNodeHandler,
-			"stats":      node.statsHandler,
-			"nodemap":    nodeMapHandler,
-			"getquery":   node.queryHandler,
+			"connect":          node.connectHandler,
+			"ping":             node.pingHandler,
+			"deleteDoc":        node.deleteDocHandler,
+			"getData":          node.getDataHandler,
+			"addFolder":        node.addFolderHandler,
+			"folders":          node.folderHandler,
+			"removeNode":       node.removeNodeHandler,
+			"stats":            node.statsHandler,
+			"nodemap":          nodeMapHandler,
+			"getQuery":         node.queryHandler,
+			"getRecentQueries": node.getRecentQueriesHandler,
+			"addRule":          node.addRuleHandler,
+			"runRule":          node.runRuleHandler,
 		},
 		"async": {
-			"getdatainfolder": node.getDataInFolderHandler,
-			"setdata":         node.setDataHandler,
+			"getDataInFolder": node.getDataInFolderHandler,
+			"setData":         node.setDataHandler,
 		},
 	}
 

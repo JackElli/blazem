@@ -74,16 +74,6 @@ func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (node *Node) getAllDataHandler(w http.ResponseWriter, req *http.Request) {
-	if node.Rank == global.MASTER {
-
-		writeHeaders(w, nil)
-		dataToSend := global.GetAllDataToPrint(node.Data)
-		json.NewEncoder(w).Encode(dataToSend)
-
-	}
-}
-
 func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	//only do this if master
 	if node.Rank == global.FOLLOWER {
@@ -102,6 +92,7 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(sendData)
 
 }
+
 func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
 
 	writeHeaders(w, nil)

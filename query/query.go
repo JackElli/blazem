@@ -69,6 +69,7 @@ func Execute(querystr string, tablename string) ([]map[string]interface{},
 	fmt.Println("------------------")
 	fmt.Println(querystr, "executed in", elapsed.Milliseconds(), "ms")
 	fmt.Println("------------------")
+
 	return decodedData, elapsed.Milliseconds(), len(decodedData), errs
 	// calc the time taken
 	// fmt.Println("Program took ", elapsed, " to get ", len(decodedData), " docs")
