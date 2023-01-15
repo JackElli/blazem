@@ -4,6 +4,7 @@ import (
 	"distributed_servers/endpoints"
 	"distributed_servers/global"
 	"distributed_servers/logging"
+	"distributed_servers/query"
 	"distributed_servers/webend"
 	"net"
 	"net/http"
@@ -32,15 +33,6 @@ func getNodeDatas() []global.NodeData {
 		nodedata = append(nodedata, n.Data)
 	}
 	return nodedata
-}
-
-func nodeMapPointertoMem() []global.Node {
-	var newmap []global.Node
-	for _, n := range global.NODE_MAP {
-		newmap = append(newmap, global.Node{Ip: n.Ip, Pinged: n.Pinged,
-			PingCount: n.PingCount, Rank: n.Rank, Data: n.Data, Active: true})
-	}
-	return newmap
 }
 
 func getLocalIp() string {
@@ -136,7 +128,7 @@ func main() {
 		Data:          map[string]interface{}{},
 		Active:        true,
 		RecentQueries: map[string]time.Time{},
-		Rules:         map[string][]global.Task{},
+		Rules:         map[string]global.Rule{},
 	}
 
 	// setup the logger
@@ -166,6 +158,8 @@ func main() {
 
 	//ping handling
 	go (*global.Node)(&node).Ping()
+
+	query.LoadIntoMemory(global.Node(node))
 
 	//like a game loop
 	for true {

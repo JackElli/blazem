@@ -181,6 +181,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	//move nodemap to local memory
 	var localnm []*global.Node
 	json.Unmarshal(body, &localnm)
+
 	//add the changed node map
 	currentMasterData := global.NODE_MAP[0].Data
 	global.NODE_MAP = localnm
@@ -198,6 +199,10 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		node.Rank = global.FOLLOWER
 	}
 	node.Pinged = time.Now()
+
+	if len(localnm) == 0 {
+		return
+	}
 
 	if len(localnm[0].Data) == 0 {
 		global.NODE_MAP[0].Data = currentMasterData
@@ -221,11 +226,13 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 
 	//if port isnt 0 (there is a valid port)
 	if ip != "" {
-		//add to the node map
+		// add to the node map
+		// a fresh node
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 		if !global.AlreadyInNodeMap(ip) {
 			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
-				PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true})
+				PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true,
+				RecentQueries: map[string]time.Time{}, Rules: map[string]global.Rule{}})
 		} else {
 			//already in map
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
@@ -294,7 +301,7 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 	value := map[string]interface{}{
 		"key":    "_firstdoc_" + key,
 		"folder": folder,
-		"data":   "_firstdoc",
+		"value":  "_firstdoc",
 		"type":   "text",
 		"date":   time.Now(),
 	}
@@ -357,56 +364,11 @@ func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Reque
 	json.NewEncoder(w).Encode(dataToSend)
 }
 
-type JSONTask struct {
-	Type string
-	Data string
-}
-
-var taskFncDecoder = map[string]func(string){
-	"query": func(string) {
-
-	},
-	"export": func(string) {},
-}
-
-func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
-	writeHeaders(w, []string{})
-
-	var tasks []JSONTask
-
-	body, _ := ioutil.ReadAll(req.Body)
-	json.Unmarshal(body, &tasks)
-
-	// will do this is a strange order
-	var taskForRule = make([]global.Task, 0)
-
-	for _, task := range tasks {
-		taskForRule = append(taskForRule, global.Task{
-			Fnct: taskFncDecoder[task.Type],
-			Data: task.Data,
-		})
-	}
-
-	node.Rules["test"] = taskForRule
-
-	json.NewEncoder(w).Encode("done")
-
-}
-
-func (node *Node) runRuleHandler(w http.ResponseWriter, req *http.Request) {
-	writeHeaders(w, []string{"ruleId"})
-
-	ruleId := req.URL.Query().Get("ruleId")
-	rule := node.Rules[ruleId]
-	fmt.Println(rule)
-}
-
 func SetupHandlers(node *Node) {
 
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
 		"sync": {
 			"connect":          node.connectHandler,
-			"ping":             node.pingHandler,
 			"deleteDoc":        node.deleteDocHandler,
 			"getData":          node.getDataHandler,
 			"addFolder":        node.addFolderHandler,
@@ -418,10 +380,12 @@ func SetupHandlers(node *Node) {
 			"getRecentQueries": node.getRecentQueriesHandler,
 			"addRule":          node.addRuleHandler,
 			"runRule":          node.runRuleHandler,
+			"getRules":         node.getRulesHandler,
 		},
 		"async": {
 			"getDataInFolder": node.getDataInFolderHandler,
 			"setData":         node.setDataHandler,
+			"ping":            node.pingHandler,
 		},
 	}
 

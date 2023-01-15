@@ -232,7 +232,7 @@ func getNodeMapWithoutData() []*Node {
 	var newmap []*Node
 	for _, n := range NODE_MAP {
 		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank,
-			NodeData{}, n.Active, map[string]time.Time{}, n.Rules})
+			NodeData{}, n.Active, n.RecentQueries, n.Rules})
 	}
 	return newmap
 }

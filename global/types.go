@@ -13,16 +13,24 @@ type Node struct {
 	Data          map[string]interface{}
 	Active        bool
 	RecentQueries map[string]time.Time
-	Rules         map[string][]Task
+	Rules         map[string]Rule
+}
+
+type Task struct {
+	Data    string
+	Require int
+	Type    string
+}
+
+type Rule struct {
+	Id          string
+	Tasks       []Task
+	ExecuteTime time.Time
 }
 
 type Rank string
 type JsonData map[string]interface{}
 type NodeData map[string]interface{}
-type Task struct {
-	Fnct func(string)
-	Data string
-}
 
 const (
 	MASTER   Rank = "MASTER"

@@ -41,16 +41,6 @@ func contains(slice []string, needle string) bool {
 	return false
 }
 
-// printResults prints all the documents inside a query result
-func printResults(resultMap []map[string]interface{}) {
-	for _, doc := range resultMap {
-		for key, value := range doc {
-			fmt.Println(key, " ", value)
-		}
-		fmt.Println("---")
-	}
-}
-
 // tonise uses regex to split the query string
 func tokenise(querystr string) []string {
 	regex := "(?i)([a-z-_.]*[><=/][0-9]+)|[a-z-_.,]*[a-z-_.,]*([=/~]*\"[a-z-_.0-9 ]+\")*"
