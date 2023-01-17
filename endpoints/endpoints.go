@@ -1,10 +1,10 @@
 package endpoints
 
 import (
+	"blazem/global"
+	"blazem/logging"
+	"blazem/query"
 	"bytes"
-	"distributed_servers/global"
-	"distributed_servers/logging"
-	"distributed_servers/query"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -181,6 +181,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	//move nodemap to local memory
 	var localnm []*global.Node
 	json.Unmarshal(body, &localnm)
+
 	//add the changed node map
 	currentMasterData := global.NODE_MAP[0].Data
 	global.NODE_MAP = localnm
@@ -198,6 +199,10 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		node.Rank = global.FOLLOWER
 	}
 	node.Pinged = time.Now()
+
+	if len(localnm) == 0 {
+		return
+	}
 
 	if len(localnm[0].Data) == 0 {
 		global.NODE_MAP[0].Data = currentMasterData
@@ -221,11 +226,13 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 
 	//if port isnt 0 (there is a valid port)
 	if ip != "" {
-		//add to the node map
+		// add to the node map
+		// a fresh node
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 		if !global.AlreadyInNodeMap(ip) {
 			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
-				PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true})
+				PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true,
+				RecentQueries: map[string]time.Time{}, Rules: map[string]global.Rule{}})
 		} else {
 			//already in map
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
@@ -294,9 +301,9 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 	value := map[string]interface{}{
 		"key":    "_firstdoc_" + key,
 		"folder": folder,
-		"data":   "_firstdoc",
+		"value":  "_firstdoc",
 		"type":   "text",
-		"date":   time.Now(),
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	node.Data[key] = value
@@ -329,6 +336,8 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		queryVal = req.Header.Get("query")
 	}
 	query.LoadIntoMemory(global.Node(*node))
+
+	// TODO error handling
 	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
 
 	dataToSend := make([]SendData, 0)
@@ -338,33 +347,45 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		dataJSON, _ := json.Marshal(res)
 		var getJSON global.JsonData
 		json.Unmarshal(dataJSON, &getJSON)
-
 		dataToSend = append(dataToSend, SendData{getJSON["key"].(string), getJSON})
 
 	}
 
+	node.RecentQueries[queryVal] = time.Now()
+
 	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
+}
+
+func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Request) {
+	writeHeaders(w, []string{})
+
+	dataToSend := node.RecentQueries
+
+	json.NewEncoder(w).Encode(dataToSend)
 }
 
 func SetupHandlers(node *Node) {
 
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
 		"sync": {
-			"connect":    node.connectHandler,
-			"ping":       node.pingHandler,
-			"getalldata": node.getAllDataHandler,
-			"deletedoc":  node.deleteDocHandler,
-			"getdata":    node.getDataHandler,
-			"addfolder":  node.addFolderHandler,
-			"folders":    node.folderHandler,
-			"removenode": node.removeNodeHandler,
-			"stats":      node.statsHandler,
-			"nodemap":    nodeMapHandler,
-			"getquery":   node.queryHandler,
+			"connect":          node.connectHandler,
+			"deleteDoc":        node.deleteDocHandler,
+			"getData":          node.getDataHandler,
+			"addFolder":        node.addFolderHandler,
+			"folders":          node.folderHandler,
+			"removeNode":       node.removeNodeHandler,
+			"stats":            node.statsHandler,
+			"nodemap":          nodeMapHandler,
+			"getQuery":         node.queryHandler,
+			"getRecentQueries": node.getRecentQueriesHandler,
+			"addRule":          node.addRuleHandler,
+			"runRule":          node.runRuleHandler,
+			"getRules":         node.getRulesHandler,
 		},
 		"async": {
-			"getdatainfolder": node.getDataInFolderHandler,
-			"setdata":         node.setDataHandler,
+			"getDataInFolder": node.getDataInFolderHandler,
+			"setData":         node.setDataHandler,
+			"ping":            node.pingHandler,
 		},
 	}
 

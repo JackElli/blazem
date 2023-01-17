@@ -1,9 +1,10 @@
 package endpoints
 
 import (
-	"distributed_servers/global"
+	"blazem/global"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"sort"
 	"time"
@@ -34,12 +35,16 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			// changed to map[string]interface{}
 			// to add to mem index
 			// and if we want custom JSON later
+
+			// have to be really careful with casting
+			// maybe have a struct like
+			// key, folder, type, date and fields
 			value := map[string]interface{}{
 				"key":    setKey,
 				"folder": setFolder,
 				"value":  setVal,
 				"type":   dataType,
-				"date":   time.Now(),
+				"date":   time.Now().Format("2006-01-02T15:04:05"),
 			}
 
 			node.Data[setKey] = value
@@ -47,13 +52,13 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			// add to index
 			// if key is not in index
 			// we can append
-			if !global.IsDocInIndex(setKey) {
-				(*global.Node)(node).AppendDataJson(setKey, value)
-			} else {
-				// if key is ALREADY in index
-				// we need to replace it
-				(*global.Node)(node).ReplaceDataJson(setKey, value)
-			}
+			// if !global.IsDocInIndex(setKey) {
+			// 	(*global.Node)(node).AppendDataJson(setKey, value)
+			// } else {
+			// 	// if key is ALREADY in index
+			// 	// we need to replace it
+			// 	(*global.Node)(node).ReplaceDataJson(setKey, value)
+			// }
 
 			// (*global.Node)(node).SaveDataJson()
 			json.NewEncoder(w).Encode("done")
@@ -74,16 +79,6 @@ func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (node *Node) getAllDataHandler(w http.ResponseWriter, req *http.Request) {
-	if node.Rank == global.MASTER {
-
-		writeHeaders(w, nil)
-		dataToSend := global.GetAllDataToPrint(node.Data)
-		json.NewEncoder(w).Encode(dataToSend)
-
-	}
-}
-
 func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	//only do this if master
 	if node.Rank == global.FOLLOWER {
@@ -102,14 +97,15 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(sendData)
 
 }
+
 func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
 
 	writeHeaders(w, nil)
 
 	folder := req.URL.Query().Get("folder")
 
-	//need to sort data by date
-	//breaking change, as added new JSON field
+	// need to sort data by date
+	// breaking change, as added new JSON field
 	nodeData := make([]map[string]interface{}, len(node.Data))
 
 	dataInd := 0
@@ -118,7 +114,16 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		dataInd++
 	}
 
+	// not sure why this is like this?
 	sort.Slice(nodeData, func(i, j int) bool {
+		if _, convOk := nodeData[i]["date"].(time.Time); !convOk {
+			dateI, errI := time.Parse("2006-01-02T15:04:05", nodeData[i]["date"].(string))
+			dateJ, errJ := time.Parse("2006-01-02T15:04:05", nodeData[j]["date"].(string))
+			if errI != nil || errJ != nil {
+				log.Fatal(errI)
+			}
+			return dateI.Unix() > dateJ.Unix()
+		}
 		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
 	})
 

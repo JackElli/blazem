@@ -1,7 +1,7 @@
 package query
 
 import (
-	"distributed_servers/global"
+	"blazem/global"
 )
 
 // loadTable turns JSON input to one

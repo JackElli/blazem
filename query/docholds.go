@@ -67,6 +67,5 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 				return
 			}
 		}
-
 	}
 }

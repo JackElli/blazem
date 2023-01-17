@@ -1,28 +1,35 @@
 package global
 
 import (
-	"distributed_servers/logging"
+	"blazem/logging"
 	"time"
 )
 
 type Node struct {
-	Ip        string
-	Pinged    time.Time
-	PingCount int
-	Rank      Rank
-	Data      map[string]interface{}
-	Active    bool
+	Ip            string
+	Pinged        time.Time
+	PingCount     int
+	Rank          Rank
+	Data          map[string]interface{}
+	Active        bool
+	RecentQueries map[string]time.Time
+	Rules         map[string]Rule
 }
 
-//	type JsonData struct {
-//		Key    string    `json:"key"`
-//		Folder string    `json:"folder"`
-//		Data   string    `json:"data"`
-//		Type   string    `json:"type"`
-//		Date   time.Time `json:"date"`
-//	}
-type JsonData map[string]interface{}
+type Task struct {
+	Data    string
+	Require int
+	Type    string
+}
+
+type Rule struct {
+	Id          string
+	Tasks       []Task
+	ExecuteTime time.Time
+}
+
 type Rank string
+type JsonData map[string]interface{}
 type NodeData map[string]interface{}
 
 const (

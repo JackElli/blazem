@@ -1,10 +1,11 @@
 package main
 
 import (
-	"distributed_servers/endpoints"
-	"distributed_servers/global"
-	"distributed_servers/logging"
-	"distributed_servers/webend"
+	"blazem/endpoints"
+	"blazem/global"
+	"blazem/logging"
+	"blazem/query"
+	"blazem/webend"
 	"net"
 	"net/http"
 	"strconv"
@@ -32,15 +33,6 @@ func getNodeDatas() []global.NodeData {
 		nodedata = append(nodedata, n.Data)
 	}
 	return nodedata
-}
-
-func nodeMapPointertoMem() []global.Node {
-	var newmap []global.Node
-	for _, n := range global.NODE_MAP {
-		newmap = append(newmap, global.Node{Ip: n.Ip, Pinged: n.Pinged,
-			PingCount: n.PingCount, Rank: n.Rank, Data: n.Data, Active: true})
-	}
-	return newmap
 }
 
 func getLocalIp() string {
@@ -104,7 +96,7 @@ func (node *Node) setNodeMasterAttrs() {
 		"folder": "text",
 		"value":  "hello this is a test",
 		"type":   "text",
-		"date":   time.Now(),
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	testData2 := map[string]interface{}{
@@ -112,7 +104,7 @@ func (node *Node) setNodeMasterAttrs() {
 		"folder": "text",
 		"value":  "hello asd",
 		"type":   "text",
-		"date":   time.Now(),
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	node.Data["testkey"] = testData1
@@ -127,18 +119,25 @@ func setupLogger() {
 // main func
 func main() {
 
+	//init node and set to follower (true until proven otherwise)
+	var node Node = Node{
+		Ip:            "",
+		Pinged:        time.Now(),
+		PingCount:     0,
+		Rank:          global.FOLLOWER,
+		Data:          map[string]interface{}{},
+		Active:        true,
+		RecentQueries: map[string]time.Time{},
+		Rules:         map[string]global.Rule{},
+	}
+
 	// setup the logger
 	setupLogger()
 
-	//init node and set to follower (true until proven otherwise)
-	var node Node
-
 	var masterip string = ""
-
-	node.Rank = global.FOLLOWER
-	node.Active = true
 	//set ips
 	localip := getLocalIp()
+
 	//this needs to be async as port should be on other thread
 	go node.pickPort(localip)
 
@@ -154,14 +153,13 @@ func main() {
 		node.setNodeMasterAttrs()
 	}
 
-	// create primary index
-	(*global.Node)(&node).SaveDataJson()
+	// // create backup
+	// (*global.Node)(&node).SaveBackup()
 
 	//ping handling
-	node.Pinged = time.Now()
 	go (*global.Node)(&node).Ping()
 
-	// (*global.Node)(&node).SaveDataJson()
+	query.LoadIntoMemory(global.Node(node))
 
 	//like a game loop
 	for true {
