@@ -11,7 +11,7 @@ import (
 //			}
 //	}
 //
-// asdsasdasd
+// asdsasda
 type DecodeFunc func(string, *QueryType,
 	*bool, *bool, *[]string, *[]string) error
 
