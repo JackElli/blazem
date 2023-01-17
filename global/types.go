@@ -1,7 +1,7 @@
 package global
 
 import (
-	"distributed_servers/logging"
+	"blazem/logging"
 	"time"
 )
 

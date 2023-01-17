@@ -1,4 +1,4 @@
-module distributed_servers
+module blazem
 
 go 1.19
 

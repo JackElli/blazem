@@ -1,10 +1,10 @@
 package endpoints
 
 import (
+	"blazem/global"
+	"blazem/logging"
+	"blazem/query"
 	"bytes"
-	"distributed_servers/global"
-	"distributed_servers/logging"
-	"distributed_servers/query"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -303,7 +303,7 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 		"folder": folder,
 		"value":  "_firstdoc",
 		"type":   "text",
-		"date":   time.Now(),
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	node.Data[key] = value

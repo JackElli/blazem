@@ -14,6 +14,33 @@ import (
 type DecodeFunc func(string, *QueryType,
 	*bool, *bool, *[]string, *[]string) error
 
+// decodeParam decodes the paramaters and sets up the next step in the query chain
+func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
+
+	if strings.Contains(param, "=") && !strings.Contains(param, "/") {
+		*paramsplit = strings.Split(param, "=")
+		*mathOp = EQ
+		return true
+	} else if strings.Contains(param, ">") {
+		*paramsplit = strings.Split(param, ">")
+		*mathOp = GT
+		return true
+	} else if strings.Contains(param, "<") {
+		*paramsplit = strings.Split(param, "<")
+		*mathOp = LT
+		return true
+	} else if strings.Contains(param, "/=") {
+		*paramsplit = strings.Split(param, "/=")
+		*mathOp = NE
+		return true
+	} else if strings.Contains(param, "~") {
+		*paramsplit = strings.Split(param, "~")
+		*mathOp = LIKE
+		return true
+	}
+	return false
+}
+
 // ANY being any token
 var decodeTokenTable = map[int]map[string]DecodeFunc{
 	0: {
@@ -77,33 +104,6 @@ func decodeToken(i int, token string, queryType *QueryType,
 	}
 
 	return decoderError
-}
-
-// decodeParam decodes the paramaters and sets up the next step in the query chain
-func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
-
-	if strings.Contains(param, "=") && !strings.Contains(param, "/") {
-		*paramsplit = strings.Split(param, "=")
-		*mathOp = EQ
-		return true
-	} else if strings.Contains(param, ">") {
-		*paramsplit = strings.Split(param, ">")
-		*mathOp = GT
-		return true
-	} else if strings.Contains(param, "<") {
-		*paramsplit = strings.Split(param, "<")
-		*mathOp = LT
-		return true
-	} else if strings.Contains(param, "/=") {
-		*paramsplit = strings.Split(param, "/=")
-		*mathOp = NE
-		return true
-	} else if strings.Contains(param, "~") {
-		*paramsplit = strings.Split(param, "~")
-		*mathOp = LIKE
-		return true
-	}
-	return false
 }
 
 // decodeQuery decodes the query so that we can manipulate it

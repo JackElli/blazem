@@ -1,8 +1,8 @@
 package endpoints
 
 import (
-	"distributed_servers/global"
-	"distributed_servers/query"
+	"blazem/global"
+	"blazem/query"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

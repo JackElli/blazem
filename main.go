@@ -1,11 +1,11 @@
 package main
 
 import (
-	"distributed_servers/endpoints"
-	"distributed_servers/global"
-	"distributed_servers/logging"
-	"distributed_servers/query"
-	"distributed_servers/webend"
+	"blazem/endpoints"
+	"blazem/global"
+	"blazem/logging"
+	"blazem/query"
+	"blazem/webend"
 	"net"
 	"net/http"
 	"strconv"
@@ -96,7 +96,7 @@ func (node *Node) setNodeMasterAttrs() {
 		"folder": "text",
 		"value":  "hello this is a test",
 		"type":   "text",
-		"date":   time.Now(),
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	testData2 := map[string]interface{}{
@@ -104,7 +104,7 @@ func (node *Node) setNodeMasterAttrs() {
 		"folder": "text",
 		"value":  "hello asd",
 		"type":   "text",
-		"date":   time.Now(),
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	node.Data["testkey"] = testData1
@@ -153,8 +153,8 @@ func main() {
 		node.setNodeMasterAttrs()
 	}
 
-	// create backup
-	(*global.Node)(&node).SaveDataJson()
+	// // create backup
+	// (*global.Node)(&node).SaveBackup()
 
 	//ping handling
 	go (*global.Node)(&node).Ping()

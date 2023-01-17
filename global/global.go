@@ -1,8 +1,8 @@
 package global
 
 import (
+	"blazem/logging"
 	"bytes"
-	"distributed_servers/logging"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -180,14 +180,6 @@ func IndexOfNodeIpInNodeMap(ip string) int {
 	return -1
 }
 
-func GetAllDataToPrint(data NodeData) []string {
-	var retdata []string
-	for v := range data {
-		retdata = append(retdata, data[v].(JsonData)["data"].(string))
-	}
-	return retdata
-}
-
 func (node *Node) isNextInLine() bool {
 	//get next true value
 	for _, n := range NODE_MAP {
@@ -203,15 +195,19 @@ func (node *Node) isNextInLine() bool {
 
 func (node *Node) setToMaster() {
 	node.Rank = MASTER
+	// pass all data over
 	node.Data = NODE_MAP[0].Data
+	node.RecentQueries = NODE_MAP[0].RecentQueries
+	node.Rules = NODE_MAP[0].Rules
+
 	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
 	Logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
-	//update node map
+	// update node map
 	NODE_MAP = NODE_MAP[1:]
 	NODE_MAP[0] = node
-	//update index
-	node.SaveDataJson()
-	//start pinging again
+	// save a backup
+	// node.SaveBackup()
+	// start pinging again
 	go node.Ping()
 }
 
