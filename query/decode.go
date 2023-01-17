@@ -10,9 +10,8 @@ import (
 //					func to complete
 //			}
 //	}
-
-// this is amazing
-
+//
+// asdsasd
 type DecodeFunc func(string, *QueryType,
 	*bool, *bool, *[]string, *[]string) error
 
