@@ -15,6 +15,10 @@ import (
 	"github.com/couchbase/gocb/v2"
 )
 
+type Rule struct {
+	Tasks []JSONTask
+	Time  string
+}
 type JSONTask struct {
 	Type    string
 	Data    string
@@ -50,19 +54,19 @@ var taskFncDecoder = map[string]func(interface{}, interface{}) (interface{}, err
 func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, []string{})
 
-	var tasks []JSONTask
+	var rule Rule
 
 	body, _ := ioutil.ReadAll(req.Body)
-	json.Unmarshal(body, &tasks)
+	json.Unmarshal(body, &rule)
 
-	if len(tasks) == 0 {
+	if len(rule.Tasks) == 0 {
 		return
 	}
 
 	// will do this is a strange order
 	var taskForRule = make([]global.Task, 0)
 
-	for _, task := range tasks {
+	for _, task := range rule.Tasks {
 		taskForRule = append(taskForRule, global.Task{
 			Data:    task.Data,
 			Require: task.Require,
@@ -70,16 +74,78 @@ func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 		})
 	}
 
+	var executeTime *time.Time
+	var t time.Time
+	var err error
+	if rule.Time != "" {
+		t, err = time.Parse("2006-01-02 15:04:05", rule.Time)
+		executeTime = &t
+		if err != nil {
+			fmt.Println("Failed to add rule")
+			json.NewEncoder(w).Encode("fail")
+		}
+	} else {
+		executeTime = nil
+	}
+
 	ruleId := "rule" + strconv.Itoa(len(node.Rules))
 	node.Rules[ruleId] = global.Rule{
-		Id:    ruleId,
-		Tasks: taskForRule,
-		ExecuteTime: time.Date(
-			2023, 01, 14, 22, 34, 58, 651387237, time.UTC),
+		Id:          ruleId,
+		Tasks:       taskForRule,
+		ExecuteTime: executeTime,
 	}
 
 	json.NewEncoder(w).Encode("done")
 
+}
+
+func (node *Node) MagicMax() {
+	// every second, check if there's
+	// a rule to run, if there is
+	// run it.
+	runRuleFreqSeconds := 24 * 60 * 60
+	for true {
+		for _, rule := range node.Rules {
+			if rule.ExecuteTime == nil {
+				continue
+			}
+			timeDiff := rule.ExecuteTime.Sub(time.Now())
+			if timeDiff < 0 && int(timeDiff.Seconds())%runRuleFreqSeconds != 0 {
+				continue
+			}
+			if timeDiff < 500*time.Millisecond ||
+				(int(timeDiff.Seconds())%runRuleFreqSeconds == 0) {
+				RunRule(rule.Tasks)
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func RunRule(tasks []global.Task) error {
+	// getting input and
+	// running output
+	var taskOutput = make([]interface{}, 0)
+	for _, task := range tasks {
+		runTask := taskFncDecoder[task.Type]
+		data := task.Data
+		if task.Require == -1 {
+			out, err := runTask(data, "")
+			if err != nil {
+				return err
+			}
+			taskOutput = append(taskOutput, out)
+			continue
+		}
+		taskOutput = append(taskOutput, "")
+		passData := taskOutput[task.Require]
+		_, err := runTask(data, passData)
+		if err != nil {
+			return err
+		}
+	}
+	fmt.Println("Rule successfully completed")
+	return nil
 }
 
 func (node *Node) runRuleHandler(w http.ResponseWriter, req *http.Request) {

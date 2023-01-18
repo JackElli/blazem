@@ -24,7 +24,10 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 			//TODO send multiple key and values
 			var dataToSet []string
 			body, _ := ioutil.ReadAll(req.Body)
-			json.Unmarshal(body, &dataToSet)
+			err := json.Unmarshal(body, &dataToSet)
+			if err != nil {
+				return
+			}
 
 			//this will change eventually
 			setFolder := dataToSet[0]
@@ -49,18 +52,7 @@ func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
 
 			node.Data[setKey] = value
 			global.DataChanged = true
-			// add to index
-			// if key is not in index
-			// we can append
-			// if !global.IsDocInIndex(setKey) {
-			// 	(*global.Node)(node).AppendDataJson(setKey, value)
-			// } else {
-			// 	// if key is ALREADY in index
-			// 	// we need to replace it
-			// 	(*global.Node)(node).ReplaceDataJson(setKey, value)
-			// }
 
-			// (*global.Node)(node).SaveDataJson()
 			json.NewEncoder(w).Encode("done")
 			return
 		}

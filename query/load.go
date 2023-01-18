@@ -1,8 +1,6 @@
 package query
 
-import (
-	"blazem/global"
-)
+import "blazem/global"
 
 // loadTable turns JSON input to one
 // we can understand
@@ -14,5 +12,4 @@ func loadTable(i interface{}) (interface{}, error) {
 func LoadIntoMemory(node global.Node) string {
 	jsonLoad = node.Data
 	return ""
-
 }

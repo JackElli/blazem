@@ -159,6 +159,9 @@ func main() {
 	//ping handling
 	go (*global.Node)(&node).Ping()
 
+	// run the rule checker
+	go (*endpoints.Node)(&node).MagicMax()
+
 	query.LoadIntoMemory(global.Node(node))
 
 	//like a game loop
