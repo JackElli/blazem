@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -27,8 +28,8 @@ func indexOfNodeInNodeMap(node *global.Node) int {
 }
 
 // return the data stored in the nodemap
-func getNodeDatas() []global.NodeData {
-	var nodedata []global.NodeData
+func getNodeDatas() []sync.Map {
+	var nodedata []sync.Map
 	for _, n := range global.NODE_MAP {
 		nodedata = append(nodedata, n.Data)
 	}
@@ -89,7 +90,7 @@ func (node *Node) pickPort(ip string) {
 
 func (node *Node) setNodeMasterAttrs() {
 	node.Rank = global.MASTER
-	node.Data = global.NodeData{}
+	node.Data = sync.Map{}
 
 	testData1 := map[string]interface{}{
 		"key":    "testkey",
@@ -106,9 +107,10 @@ func (node *Node) setNodeMasterAttrs() {
 		"type":   "text",
 		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
-
-	node.Data["testkey"] = testData1
-	node.Data["testkey2"] = testData2
+	node.Data.Store("testkey", testData1)
+	node.Data.Store("testkey2", testData2)
+	// node.Data["testkey"] = testData1
+	// node.Data["testkey2"] = testData2
 }
 func setupLogger() {
 	//setup file for logging
@@ -125,11 +127,13 @@ func main() {
 		Pinged:        time.Now(),
 		PingCount:     0,
 		Rank:          global.FOLLOWER,
-		Data:          map[string]interface{}{},
+		Data:          sync.Map{},
 		Active:        true,
-		RecentQueries: map[string]time.Time{},
+		RecentQueries: map[string]string{},
 		Rules:         map[string]global.Rule{},
 	}
+
+	global.GlobalNode = (*global.Node)(&node)
 
 	// setup the logger
 	setupLogger()

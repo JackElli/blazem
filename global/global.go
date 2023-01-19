@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -215,7 +216,7 @@ func (node *Node) setToMaster() {
 func checkIfDataChanged() []byte {
 	var jsonNodeMap []byte
 	if DataChanged {
-		// Logger.Log("DATA CHANGED", logging.INFO)
+		fmt.Println(NODE_MAP)
 		jsonNodeMap, _ = json.Marshal(NODE_MAP)
 		DataChanged = false
 	} else {
@@ -228,7 +229,7 @@ func getNodeMapWithoutData() []*Node {
 	var newmap []*Node
 	for _, n := range NODE_MAP {
 		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank,
-			NodeData{}, n.Active, n.RecentQueries, n.Rules})
+			sync.Map{}, n.Active, n.RecentQueries, n.Rules})
 	}
 	return newmap
 }

@@ -10,61 +10,81 @@ import (
 	"time"
 )
 
-// this needs to change
-func (node *Node) setDataHandler(w http.ResponseWriter, req *http.Request) {
+type AddData struct {
+	Folder string
+	Key    string
+	Value  string
+	Format string
+}
 
+func (node *Node) getNewDoc(dataToAdd AddData) map[string]interface{} {
+	// changed to map[string]interface{}
+	// to add to mem index
+	// and if we want custom JSON later
+
+	// have to be really careful with casting
+	// maybe have a struct like
+	// key, folder, type, date and fields
+
+	// if doc key exists
+	if _, ok := node.Data.Load(dataToAdd.Key); ok {
+		getDocTime, _ := node.Data.Load(dataToAdd.Key)
+		docTime := getDocTime.(map[string]interface{})
+		value := map[string]interface{}{
+			"key":    dataToAdd.Key,
+			"folder": dataToAdd.Folder,
+			"value":  dataToAdd.Value,
+			"type":   dataToAdd.Format,
+			"date":   docTime["date"].(string),
+		}
+		return value
+	}
+	value := map[string]interface{}{
+		"key":    dataToAdd.Key,
+		"folder": dataToAdd.Folder,
+		"value":  dataToAdd.Value,
+		"type":   dataToAdd.Format,
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
+	}
+	return value
+}
+
+func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	// This could be done using sockets rather than
 	// http requests
-	if node.Rank == global.MASTER {
+	writeHeaders(w, []string{"all"})
 
-		writeHeaders(w, []string{"all"})
-
-		if req.Method == "POST" {
-
-			//TODO send multiple key and values
-			var dataToSet []string
-			body, _ := ioutil.ReadAll(req.Body)
-			err := json.Unmarshal(body, &dataToSet)
-			if err != nil {
-				return
-			}
-
-			//this will change eventually
-			setFolder := dataToSet[0]
-			setKey := dataToSet[1]
-			setVal := dataToSet[2]
-			dataType := dataToSet[3]
-
-			// changed to map[string]interface{}
-			// to add to mem index
-			// and if we want custom JSON later
-
-			// have to be really careful with casting
-			// maybe have a struct like
-			// key, folder, type, date and fields
-			value := map[string]interface{}{
-				"key":    setKey,
-				"folder": setFolder,
-				"value":  setVal,
-				"type":   dataType,
-				"date":   time.Now().Format("2006-01-02T15:04:05"),
-			}
-
-			node.Data[setKey] = value
-			global.DataChanged = true
-
-			json.NewEncoder(w).Encode("done")
-			return
-		}
+	if node.Rank != global.MASTER {
+		return
 	}
+
+	if req.Method != "POST" {
+		return
+	}
+
+	//TODO send multiple key and values
+	var dataToAdd AddData
+	body, _ := ioutil.ReadAll(req.Body)
+	err := json.Unmarshal(body, &dataToAdd)
+	if err != nil {
+		return
+	}
+
+	value := node.getNewDoc(dataToAdd)
+	node.Data.Store(dataToAdd.Key, value)
+	// node.Data[dataToAdd.Key] = value
+	global.DataChanged = true
+
+	json.NewEncoder(w).Encode("done")
+	return
 }
 
 func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, []string{})
 
 	docKey := req.URL.Query().Get("key")
-
-	delete(node.Data, docKey)
+	node.Data.Delete(docKey)
+	// delete(node.Data, docKey)
 	global.DataChanged = true
 
 	json.NewEncoder(w).Encode("done")
@@ -84,7 +104,8 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 		dataKey = req.Header.Get("key")
 	}
 
-	getData := global.NODE_MAP[0].Data[dataKey]
+	// getData := global.NODE_MAP[0].Data[dataKey]
+	getData, _ := global.NODE_MAP[0].Data.Load(dataKey)
 	sendData := SendData{dataKey, getData.(global.JsonData)}
 	json.NewEncoder(w).Encode(sendData)
 
@@ -98,13 +119,14 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 
 	// need to sort data by date
 	// breaking change, as added new JSON field
-	nodeData := make([]map[string]interface{}, len(node.Data))
+	nodeData := make([]map[string]interface{}, lenOfSyncMap(node.Data))
 
 	dataInd := 0
-	for _, d := range node.Data {
-		nodeData[dataInd] = d.(map[string]interface{})
+	node.Data.Range(func(key, value interface{}) bool {
+		nodeData[dataInd] = value.(map[string]interface{})
 		dataInd++
-	}
+		return true
+	})
 
 	// not sure why this is like this?
 	sort.Slice(nodeData, func(i, j int) bool {
@@ -132,6 +154,6 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 			numOfItems++
 		}
 	}
-	json.NewEncoder(w).Encode(dataInFolder)
 
+	json.NewEncoder(w).Encode(dataInFolder)
 }

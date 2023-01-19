@@ -1,10 +1,12 @@
 package query
 
 import (
+	"blazem/global"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 func checkNest(nestparams []string, getobj map[string]interface{},
@@ -105,48 +107,60 @@ func executeQuery(queryType QueryType, whereParams []string,
 	fetchKeys []string, jsondata interface{},
 	all bool) []map[string]interface{} {
 
-	var newjsondata = jsondata.(map[string]interface{})
+	var newjsondata = jsondata.(sync.Map)
 	// jsondata = jsondata.(map[string]interface{})
 	var newmap []map[string]interface{}
 
-	switch queryType {
-	case SELECT:
-		var wherejson []map[string]interface{}
-		// if there are whereParams
-		//filter
-		if len(whereParams) > 0 {
-			// for each document
-			for _, doc := range newjsondata {
-				// this is seeing if the doc matches the query
-				holds := 1
-				//could be better
-				getobj := doc.(map[string]interface{})
-				// for each param
-				for _, param := range whereParams {
-					// split the paramstring
-					var paramsplit []string
-					// math operator <>=
-					var mathOp MathOp
-					//decodes the paramater, splitting int paramsplit and mathop
-					ok := decodeParam(param, &mathOp, &paramsplit)
-					checkParamHolds(ok, paramsplit, getobj,
-						mathOp, &holds)
-				}
-				// if the doc matches the query
-				if holds == 1 {
-					wherejson = append(wherejson, getobj)
-				}
+	var wherejson []map[string]interface{}
+	// if there are whereParams
+	//filter
+	if len(whereParams) > 0 {
+		// for each document
+		newjsondata.Range(func(key, doc any) bool {
+			// this is seeing if the doc matches the query
+			holds := 1
+			//could be better
+			getobj := doc.(map[string]interface{})
+			// for each param
+			for _, param := range whereParams {
+				// split the paramstring
+				var paramsplit []string
+				// math operator <>=
+				var mathOp MathOp
+				//decodes the paramater, splitting int paramsplit and mathop
+				ok := decodeParam(param, &mathOp, &paramsplit)
+				checkParamHolds(ok, paramsplit, getobj,
+					mathOp, &holds)
 			}
-		} else {
-			for _, doc := range newjsondata {
-				wherejson = append(wherejson, doc.(map[string]interface{}))
+			// if the doc matches the query
+			if holds == 1 {
+				wherejson = append(wherejson, getobj)
 			}
-		}
-		//push docs
-		pushed := pushDocs(all, wherejson, &newmap, fetchKeys)
-		if pushed != nil {
+			return true
+		})
+	} else {
+		newjsondata.Range(func(key, doc any) bool {
+			wherejson = append(wherejson, doc.(map[string]interface{}))
+			return true
+		})
+
+	}
+	//push docs
+	pushed := pushDocs(all, wherejson, &newmap, fetchKeys)
+	if pushed != nil {
+		if queryType == SELECT {
 			return pushed
 		}
+		if queryType == DELETE {
+			for _, doc := range pushed {
+				key := doc["key"].(string)
+				global.GlobalNode.Data.Delete(key)
+				// delete(global.GlobalNode.Data, key)
+
+			}
+			return []map[string]interface{}{}
+		}
 	}
+
 	return newmap
 }

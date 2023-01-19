@@ -18,6 +18,7 @@ const (
 
 const (
 	SELECT QueryType = 0
+	DELETE QueryType = 1
 )
 
 const (

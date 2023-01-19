@@ -2,6 +2,7 @@ package global
 
 import (
 	"blazem/logging"
+	"sync"
 	"time"
 )
 
@@ -10,9 +11,9 @@ type Node struct {
 	Pinged        time.Time
 	PingCount     int
 	Rank          Rank
-	Data          map[string]interface{}
+	Data          sync.Map
 	Active        bool
-	RecentQueries map[string]time.Time
+	RecentQueries map[string]string //time
 	Rules         map[string]Rule
 }
 
@@ -42,3 +43,4 @@ var PORT_START = 3100
 var NODE_MAP []*Node
 var Logger logging.Logger
 var DataChanged bool = false
+var GlobalNode *Node

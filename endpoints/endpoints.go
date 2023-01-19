@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -170,6 +171,15 @@ func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(nodeMapResp)
 }
 
+func lenOfSyncMap(mp sync.Map) int {
+	var i int
+	mp.Range(func(key any, value any) bool {
+		i++
+		return true
+	})
+	return i
+}
+
 // handlers
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
@@ -204,7 +214,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if len(localnm[0].Data) == 0 {
+	if lenOfSyncMap(localnm[0].Data) == 0 {
 		global.NODE_MAP[0].Data = currentMasterData
 		return
 	}
@@ -231,8 +241,8 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 		if !global.AlreadyInNodeMap(ip) {
 			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
-				PingCount: 0, Rank: global.FOLLOWER, Data: global.NodeData{}, Active: true,
-				RecentQueries: map[string]time.Time{}, Rules: map[string]global.Rule{}})
+				PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,
+				RecentQueries: map[string]string{}, Rules: map[string]global.Rule{}})
 		} else {
 			//already in map
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
@@ -281,11 +291,12 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, nil)
 	//get folders
 	var folders = make([]string, 0)
-	for _, d := range node.Data {
-		if !isInArr(folders, d.(map[string]interface{})["folder"].(string)) {
-			folders = append(folders, d.(map[string]interface{})["folder"].(string))
+	node.Data.Range(func(k, value interface{}) bool {
+		if !isInArr(folders, value.(map[string]interface{})["folder"].(string)) {
+			folders = append(folders, value.(map[string]interface{})["folder"].(string))
 		}
-	}
+		return true
+	})
 	json.NewEncoder(w).Encode(folders)
 }
 
@@ -306,7 +317,7 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
-	node.Data[key] = value
+	node.Data.Store(key, value)
 	global.DataChanged = true
 
 	json.NewEncoder(w).Encode("done")
@@ -351,7 +362,7 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
 	}
 
-	node.RecentQueries[queryVal] = time.Now()
+	node.RecentQueries[queryVal] = time.Now().Format("2006-01-02 15:04:05")
 
 	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
 }
@@ -371,8 +382,8 @@ func SetupHandlers(node *Node) {
 
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
 		"sync": {
-			"connect":          node.connectHandler,
-			"deleteDoc":        node.deleteDocHandler,
+			"connect": node.connectHandler,
+
 			"getData":          node.getDataHandler,
 			"addFolder":        node.addFolderHandler,
 			"folders":          node.folderHandler,
@@ -382,12 +393,14 @@ func SetupHandlers(node *Node) {
 			"getQuery":         node.queryHandler,
 			"getRecentQueries": node.getRecentQueriesHandler,
 			"addRule":          node.addRuleHandler,
+			"removeRule":       node.removeRuleHandler,
 			"runRule":          node.runRuleHandler,
 			"getRules":         node.getRulesHandler,
 		},
 		"async": {
 			"getDataInFolder": node.getDataInFolderHandler,
-			"setData":         node.setDataHandler,
+			"addDoc":          node.addDocHandler,
+			"deleteDoc":       node.deleteDocHandler,
 			"ping":            node.pingHandler,
 		},
 	}

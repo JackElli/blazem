@@ -50,6 +50,11 @@ var decodeTokenTable = map[int]map[string]DecodeFunc{
 			*queryType = SELECT
 			return nil
 		},
+		"DELETE": func(token string, queryType *QueryType,
+			all *bool, where *bool, fetchKeys *[]string, whereParams *[]string) error {
+			*queryType = DELETE
+			return nil
+		},
 	},
 	1: {
 		"ANY": func(token string, queryType *QueryType,
@@ -81,6 +86,7 @@ var decodeTokenTable = map[int]map[string]DecodeFunc{
 var specialTokens = map[string]bool{
 	"SELECT": true,
 	"WHERE":  true,
+	"DELETE": true,
 }
 
 // decodeTokens gets each token and decides what it is

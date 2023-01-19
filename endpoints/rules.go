@@ -186,6 +186,21 @@ func (node *Node) runRuleHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode("done")
 
 }
+
+func (node *Node) removeRuleHandler(w http.ResponseWriter, req *http.Request) {
+	writeHeaders(w, []string{"ruleId"})
+
+	ruleId := req.URL.Query().Get("ruleId")
+	_, ok := node.Rules[ruleId]
+	if !ok {
+		json.NewEncoder(w).Encode("fail")
+		return
+	}
+
+	delete(node.Rules, ruleId)
+	json.NewEncoder(w).Encode("done")
+
+}
 func (node *Node) getRulesHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, []string{})
 
@@ -201,7 +216,7 @@ func (node *Node) getRulesHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		sendRule := map[string]interface{}{
 			"tasks":    jsonTasks,
-			"execTime": rule.ExecuteTime,
+			"execTime": rule.ExecuteTime.Format("2006-01-02 15:04:05"),
 			"id":       rule.Id,
 		}
 		jsonRules = append(jsonRules, sendRule)
