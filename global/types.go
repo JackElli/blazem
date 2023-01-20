@@ -27,6 +27,7 @@ type Rule struct {
 	Id          string
 	Tasks       []Task
 	ExecuteTime *time.Time
+	Executed    bool
 }
 
 type Rank string

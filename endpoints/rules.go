@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/couchbase/gocb/v2"
@@ -105,18 +106,26 @@ func (node *Node) MagicMax() {
 	// run it.
 	runRuleFreqSeconds := 24 * 60 * 60
 	for true {
+		var wg sync.WaitGroup
 		for _, rule := range node.Rules {
-			if rule.ExecuteTime == nil {
-				continue
-			}
-			timeDiff := rule.ExecuteTime.Sub(time.Now())
-			if timeDiff < 0 && int(timeDiff.Seconds())%runRuleFreqSeconds != 0 {
-				continue
-			}
-			if timeDiff < 500*time.Millisecond ||
-				(int(timeDiff.Seconds())%runRuleFreqSeconds == 0) {
+			wg.Add(1)
+			go func(rule global.Rule) {
+				defer wg.Done()
+				if rule.ExecuteTime == nil {
+					return
+				}
+				timeDiff := rule.ExecuteTime.Sub(time.Now())
+				if int(timeDiff.Seconds())%runRuleFreqSeconds != 0 {
+					return
+				}
+
 				RunRule(rule.Tasks)
-			}
+				time.Sleep(1 * time.Second)
+				return
+
+			}(rule)
+
+			wg.Wait()
 		}
 		time.Sleep(1 * time.Second)
 	}
