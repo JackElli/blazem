@@ -71,9 +71,9 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	value := node.getNewDoc(dataToAdd)
+	global.DataChanged = true
 	node.Data.Store(dataToAdd.Key, value)
 	// node.Data[dataToAdd.Key] = value
-	global.DataChanged = true
 
 	json.NewEncoder(w).Encode("done")
 	return

@@ -189,8 +189,28 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	body, _ := ioutil.ReadAll(req.Body)
 
 	//move nodemap to local memory
+	var localTempNodes []*global.TempNode
 	var localnm []*global.Node
-	json.Unmarshal(body, &localnm)
+	json.Unmarshal(body, &localTempNodes)
+
+	// this can be functionizated
+	for _, node := range localTempNodes {
+		var nodeData sync.Map
+		for key, value := range node.Data {
+			nodeData.Store(key, value)
+		}
+		localnm = append(localnm, &global.Node{
+			Ip:            node.Ip,
+			Pinged:        node.Pinged,
+			PingCount:     node.PingCount,
+			Rank:          node.Rank,
+			Data:          nodeData,
+			Active:        node.Active,
+			RecentQueries: node.RecentQueries,
+			Rules:         node.Rules,
+		})
+
+	}
 
 	//add the changed node map
 	currentMasterData := global.NODE_MAP[0].Data
@@ -382,8 +402,7 @@ func SetupHandlers(node *Node) {
 
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
 		"sync": {
-			"connect": node.connectHandler,
-
+			"connect":          node.connectHandler,
 			"getData":          node.getDataHandler,
 			"addFolder":        node.addFolderHandler,
 			"folders":          node.folderHandler,

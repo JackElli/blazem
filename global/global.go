@@ -212,12 +212,47 @@ func (node *Node) setToMaster() {
 	go node.Ping()
 }
 
+type TempNode struct {
+	Ip            string
+	Pinged        time.Time
+	PingCount     int
+	Rank          Rank
+	Data          map[string]interface{}
+	Active        bool
+	RecentQueries map[string]string //time
+	Rules         map[string]Rule
+}
+
 // this needs improving, need to check data not just endpoint
 func checkIfDataChanged() []byte {
 	var jsonNodeMap []byte
 	if DataChanged {
-		fmt.Println(NODE_MAP)
-		jsonNodeMap, _ = json.Marshal(NODE_MAP)
+
+		// need to change from syncMap
+		// to normal map to send
+
+		// this can be functionizated
+		var SEND_MAP []*TempNode
+		for _, node := range NODE_MAP {
+			var nodeData = make(map[string]interface{}, 0)
+			node.Data.Range(func(key, value any) bool {
+				nodeData[key.(string)] = value
+				return true
+			})
+			tempNode := TempNode{
+				node.Ip,
+				node.Pinged,
+				node.PingCount,
+				node.Rank,
+				nodeData,
+				node.Active,
+				node.RecentQueries,
+				node.Rules,
+			}
+			SEND_MAP = append(SEND_MAP, &tempNode)
+		}
+
+		jsonNodeMap, _ = json.Marshal(SEND_MAP)
 		DataChanged = false
 	} else {
 		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
