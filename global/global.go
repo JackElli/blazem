@@ -12,6 +12,29 @@ import (
 	"time"
 )
 
+func marshalNodeMap(nodeMap []*Node) []*TempNode {
+	var SEND_MAP []*TempNode
+	for _, node := range NODE_MAP {
+		var nodeData = make(map[string]interface{}, 0)
+		node.Data.Range(func(key, value any) bool {
+			nodeData[key.(string)] = value
+			return true
+		})
+		tempNode := TempNode{
+			node.Ip,
+			node.Pinged,
+			node.PingCount,
+			node.Rank,
+			nodeData,
+			node.Active,
+			node.RecentQueries,
+			node.Rules,
+		}
+		SEND_MAP = append(SEND_MAP, &tempNode)
+	}
+	return SEND_MAP
+}
+
 // PingRetry retries the ping 3 times and if
 // afer 3 pings there's no response,
 // node is 'paused'
@@ -77,7 +100,7 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				Logger.Log("SENDING MAP TO FIRST JOINER",
 					logging.INFO)
 				//marshall so we're able to send over TCP
-				jsonNodeMap, _ = json.Marshal(NODE_MAP)
+				jsonNodeMap, _ := json.Marshal(marshalNodeMap(NODE_MAP))
 				sendData := bytes.NewBuffer(jsonNodeMap)
 				_, err = http.Post("http://"+loopn.Ip+"/ping",
 					"application/json", sendData)
@@ -230,29 +253,7 @@ func checkIfDataChanged() []byte {
 
 		// need to change from syncMap
 		// to normal map to send
-
-		// this can be functionizated
-		var SEND_MAP []*TempNode
-		for _, node := range NODE_MAP {
-			var nodeData = make(map[string]interface{}, 0)
-			node.Data.Range(func(key, value any) bool {
-				nodeData[key.(string)] = value
-				return true
-			})
-			tempNode := TempNode{
-				node.Ip,
-				node.Pinged,
-				node.PingCount,
-				node.Rank,
-				nodeData,
-				node.Active,
-				node.RecentQueries,
-				node.Rules,
-			}
-			SEND_MAP = append(SEND_MAP, &tempNode)
-		}
-
-		jsonNodeMap, _ = json.Marshal(SEND_MAP)
+		jsonNodeMap, _ = json.Marshal(marshalNodeMap(NODE_MAP))
 		DataChanged = false
 	} else {
 		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
