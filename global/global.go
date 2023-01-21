@@ -12,7 +12,72 @@ import (
 	"time"
 )
 
-func marshalNodeMap(nodeMap []*Node) []*TempNode {
+// return the ips stored in the nodemap
+func GetNodeIps() []string {
+	var nodeips []string
+
+	for _, n := range NODE_MAP {
+		node := n.Ip + ":" + strconv.FormatBool(n.Active)
+		nodeips = append(nodeips, node)
+	}
+	return nodeips
+}
+
+func AlreadyInNodeMap(ip string) bool {
+	for _, n := range NODE_MAP {
+		if n.Ip == ip {
+			return true
+		}
+	}
+	return false
+}
+
+func IndexOfNodeIpInNodeMap(ip string) int {
+	for i, n := range NODE_MAP {
+		if n.Ip == ip {
+			return i
+		}
+	}
+	return -1
+}
+
+func (node *Node) isNextInLine() bool {
+	//get next true value
+	for _, n := range NODE_MAP {
+		if n.Active == false {
+			continue
+		}
+		if n.Ip == node.Ip {
+			return true
+		}
+	}
+	return false
+}
+
+// this needs improving, need to check data not just endpoint
+func checkIfDataChanged() []byte {
+	var jsonNodeMap []byte
+	if DataChanged {
+		// need to change from syncMap
+		// to normal map to send
+		jsonNodeMap, _ = json.Marshal(MarshalNodeMap(NODE_MAP))
+		DataChanged = false
+	} else {
+		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
+	}
+	return jsonNodeMap
+}
+
+func getNodeMapWithoutData() []*Node {
+	var newmap []*Node
+	for _, n := range NODE_MAP {
+		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank,
+			sync.Map{}, n.Active, n.RecentQueries, n.Rules})
+	}
+	return newmap
+}
+
+func MarshalNodeMap(nodeMap []*Node) []*TempNode {
 	var SEND_MAP []*TempNode
 	for _, node := range NODE_MAP {
 		var nodeData = make(map[string]interface{}, 0)
@@ -31,6 +96,27 @@ func marshalNodeMap(nodeMap []*Node) []*TempNode {
 			node.Rules,
 		}
 		SEND_MAP = append(SEND_MAP, &tempNode)
+	}
+	return SEND_MAP
+}
+
+func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
+	var SEND_MAP []*Node
+	for _, node := range nodeMap {
+		var nodeData sync.Map
+		for key, value := range node.Data {
+			nodeData.Store(key, value)
+		}
+		SEND_MAP = append(SEND_MAP, &Node{
+			Ip:            node.Ip,
+			Pinged:        node.Pinged,
+			PingCount:     node.PingCount,
+			Rank:          node.Rank,
+			Data:          nodeData,
+			Active:        node.Active,
+			RecentQueries: node.RecentQueries,
+			Rules:         node.Rules,
+		})
 	}
 	return SEND_MAP
 }
@@ -100,7 +186,7 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				Logger.Log("SENDING MAP TO FIRST JOINER",
 					logging.INFO)
 				//marshall so we're able to send over TCP
-				jsonNodeMap, _ := json.Marshal(marshalNodeMap(NODE_MAP))
+				jsonNodeMap, _ := json.Marshal(MarshalNodeMap(NODE_MAP))
 				sendData := bytes.NewBuffer(jsonNodeMap)
 				_, err = http.Post("http://"+loopn.Ip+"/ping",
 					"application/json", sendData)
@@ -175,48 +261,6 @@ func (node *Node) CheckForNoPingFromMaster() {
 	node.setToMaster()
 }
 
-// return the ips stored in the nodemap
-func GetNodeIps() []string {
-	var nodeips []string
-
-	for _, n := range NODE_MAP {
-		node := n.Ip + ":" + strconv.FormatBool(n.Active)
-		nodeips = append(nodeips, node)
-	}
-	return nodeips
-}
-
-func AlreadyInNodeMap(ip string) bool {
-	for _, n := range NODE_MAP {
-		if n.Ip == ip {
-			return true
-		}
-	}
-	return false
-}
-
-func IndexOfNodeIpInNodeMap(ip string) int {
-	for i, n := range NODE_MAP {
-		if n.Ip == ip {
-			return i
-		}
-	}
-	return -1
-}
-
-func (node *Node) isNextInLine() bool {
-	//get next true value
-	for _, n := range NODE_MAP {
-		if n.Active == false {
-			continue
-		}
-		if n.Ip == node.Ip {
-			return true
-		}
-	}
-	return false
-}
-
 func (node *Node) setToMaster() {
 	node.Rank = MASTER
 	// pass all data over
@@ -233,39 +277,4 @@ func (node *Node) setToMaster() {
 	// node.SaveBackup()
 	// start pinging again
 	go node.Ping()
-}
-
-type TempNode struct {
-	Ip            string
-	Pinged        time.Time
-	PingCount     int
-	Rank          Rank
-	Data          map[string]interface{}
-	Active        bool
-	RecentQueries map[string]string //time
-	Rules         map[string]Rule
-}
-
-// this needs improving, need to check data not just endpoint
-func checkIfDataChanged() []byte {
-	var jsonNodeMap []byte
-	if DataChanged {
-
-		// need to change from syncMap
-		// to normal map to send
-		jsonNodeMap, _ = json.Marshal(marshalNodeMap(NODE_MAP))
-		DataChanged = false
-	} else {
-		jsonNodeMap, _ = json.Marshal(getNodeMapWithoutData())
-	}
-	return jsonNodeMap
-}
-
-func getNodeMapWithoutData() []*Node {
-	var newmap []*Node
-	for _, n := range NODE_MAP {
-		newmap = append(newmap, &Node{n.Ip, n.Pinged, 0, n.Rank,
-			sync.Map{}, n.Active, n.RecentQueries, n.Rules})
-	}
-	return newmap
 }

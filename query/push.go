@@ -155,8 +155,6 @@ func executeQuery(queryType QueryType, whereParams []string,
 			for _, doc := range pushed {
 				key := doc["key"].(string)
 				global.GlobalNode.Data.Delete(key)
-				// delete(global.GlobalNode.Data, key)
-
 			}
 			return []map[string]interface{}{}
 		}

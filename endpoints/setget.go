@@ -73,7 +73,6 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	value := node.getNewDoc(dataToAdd)
 	global.DataChanged = true
 	node.Data.Store(dataToAdd.Key, value)
-	// node.Data[dataToAdd.Key] = value
 
 	json.NewEncoder(w).Encode("done")
 	return
@@ -84,7 +83,6 @@ func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
 
 	docKey := req.URL.Query().Get("key")
 	node.Data.Delete(docKey)
-	// delete(node.Data, docKey)
 	global.DataChanged = true
 
 	json.NewEncoder(w).Encode("done")
@@ -103,8 +101,6 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	if dataKey == "" {
 		dataKey = req.Header.Get("key")
 	}
-
-	// getData := global.NODE_MAP[0].Data[dataKey]
 	getData, _ := global.NODE_MAP[0].Data.Load(dataKey)
 	sendData := SendData{dataKey, getData.(global.JsonData)}
 	json.NewEncoder(w).Encode(sendData)

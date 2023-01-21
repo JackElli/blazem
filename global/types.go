@@ -17,6 +17,17 @@ type Node struct {
 	Rules         map[string]Rule
 }
 
+type TempNode struct {
+	Ip            string
+	Pinged        time.Time
+	PingCount     int
+	Rank          Rank
+	Data          map[string]interface{}
+	Active        bool
+	RecentQueries map[string]string //time
+	Rules         map[string]Rule
+}
+
 type Task struct {
 	Data    string
 	Require int

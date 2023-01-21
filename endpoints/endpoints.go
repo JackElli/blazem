@@ -190,27 +190,10 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 	//move nodemap to local memory
 	var localTempNodes []*global.TempNode
-	var localnm []*global.Node
 	json.Unmarshal(body, &localTempNodes)
 
 	// this can be functionizated
-	for _, node := range localTempNodes {
-		var nodeData sync.Map
-		for key, value := range node.Data {
-			nodeData.Store(key, value)
-		}
-		localnm = append(localnm, &global.Node{
-			Ip:            node.Ip,
-			Pinged:        node.Pinged,
-			PingCount:     node.PingCount,
-			Rank:          node.Rank,
-			Data:          nodeData,
-			Active:        node.Active,
-			RecentQueries: node.RecentQueries,
-			Rules:         node.Rules,
-		})
-
-	}
+	localnm := global.UnmarshalNodeMap(localTempNodes)
 
 	//add the changed node map
 	currentMasterData := global.NODE_MAP[0].Data
