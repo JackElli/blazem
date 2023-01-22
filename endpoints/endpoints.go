@@ -381,6 +381,40 @@ func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Reque
 	json.NewEncoder(w).Encode(dataToSend)
 }
 
+func (node *Node) replicateFolderHandler(w http.ResponseWriter, req *http.Request) {
+
+	// THIS IS UNSAFE!!!
+	// NEEDS PERMS
+	writeHeaders(w, []string{})
+
+	var replicate global.Replicate
+	body, _ := ioutil.ReadAll(req.Body)
+	_ = json.Unmarshal(body, &replicate)
+
+	localFolder := replicate.LocalFolder
+	ip := replicate.RemoteIp
+
+	// THIS IS QUITE INEFFICIENT
+	node.Data.Range(func(key, value any) bool {
+		doc := value.(map[string]interface{})
+		if doc["folder"].(string) == localFolder {
+			data := map[string]interface{}{
+				"folder": localFolder,
+				"key":    doc["key"].(string),
+				"value":  doc["value"].(string),
+				"format": doc["type"].(string),
+			}
+			dataToJSON, _ := json.Marshal(data)
+			dataToSend := bytes.NewReader(dataToJSON)
+			http.Post("http://"+ip+"/addDoc", "application/json", dataToSend)
+		}
+		return true
+	})
+
+	json.NewEncoder(w).Encode("done")
+	return
+}
+
 func SetupHandlers(node *Node) {
 
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
@@ -404,6 +438,7 @@ func SetupHandlers(node *Node) {
 			"addDoc":          node.addDocHandler,
 			"deleteDoc":       node.deleteDocHandler,
 			"ping":            node.pingHandler,
+			"replicateFolder": node.replicateFolderHandler,
 		},
 	}
 

@@ -41,6 +41,11 @@ type Rule struct {
 	Executed    bool
 }
 
+type Replicate struct {
+	LocalFolder string `json:"localFolder"`
+	RemoteIp    string `json:"remoteIp"`
+}
+
 type Rank string
 type JsonData map[string]interface{}
 type NodeData map[string]interface{}

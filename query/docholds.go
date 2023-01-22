@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -9,8 +10,8 @@ import (
 // checkIfDocHolds checks if the document matches the query
 func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds *int) {
 
-	// v is opcode
-	// wherevalue is operand
+	// v is currently in map
+	// wherevalue is what user is searching
 
 	// REMEMBER holds is 1 by default
 	// we need to prove that it
@@ -62,7 +63,9 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 				return
 			}
 		case "string":
-			if !strings.Contains(v.(string), wherevalue.(string)) {
+			reg, err := regexp.Compile(wherevalue.(string))
+
+			if err != nil || !reg.MatchString(v.(string)) {
 				*holds = *holds & 0
 				return
 			}

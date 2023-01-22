@@ -74,7 +74,7 @@ func checkParamHolds(ok bool, paramsplit []string,
 	// this is the where key
 	wherekey := paramsplit[0]
 	// where value, value of the where param
-	wherevalue := regexp.MustCompile("(?i)[a-z0-9-_. ]+|[0-9-_. ]+").FindString(paramsplit[1])
+	wherevalue := regexp.MustCompile("(?i)[a-zA-Z0-9-_.\\[\\]\\* ]+|[0-9-_. ]+").FindString(paramsplit[1])
 
 	// fmt.Println(getobj)
 	if strings.Contains(wherekey, ".") {
