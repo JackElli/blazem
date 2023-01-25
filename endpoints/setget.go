@@ -112,6 +112,12 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	writeHeaders(w, nil)
 
 	folder := req.URL.Query().Get("folder")
+	user := req.URL.Query().Get("user")
+
+	if user != "jack" {
+		json.NewEncoder(w).Encode("no auth")
+		return
+	}
 
 	// need to sort data by date
 	// breaking change, as added new JSON field
