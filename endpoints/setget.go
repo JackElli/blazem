@@ -114,14 +114,24 @@ func (node *Node) getDocHandler(w http.ResponseWriter, req *http.Request) {
 		dataKey = req.Header.Get("key")
 	}
 	getData, _ := global.NODE_MAP[0].Data.Load(dataKey)
+
+	// make a copy, so if we need to overwrite value
+	// if doesnt overwrite in the node
+	sendDataJson := map[string]interface{}{
+		"key":    getData.(map[string]interface{})["key"],
+		"folder": getData.(map[string]interface{})["folder"],
+		"type":   getData.(map[string]interface{})["type"],
+		"date":   getData.(map[string]interface{})["date"],
+		"value":  getData.(map[string]interface{})["value"],
+	}
 	// do we need to load from disk?
 	if getData.(map[string]interface{})["type"] != "text" {
 		data, _ := ioutil.ReadFile("data/" + dataKey)
 		var dataJSON global.JsonData
 		json.Unmarshal(data, &dataJSON)
-		getData.(map[string]interface{})["value"] = dataJSON["value"].(string)
+		sendDataJson["value"] = dataJSON["value"].(string)
 	}
-	sendData := SendData{dataKey, getData.(map[string]interface{})}
+	sendData := SendData{dataKey, sendDataJson}
 	json.NewEncoder(w).Encode(sendData)
 
 }
