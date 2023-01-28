@@ -157,8 +157,8 @@ func main() {
 		node.setNodeMasterAttrs()
 	}
 
-	// // create backup
-	// (*global.Node)(&node).SaveBackup()
+	// load local storage
+	(*global.Node)(&node).ReadFromLocal()
 
 	//ping handling
 	go (*global.Node)(&node).Ping()

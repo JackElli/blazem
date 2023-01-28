@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -273,8 +274,21 @@ func (node *Node) setToMaster() {
 	// update node map
 	NODE_MAP = NODE_MAP[1:]
 	NODE_MAP[0] = node
-	// save a backup
-	// node.SaveBackup()
-	// start pinging again
 	go node.Ping()
+}
+
+func (node *Node) ReadFromLocal() {
+	// reads from data storage
+	// puts all docs to memory
+	// on load
+	files, _ := ioutil.ReadDir("data/")
+	for _, file := range files {
+		key := file.Name()
+		data, _ := ioutil.ReadFile("data/" + key)
+		var dataJSON JsonData
+		json.Unmarshal(data, &dataJSON)
+		// I can do a cast to map[string]interface{}
+		// keep forgetting
+		node.Data.Store(key, (map[string]interface{})(dataJSON))
+	}
 }

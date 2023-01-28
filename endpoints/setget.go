@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"time"
 )
@@ -21,31 +22,24 @@ func (node *Node) getNewDoc(dataToAdd AddData) map[string]interface{} {
 	// changed to map[string]interface{}
 	// to add to mem index
 	// and if we want custom JSON later
-
-	// have to be really careful with casting
-	// maybe have a struct like
-	// key, folder, type, date and fields
-
-	// if doc key exists
-	if _, ok := node.Data.Load(dataToAdd.Key); ok {
-		getDocTime, _ := node.Data.Load(dataToAdd.Key)
-		docTime := getDocTime.(map[string]interface{})
-		value := map[string]interface{}{
-			"key":    dataToAdd.Key,
-			"folder": dataToAdd.Folder,
-			"value":  dataToAdd.Value,
-			"type":   dataToAdd.Format,
-			"date":   docTime["date"].(string),
-		}
-		return value
-	}
 	value := map[string]interface{}{
 		"key":    dataToAdd.Key,
 		"folder": dataToAdd.Folder,
 		"value":  dataToAdd.Value,
 		"type":   dataToAdd.Format,
-		"date":   time.Now().Format("2006-01-02T15:04:05"),
+		"date":   "none",
 	}
+	// have to be really careful with casting
+	// maybe have a struct like
+	// key, folder, type, date and fields
+	// if doc key exists
+	if _, ok := node.Data.Load(dataToAdd.Key); ok {
+		getDocTime, _ := node.Data.Load(dataToAdd.Key)
+		docTime := getDocTime.(map[string]interface{})
+		value["date"] = docTime["date"].(string)
+		return value
+	}
+	value["date"] = time.Now().Format("2006-01-02T15:04:05")
 	return value
 }
 
@@ -71,6 +65,23 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	value := node.getNewDoc(dataToAdd)
+
+	// if the data is not just text
+	// we need to add it to disk
+	// this is for backup
+	dataToWrite, _ := json.Marshal(value)
+	path := "data/"
+	_ = os.MkdirAll(path, os.ModePerm)
+	os.WriteFile("data/"+value["key"].(string),
+		[]byte(dataToWrite), os.ModePerm)
+
+	// if its not text, set the value
+	// to not text so we dont add
+	// the image/file to memory
+	if value["type"].(string) != "text" {
+		value["value"] = "file"
+	}
+
 	global.DataChanged = true
 	node.Data.Store(dataToAdd.Key, value)
 
@@ -89,7 +100,7 @@ func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
+func (node *Node) getDocHandler(w http.ResponseWriter, req *http.Request) {
 	//only do this if master
 	if node.Rank == global.FOLLOWER {
 		return
@@ -98,11 +109,19 @@ func (node *Node) getDataHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, []string{"key"})
 
 	dataKey := req.URL.Query().Get("key")
+
 	if dataKey == "" {
 		dataKey = req.Header.Get("key")
 	}
 	getData, _ := global.NODE_MAP[0].Data.Load(dataKey)
-	sendData := SendData{dataKey, getData.(global.JsonData)}
+	// do we need to load from disk?
+	if getData.(map[string]interface{})["type"] != "text" {
+		data, _ := ioutil.ReadFile("data/" + dataKey)
+		var dataJSON global.JsonData
+		json.Unmarshal(data, &dataJSON)
+		getData.(map[string]interface{})["value"] = dataJSON["value"].(string)
+	}
+	sendData := SendData{dataKey, getData.(map[string]interface{})}
 	json.NewEncoder(w).Encode(sendData)
 
 }
@@ -147,6 +166,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	numOfItems := 0
 	for i, data := range nodeData {
 		key := nodeData[i]["key"].(string)
+
 		if numOfItems == 40 {
 			break
 		}

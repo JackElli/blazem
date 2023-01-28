@@ -28,8 +28,8 @@ type WebNodeMap struct {
 }
 
 type SendData struct {
-	Key  string          `json:"key"`
-	Data global.JsonData `json:"data"`
+	Key  string                 `json:"key"`
+	Data map[string]interface{} `json:"data"`
 }
 
 type Stats struct {
@@ -420,7 +420,7 @@ func SetupHandlers(node *Node) {
 	var handlers = map[string]map[string]func(http.ResponseWriter, *http.Request){
 		"sync": {
 			"connect":          node.connectHandler,
-			"getData":          node.getDataHandler,
+			"getDoc":           node.getDocHandler,
 			"addFolder":        node.addFolderHandler,
 			"folders":          node.folderHandler,
 			"removeNode":       node.removeNodeHandler,
