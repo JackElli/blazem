@@ -18,23 +18,33 @@ type AddData struct {
 	Format string
 }
 
-func (node *Node) getNewDoc(dataToAdd AddData) map[string]interface{} {
+func (node *Node) getNewDoc(dataToAdd map[string]interface{}) map[string]interface{} {
 	// changed to map[string]interface{}
 	// to add to mem index
 	// and if we want custom JSON later
 	value := map[string]interface{}{
-		"key":    dataToAdd.Key,
-		"folder": dataToAdd.Folder,
-		"value":  dataToAdd.Value,
-		"type":   dataToAdd.Format,
+		"key":    dataToAdd["key"],
+		"folder": dataToAdd["folder"],
+		"value":  dataToAdd["value"],
+		"type":   dataToAdd["format"],
 		"date":   "none",
+	}
+
+	// if its not text, set the value
+	// to not text so we dont add
+	// the image/file to memory
+	if value["type"].(string) != "text" {
+		// value["value"] = "file"
+		// set the file_name field if its not
+		// just text
+		value["file_name"] = dataToAdd["file_name"]
 	}
 	// have to be really careful with casting
 	// maybe have a struct like
 	// key, folder, type, date and fields
-	// if doc key exists
-	if _, ok := node.Data.Load(dataToAdd.Key); ok {
-		getDocTime, _ := node.Data.Load(dataToAdd.Key)
+	// if doc key exists dont update date
+	if _, ok := node.Data.Load(dataToAdd["key"]); ok {
+		getDocTime, _ := node.Data.Load(dataToAdd["key"])
 		docTime := getDocTime.(map[string]interface{})
 		value["date"] = docTime["date"].(string)
 		return value
@@ -56,16 +66,18 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//TODO send multiple key and values
-	var dataToAdd AddData
+	// changed to map[string]interface{}
+	// to allow any fields to be passed
+	var dataToAdd map[string]interface{}
 	body, _ := ioutil.ReadAll(req.Body)
 	err := json.Unmarshal(body, &dataToAdd)
 	if err != nil {
 		return
 	}
 
+	// a bit of processing on the incoming
+	// doc
 	value := node.getNewDoc(dataToAdd)
-
 	// if the data is not just text
 	// we need to add it to disk
 	// this is for backup
@@ -75,15 +87,11 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	os.WriteFile("data/"+value["key"].(string),
 		[]byte(dataToWrite), os.ModePerm)
 
-	// if its not text, set the value
-	// to not text so we dont add
-	// the image/file to memory
-	if value["type"].(string) != "text" {
-		value["value"] = "file"
-	}
-
+	// so we can replicate changes
 	global.DataChanged = true
-	node.Data.Store(dataToAdd.Key, value)
+
+	// store the doc
+	node.Data.Store(dataToAdd["key"], value)
 
 	json.NewEncoder(w).Encode("done")
 	return
@@ -176,6 +184,13 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	numOfItems := 0
 	for i, data := range nodeData {
 		key := nodeData[i]["key"].(string)
+
+		// push the word file instead
+		// of file data so we save
+		// on loading times
+		if data["type"] != "text" {
+			data["value"] = "file"
+		}
 
 		if numOfItems == 40 {
 			break

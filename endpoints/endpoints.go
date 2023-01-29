@@ -290,16 +290,53 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+type Folder struct {
+	FolderName string `json:"folderName"`
+	DocCount   int    `json:"docCount"`
+}
+
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, nil)
-	//get folders
-	var folders = make([]string, 0)
+
+	// this can be improved
+	var folderNames = make([]string, 0)
+	var folderMap = make(map[string]Folder, 0)
+	var folders = make([]Folder, 0)
+
+	// get all folder names
 	node.Data.Range(func(k, value interface{}) bool {
-		if !isInArr(folders, value.(map[string]interface{})["folder"].(string)) {
-			folders = append(folders, value.(map[string]interface{})["folder"].(string))
+		if !isInArr(folderNames, value.(map[string]interface{})["folder"].(string)) {
+			folderNames = append(folderNames, value.(map[string]interface{})["folder"].(string))
 		}
 		return true
 	})
+
+	// set up folders
+	for _, folder := range folderNames {
+		folderMap[folder] = Folder{
+			folder,
+			0,
+		}
+	}
+
+	// get doc count within folder
+	// (used a map for easy access)
+	node.Data.Range(func(k, value interface{}) bool {
+		folder := value.(map[string]interface{})["folder"].(string)
+		currDocCount := folderMap[folder].DocCount
+		folderMap[folder] = Folder{
+			folder,
+			currDocCount + 1,
+		}
+		return true
+	})
+
+	// push to client as list of obj
+
+	for _, folder := range folderMap {
+		folders = append(folders, folder)
+	}
+
 	json.NewEncoder(w).Encode(folders)
 }
 
@@ -349,6 +386,9 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 	if queryVal == "" {
 		queryVal = req.Header.Get("query")
 	}
+
+	// there is some optimisation we can do
+	// here
 	query.LoadIntoMemory(global.Node(*node))
 
 	// TODO error handling
