@@ -57,6 +57,7 @@ var decodeTokenTable = map[int]map[string]DecodeFunc{
 		},
 	},
 	1: {
+		// this is for the values fetched
 		"ANY": func(token string, queryType *QueryType,
 			all *bool, where *bool, fetchKeys *[]string, whereParams *[]string) error {
 			if token == "none" {
@@ -65,6 +66,12 @@ var decodeTokenTable = map[int]map[string]DecodeFunc{
 			if token != "all" {
 				// this is where params are set
 				tokensplit := strings.Split(token, ",")
+				// if there's no key entered in the query
+				// add it so we know which doc to retrieve
+				// and send back
+				if !strings.Contains(token, "key") {
+					*fetchKeys = append(*fetchKeys, "key")
+				}
 				for _, t := range tokensplit {
 					*fetchKeys = append(*fetchKeys, t)
 				}

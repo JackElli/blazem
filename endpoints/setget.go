@@ -195,6 +195,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		if numOfItems == 40 {
 			break
 		}
+
 		if data["folder"] == folder {
 			sendData := SendData{key, data}
 			dataInFolder = append(dataInFolder, sendData)

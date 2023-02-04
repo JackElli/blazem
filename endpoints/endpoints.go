@@ -42,10 +42,14 @@ type SendQueryData struct {
 	TimeTaken int64      `json:"timeTaken"`
 }
 
+type Folder struct {
+	FolderName string `json:"folderName"`
+	DocCount   int    `json:"docCount"`
+}
+
 var connectedFromWebUI bool
 
 func writeHeaders(w http.ResponseWriter, extras []string) {
-
 	extra := strings.Join(extras, ",")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -64,6 +68,24 @@ func getHexKey() string {
 func roundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
+}
+
+func lenOfSyncMap(mp sync.Map) int {
+	var i int
+	mp.Range(func(key any, value any) bool {
+		i++
+		return true
+	})
+	return i
+}
+
+func isInArr(arr []string, needle string) bool {
+	for _, s := range arr {
+		if s == needle {
+			return true
+		}
+	}
+	return false
 }
 
 func getWindowsStats() Stats {
@@ -150,15 +172,6 @@ func getLinuxStats() Stats {
 	return Stats{cpuused, ramperc}
 }
 
-func isInArr(arr []string, needle string) bool {
-	for _, s := range arr {
-		if s == needle {
-			return true
-		}
-	}
-	return false
-}
-
 func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 
 	writeHeaders(w, []string{"all"})
@@ -171,16 +184,6 @@ func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(nodeMapResp)
 }
 
-func lenOfSyncMap(mp sync.Map) int {
-	var i int
-	mp.Range(func(key any, value any) bool {
-		i++
-		return true
-	})
-	return i
-}
-
-// handlers
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 	global.Logger.Log("PING RECEIVED", logging.INFO)
@@ -228,7 +231,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	for _, j := range localnm {
 		global.NODE_MAP = append(global.NODE_MAP, j)
 	}
-
 }
 
 func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
@@ -288,11 +290,6 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 	global.NODE_MAP = append(global.NODE_MAP[:indexOfNode], global.NODE_MAP[indexOfNode+1:]...)
 	json.NewEncoder(w).Encode("removed node")
 
-}
-
-type Folder struct {
-	FolderName string `json:"folderName"`
-	DocCount   int    `json:"docCount"`
 }
 
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
