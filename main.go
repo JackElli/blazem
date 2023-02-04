@@ -164,7 +164,7 @@ func main() {
 	go (*global.Node)(&node).Ping()
 
 	// run the rule checker
-	go (*endpoints.Node)(&node).MagicMax()
+	go (*endpoints.Node)(&node).CheckRules()
 
 	query.LoadIntoMemory(global.Node(node))
 

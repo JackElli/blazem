@@ -100,7 +100,7 @@ func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (node *Node) MagicMax() {
+func (node *Node) CheckRules() {
 	// every second, check if there's
 	// a rule to run, if there is
 	// run it.

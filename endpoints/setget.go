@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sort"
 	"time"
 )
@@ -81,11 +80,7 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	// if the data is not just text
 	// we need to add it to disk
 	// this is for backup
-	dataToWrite, _ := json.Marshal(value)
-	path := "data/"
-	_ = os.MkdirAll(path, os.ModePerm)
-	os.WriteFile("data/"+value["key"].(string),
-		[]byte(dataToWrite), os.ModePerm)
+	global.WriteDocToDisk(value)
 
 	// so we can replicate changes
 	global.DataChanged = true

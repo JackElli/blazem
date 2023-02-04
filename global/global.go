@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -291,4 +292,12 @@ func (node *Node) ReadFromLocal() {
 		// keep forgetting
 		node.Data.Store(key, (map[string]interface{})(dataJSON))
 	}
+}
+
+func WriteDocToDisk(value map[string]interface{}) {
+	dataToWrite, _ := json.Marshal(value)
+	path := "data/"
+	_ = os.MkdirAll(path, os.ModePerm)
+	os.WriteFile("data/"+value["key"].(string),
+		[]byte(dataToWrite), os.ModePerm)
 }

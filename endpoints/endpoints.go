@@ -11,6 +11,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -231,6 +232,15 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	for _, j := range localnm {
 		global.NODE_MAP = append(global.NODE_MAP, j)
 	}
+
+	// write all changed docs to disk
+	global.NODE_MAP[0].Data.Range(func(key, value any) bool {
+		_, err := os.Stat("data/" + key.(string))
+		if os.IsNotExist(err) {
+			global.WriteDocToDisk(value.(map[string]interface{}))
+		}
+		return true
+	})
 }
 
 func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
