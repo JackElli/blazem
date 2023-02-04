@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -34,8 +35,8 @@ func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
 		*paramsplit = strings.Split(param, "/=")
 		*mathOp = NE
 		return true
-	} else if strings.Contains(param, "~") {
-		*paramsplit = strings.Split(param, "~")
+	} else if strings.Contains(param, "LIKE") {
+		*paramsplit = strings.Split(param, "LIKE")
 		*mathOp = LIKE
 		return true
 	}
@@ -94,6 +95,7 @@ var specialTokens = map[string]bool{
 	"SELECT": true,
 	"WHERE":  true,
 	"DELETE": true,
+	"LIKE":   true,
 }
 
 // decodeTokens gets each token and decides what it is
@@ -103,7 +105,12 @@ func decodeToken(i int, token string, queryType *QueryType,
 	// get all predicates after the where
 	// do this first
 	if *where && i > 2 {
-		*whereParams = append(*whereParams, token)
+		// get rid of unnecessary white space
+		noWhiteSpaceReg := regexp.MustCompile("[a-zA-Z= ]*")
+		findSection := noWhiteSpaceReg.FindString(token)
+		findSectionNoWhiteSpace := strings.ReplaceAll(findSection, " ", "")
+		trimmedToken := strings.ReplaceAll(token, findSection, findSectionNoWhiteSpace)
+		*whereParams = append(*whereParams, string(trimmedToken))
 		return nil
 	}
 	// this is for the decoder
