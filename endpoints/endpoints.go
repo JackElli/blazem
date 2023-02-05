@@ -449,7 +449,7 @@ func (node *Node) replicateFolderHandler(w http.ResponseWriter, req *http.Reques
 				"folder": localFolder,
 				"key":    doc["key"].(string),
 				"value":  doc["value"].(string),
-				"format": doc["type"].(string),
+				"type":   doc["type"].(string),
 			}
 			dataToJSON, _ := json.Marshal(data)
 			dataToSend := bytes.NewReader(dataToJSON)

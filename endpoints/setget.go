@@ -10,24 +10,11 @@ import (
 	"time"
 )
 
-type AddData struct {
-	Folder string
-	Key    string
-	Value  string
-	Format string
-}
-
 func (node *Node) getNewDoc(dataToAdd map[string]interface{}) map[string]interface{} {
 	// changed to map[string]interface{}
 	// to add to mem index
 	// and if we want custom JSON later
-	value := map[string]interface{}{
-		"key":    dataToAdd["key"],
-		"folder": dataToAdd["folder"],
-		"value":  dataToAdd["value"],
-		"type":   dataToAdd["format"],
-		"date":   "none",
-	}
+	value := dataToAdd
 
 	// if its not text, set the value
 	// to not text so we dont add
@@ -120,13 +107,8 @@ func (node *Node) getDocHandler(w http.ResponseWriter, req *http.Request) {
 
 	// make a copy, so if we need to overwrite value
 	// if doesnt overwrite in the node
-	sendDataJson := map[string]interface{}{
-		"key":    getData.(map[string]interface{})["key"],
-		"folder": getData.(map[string]interface{})["folder"],
-		"type":   getData.(map[string]interface{})["type"],
-		"date":   getData.(map[string]interface{})["date"],
-		"value":  getData.(map[string]interface{})["value"],
-	}
+	sendDataJson := getData.(map[string]interface{})
+
 	// do we need to load from disk?
 	if getData.(map[string]interface{})["type"] != "text" {
 		data, _ := ioutil.ReadFile("data/" + dataKey)

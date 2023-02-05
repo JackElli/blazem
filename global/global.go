@@ -80,11 +80,42 @@ func getNodeMapWithoutData() []*Node {
 }
 
 func MarshalNodeMap(nodeMap []*Node) []*TempNode {
+
+	// this is for sending data across to
+	// other nodes
 	var SEND_MAP []*TempNode
 	for _, node := range NODE_MAP {
 		var nodeData = make(map[string]interface{}, 0)
+		files, _ := ioutil.ReadDir("data/")
+
 		node.Data.Range(func(key, value any) bool {
-			nodeData[key.(string)] = value
+			docKey := key.(string)
+			var jsonData map[string]interface{}
+			if value.(map[string]interface{})["type"] != "text" {
+
+				// if its a file we want
+				// to get its "disk" value
+				if len(files) == 0 {
+					return true
+				}
+
+				// this is not very efficient
+				// will change
+				for _, file := range files {
+					key := file.Name()
+					data, _ := ioutil.ReadFile("data/" + key)
+					if key != docKey {
+						continue
+					}
+					// put json text val into
+					// map and send it
+					json.Unmarshal(data, &jsonData)
+					nodeData[docKey] = jsonData
+					return true
+				}
+
+			}
+			nodeData[docKey] = value
 			return true
 		})
 		tempNode := TempNode{
@@ -283,6 +314,9 @@ func (node *Node) ReadFromLocal() {
 	// puts all docs to memory
 	// on load
 	files, _ := ioutil.ReadDir("data/")
+	if len(files) == 0 {
+		return
+	}
 	for _, file := range files {
 		key := file.Name()
 		data, _ := ioutil.ReadFile("data/" + key)
@@ -292,6 +326,7 @@ func (node *Node) ReadFromLocal() {
 		// keep forgetting
 		node.Data.Store(key, (map[string]interface{})(dataJSON))
 	}
+	Logger.Log("Loaded files into memory.", logging.INFO)
 }
 
 func WriteDocToDisk(value map[string]interface{}) {
