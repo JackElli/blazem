@@ -11,6 +11,8 @@ import (
 
 func checkNest(nestparams []string, getobj map[string]interface{},
 	docin *bool) map[string]interface{} {
+
+	// this is for non-where clause tokens
 	for _, nestparam := range nestparams {
 		if v, exists := getobj[nestparam]; exists {
 			if reflect.TypeOf(v).String() ==
@@ -76,8 +78,9 @@ func checkParamHolds(ok bool, paramsplit []string,
 	}
 	// this is the where key
 	wherekey := paramsplit[0]
+	wherekey = strings.Trim(wherekey, " ")
 	// where value, value of the where param
-	wherevalue := regexp.MustCompile("(?i)[a-zA-Z0-9-_.\\[\\]\\* ]+|[0-9-_. ]+").FindString(paramsplit[1])
+	wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z-_ ]+\"").FindString(paramsplit[1])
 
 	if strings.Contains(wherekey, ".") {
 		//genius
@@ -92,9 +95,10 @@ func checkParamHolds(ok bool, paramsplit []string,
 		if _, exists := getobj[nestparams[len(nestparams)-1]]; !exists {
 			*holds = *holds & 0
 		}
-		wherevalue = regexp.MustCompile("(?i)[a-z ]+|[0-9]+").FindString(fmt.Sprintf("%v", wherevalue))
+		wherevalue = regexp.MustCompile("(?i)[a-zA-Z-_ ]+").FindString(fmt.Sprintf("%v", wherevalue))
 		if v, exists := getobj[nestparams[len(nestparams)-1]]; exists {
 			checkIfDocHolds(mathOp, v, wherevalue, holds)
+			return
 		}
 	}
 	if v, exists := getobj[wherekey]; exists {
