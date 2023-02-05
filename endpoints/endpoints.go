@@ -445,13 +445,7 @@ func (node *Node) replicateFolderHandler(w http.ResponseWriter, req *http.Reques
 	node.Data.Range(func(key, value any) bool {
 		doc := value.(map[string]interface{})
 		if doc["folder"].(string) == localFolder {
-			data := map[string]interface{}{
-				"folder": localFolder,
-				"key":    doc["key"].(string),
-				"value":  doc["value"].(string),
-				"type":   doc["type"].(string),
-			}
-			dataToJSON, _ := json.Marshal(data)
+			dataToJSON, _ := json.Marshal(value.(map[string]interface{}))
 			dataToSend := bytes.NewReader(dataToJSON)
 			http.Post("http://"+ip+"/addDoc", "application/json", dataToSend)
 		}

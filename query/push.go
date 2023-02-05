@@ -10,7 +10,7 @@ import (
 )
 
 func checkNest(nestparams []string, getobj map[string]interface{},
-	docin *bool) {
+	docin *bool) map[string]interface{} {
 	for _, nestparam := range nestparams {
 		if v, exists := getobj[nestparam]; exists {
 			if reflect.TypeOf(v).String() ==
@@ -21,6 +21,7 @@ func checkNest(nestparams []string, getobj map[string]interface{},
 			*docin = false
 		}
 	}
+	return getobj
 }
 func pushDocs(all bool, wherejson []map[string]interface{},
 	newmap *[]map[string]interface{},
@@ -41,8 +42,10 @@ func pushDocs(all bool, wherejson []map[string]interface{},
 			// if the key exists in the data
 			if strings.Contains(fetchkey, ".") {
 				//genius
+				// getobj is the filtered doc
+				// down to the nested value
 				nestparams := strings.Split(fetchkey, ".")
-				checkNest(nestparams, getobj, &docin)
+				getobj = checkNest(nestparams, getobj, &docin)
 				if v, exists :=
 					getobj[nestparams[len(nestparams)-1]]; exists {
 					newobj[fetchkey] = v
@@ -76,7 +79,6 @@ func checkParamHolds(ok bool, paramsplit []string,
 	// where value, value of the where param
 	wherevalue := regexp.MustCompile("(?i)[a-zA-Z0-9-_.\\[\\]\\* ]+|[0-9-_. ]+").FindString(paramsplit[1])
 
-	// fmt.Println(getobj)
 	if strings.Contains(wherekey, ".") {
 		//genius
 		nestparams := strings.Split(wherekey, ".")
@@ -90,7 +92,6 @@ func checkParamHolds(ok bool, paramsplit []string,
 		if _, exists := getobj[nestparams[len(nestparams)-1]]; !exists {
 			*holds = *holds & 0
 		}
-		// objval := getobj[nestparams[len(nestparams)-1]]
 		wherevalue = regexp.MustCompile("(?i)[a-z ]+|[0-9]+").FindString(fmt.Sprintf("%v", wherevalue))
 		if v, exists := getobj[nestparams[len(nestparams)-1]]; exists {
 			checkIfDocHolds(mathOp, v, wherevalue, holds)
@@ -98,8 +99,10 @@ func checkParamHolds(ok bool, paramsplit []string,
 	}
 	if v, exists := getobj[wherekey]; exists {
 		checkIfDocHolds(mathOp, v, wherevalue, holds)
+		return
 	}
-	*holds = *holds & 1
+	// if param doesnt exists, it cant hold
+	*holds = *holds & 0
 }
 
 // executeQuery is the query chain
