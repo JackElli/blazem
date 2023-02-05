@@ -80,9 +80,9 @@ func checkParamHolds(ok bool, paramsplit []string,
 	wherekey := paramsplit[0]
 	wherekey = strings.Trim(wherekey, " ")
 	// where value, value of the where param
-	wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z-_ ]+\"").FindString(paramsplit[1])
 
 	if strings.Contains(wherekey, ".") {
+		wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z-_ ]+\"").FindString(paramsplit[1])
 		//genius
 		nestparams := strings.Split(wherekey, ".")
 		for _, nestparam := range nestparams {
@@ -101,6 +101,8 @@ func checkParamHolds(ok bool, paramsplit []string,
 			return
 		}
 	}
+	// lazy way of getting around the where clause problem
+	wherevalue := regexp.MustCompile("(?i)[a-zA-Z-_ ]+").FindString(paramsplit[1])
 	if v, exists := getobj[wherekey]; exists {
 		checkIfDocHolds(mathOp, v, wherevalue, holds)
 		return
