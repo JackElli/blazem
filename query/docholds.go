@@ -3,6 +3,7 @@ package query
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -27,14 +28,28 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 		_, doesWhereCast = wherevalue.(time.Time)
 	case "float64":
 		_, doesWhereCast = wherevalue.(float64)
+		_, doesFloatParse := strconv.ParseFloat(wherevalue.(string), 64)
+		doesWhereCast = (doesFloatParse == nil) || doesWhereCast
 	case "string":
 		_, doesWhereCast = wherevalue.(string)
 	}
 
+	// These are the opposites
 	// check if doesnt cast
 	if (mathOp == EQ || mathOp == NE) && !doesWhereCast {
 		*holds = *holds & 0
 		return
+	}
+
+	// make wherevalue cast to correct
+	// type
+	if doesWhereCast {
+		// where value will always be string
+		// user input
+		switch opType {
+		case "float64":
+			wherevalue, _ = strconv.ParseFloat(wherevalue.(string), 64)
+		}
 	}
 
 	if mathOp == EQ && v != wherevalue {
@@ -48,7 +63,19 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 		return
 	}
 
-	// TODO add > and <
+	// Greater than
+	// must be float (check doesWhereCast)
+	if mathOp == GT && doesWhereCast && v.(float64) <= wherevalue.(float64) {
+		*holds = *holds & 0
+		return
+	}
+
+	// Less than
+	// must be float (check doesWhereCast)
+	if mathOp == LT && doesWhereCast && v.(float64) >= wherevalue.(float64) {
+		*holds = *holds & 0
+		return
+	}
 
 	if mathOp == LIKE {
 		switch opType {

@@ -44,7 +44,7 @@ func contains(slice []string, needle string) bool {
 
 // tonise uses regex to split the query string
 func tokenise(querystr string) []string {
-	regex := "(?i)([a-z-_.]*[><=/][0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
+	regex := "(?i)([a-zA-Z-_.]*[><=/ ]*[0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
 	return regexp.MustCompile(regex).FindAllString(querystr, 100)
 }
 

@@ -158,5 +158,4 @@ func decodeQuery(querystr string) ([]map[string]interface{}, []error) {
 		return nil, errs
 	}
 	return executeQuery(queryType, whereParams, fetchKeys, jsondata, all), errs
-
 }

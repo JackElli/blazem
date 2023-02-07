@@ -173,6 +173,13 @@ func getLinuxStats() Stats {
 	return Stats{cpuused, ramperc}
 }
 
+func getMacStats() Stats {
+	return Stats{
+		1.1,
+		2.3,
+	}
+}
+
 func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 
 	writeHeaders(w, []string{"all"})
@@ -378,6 +385,7 @@ func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 	osStats := map[string]func() Stats{
 		"windows": getWindowsStats,
 		"linux":   getLinuxStats,
+		"darwin":  getMacStats,
 	}
 
 	stats := osStats[os]()

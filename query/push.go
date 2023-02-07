@@ -95,14 +95,14 @@ func checkParamHolds(ok bool, paramsplit []string,
 		if _, exists := getobj[nestparams[len(nestparams)-1]]; !exists {
 			*holds = *holds & 0
 		}
-		wherevalue = regexp.MustCompile("(?i)[a-zA-Z-_ ]+").FindString(fmt.Sprintf("%v", wherevalue))
+		wherevalue = regexp.MustCompile("(?i)[a-zA-Z0-9-_ ]+").FindString(fmt.Sprintf("%v", wherevalue))
 		if v, exists := getobj[nestparams[len(nestparams)-1]]; exists {
 			checkIfDocHolds(mathOp, v, wherevalue, holds)
 			return
 		}
 	}
 	// lazy way of getting around the where clause problem
-	wherevalue := regexp.MustCompile("(?i)[a-zA-Z-_ ]+").FindString(paramsplit[1])
+	wherevalue := strings.Trim(regexp.MustCompile("(?i)[a-zA-Z0-9-_ ]+").FindString(paramsplit[1]), " ")
 	if v, exists := getobj[wherekey]; exists {
 		checkIfDocHolds(mathOp, v, wherevalue, holds)
 		return
