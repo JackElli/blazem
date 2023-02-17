@@ -109,8 +109,6 @@ func (node *Node) setNodeMasterAttrs() {
 	}
 	node.Data.Store("testkey", testData1)
 	node.Data.Store("testkey2", testData2)
-	// node.Data["testkey"] = testData1
-	// node.Data["testkey2"] = testData2
 }
 func setupLogger() {
 	//setup file for logging
