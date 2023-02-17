@@ -106,7 +106,7 @@ func decodeToken(i int, token string, queryType *QueryType,
 	// do this first
 	if *where && i > 2 {
 		// get rid of unnecessary white space
-		noWhiteSpaceReg := regexp.MustCompile("[a-zA-Z= ]*")
+		noWhiteSpaceReg := regexp.MustCompile("[a-zA-Z-_.= ]*")
 		findSection := noWhiteSpaceReg.FindString(token)
 		findSectionNoWhiteSpace := strings.ReplaceAll(findSection, " ", "")
 		trimmedToken := strings.ReplaceAll(token, findSection, findSectionNoWhiteSpace)

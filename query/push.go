@@ -82,7 +82,7 @@ func checkParamHolds(ok bool, paramsplit []string,
 	// where value, value of the where param
 
 	if strings.Contains(wherekey, ".") {
-		wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z-_ ]+\"").FindString(paramsplit[1])
+		wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z0-9-_ ]+\"|[0-9]*").FindString(paramsplit[1])
 		//genius
 		nestparams := strings.Split(wherekey, ".")
 		for _, nestparam := range nestparams {
