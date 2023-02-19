@@ -23,6 +23,7 @@ func (logger *Logger) getNiceTime() string {
 	nicetime := time.Now().Format("2006-01-02 15:04:05")
 	return nicetime
 }
+
 func LogFile(logfilepath string) *Logger {
 	//need to be in append mode
 	logfile, err := os.OpenFile(logfilepath+"jserver.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -37,6 +38,7 @@ func LogFile(logfilepath string) *Logger {
 	}
 	return &Logger{LogFileHandle: logfile}
 }
+
 func (logger *Logger) Log(str string, logType LOG_TYPE) {
 	go func() {
 		log := string(logType) + " " + logger.getNiceTime() + "\t " + str

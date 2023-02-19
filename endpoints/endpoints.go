@@ -408,20 +408,22 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
 	// TODO error handling
 	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
-
 	dataToSend := make([]SendData, 0)
 
 	for _, res := range queryResult {
-
+		// we want to not send lots of data
+		// let the client fetch that
+		// whem rendered
+		if res["type"] != "text" {
+			res["value"] = "file"
+		}
 		dataJSON, _ := json.Marshal(res)
 		var getJSON global.JsonData
 		json.Unmarshal(dataJSON, &getJSON)
 		dataToSend = append(dataToSend, SendData{getJSON["key"].(string), getJSON})
-
 	}
 
 	node.RecentQueries[queryVal] = time.Now().Format("2006-01-02 15:04:05")
-
 	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
 }
 

@@ -18,9 +18,6 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 	// we need to prove that it
 	// does not hold
 
-	// definitely change
-	// this to factory
-
 	var doesWhereCast bool
 	opType := fmt.Sprintf("%T", v)
 	switch opType {
@@ -57,21 +54,16 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 		return
 	}
 
-	// Not equals
 	if mathOp == NE && v == wherevalue {
 		*holds = *holds & 0
 		return
 	}
 
-	// Greater than
-	// must be float (check doesWhereCast)
 	if mathOp == GT && doesWhereCast && v.(float64) <= wherevalue.(float64) {
 		*holds = *holds & 0
 		return
 	}
 
-	// Less than
-	// must be float (check doesWhereCast)
 	if mathOp == LT && doesWhereCast && v.(float64) >= wherevalue.(float64) {
 		*holds = *holds & 0
 		return
