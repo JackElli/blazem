@@ -93,22 +93,38 @@ func (node *Node) setNodeMasterAttrs() {
 	node.Data = sync.Map{}
 
 	testData1 := map[string]interface{}{
-		"key":    "testkey",
-		"folder": "text",
-		"value":  "hello this is a test",
-		"type":   "text",
-		"date":   time.Now().Format("2006-01-02T15:04:05"),
+		"type":       "folder",
+		"key":        "testkey1",
+		"folderName": "TestFolder",
+		"value":      "hello this is a test",
+		"date":       time.Now().Format("2006-01-02T15:04:05"),
 	}
 
 	testData2 := map[string]interface{}{
-		"key":    "testkey2",
-		"folder": "text",
-		"value":  "hello asd",
 		"type":   "text",
+		"key":    "testkey2",
+		"folder": "TestFolder",
+		"value":  "hello asd",
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
+	}
+	testData3 := map[string]interface{}{
+		"type":       "folder",
+		"key":        "testkey3",
+		"folderName": "AnotherFolder",
+		"folder":     "TestFolder",
+		"date":       time.Now().Format("2006-01-02T15:04:05"),
+	}
+	testData4 := map[string]interface{}{
+		"type":   "text",
+		"key":    "testkey4",
+		"folder": "AnotherFolder",
+		"value":  "hello testing",
 		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 	node.Data.Store("testkey", testData1)
 	node.Data.Store("testkey2", testData2)
+	node.Data.Store("testkey3", testData3)
+	node.Data.Store("testkey4", testData4)
 }
 func setupLogger() {
 	//setup file for logging

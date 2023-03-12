@@ -8,7 +8,7 @@ RUN apk update && apk add --no-cache git
 WORKDIR /app
 
 #copy blazem (has to be local dir so blazem/)
-COPY blazem/ .
+COPY . .
 
 # get dependecies
 # and build
@@ -17,6 +17,8 @@ RUN go build -o /blazem
 
 FROM scratch
 
+# have to run web and backend separate
+# might have to write a build script 
 COPY --from=builder app/statictest /statictest
 COPY --from=builder /blazem /blazem
 

@@ -311,21 +311,18 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, nil)
-
-	// this can be improved
 	var folderNames = make([]string, 0)
 	var folderMap = make(map[string]Folder, 0)
-	var folders = make([]Folder, 0)
 
-	// get all folder names
 	node.Data.Range(func(k, value interface{}) bool {
-		if !isInArr(folderNames, value.(map[string]interface{})["folder"].(string)) {
-			folderNames = append(folderNames, value.(map[string]interface{})["folder"].(string))
+		dataType := value.(map[string]interface{})["type"]
+		_, folderExists := value.(map[string]interface{})["folder"]
+		if dataType == "folder" && !folderExists {
+			folderNames = append(folderNames, value.(map[string]interface{})["folderName"].(string))
 		}
 		return true
 	})
 
-	// set up folders
 	for _, folder := range folderNames {
 		folderMap[folder] = Folder{
 			folder,
@@ -333,19 +330,18 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// get doc count within folder
-	// (used a map for easy access)
+	var folders = make([]Folder, 0)
 	node.Data.Range(func(k, value interface{}) bool {
-		folder := value.(map[string]interface{})["folder"].(string)
-		currDocCount := folderMap[folder].DocCount
-		folderMap[folder] = Folder{
-			folder,
-			currDocCount + 1,
+
+		if folder, exists := value.(map[string]interface{})["folder"].(string); exists {
+			currDocCount := folderMap[folder].DocCount
+			folderMap[folder] = Folder{
+				folder,
+				currDocCount + 1,
+			}
 		}
 		return true
 	})
-
-	// push to client as list of obj
 
 	for _, folder := range folderMap {
 		folders = append(folders, folder)
