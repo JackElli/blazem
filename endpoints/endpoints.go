@@ -6,182 +6,19 @@ import (
 	"blazem/query"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"math"
-	"math/rand"
 	"net/http"
 	"os"
-	"os/exec"
-	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-type Node global.Node
-
-type WebNodeMap struct {
-	Ip     string `json:"ip"`
-	Active bool   `json:"active"`
-}
-
-type SendData struct {
-	Key  string                 `json:"key"`
-	Data map[string]interface{} `json:"data"`
-}
-
-type Stats struct {
-	Cpu float64 `json:"cpu"`
-	Ram float64 `json:"ram"`
-}
-
-type SendQueryData struct {
-	Docs      []SendData `json:"docs"`
-	TimeTaken int64      `json:"timeTaken"`
-}
-
-type Folder struct {
-	FolderName string `json:"folderName"`
-	DocCount   int    `json:"docCount"`
-}
-
 var connectedFromWebUI bool
 
-func writeHeaders(w http.ResponseWriter, extras []string) {
-	extra := strings.Join(extras, ",")
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
-}
-
-func getHexKey() string {
-	pos := "0123456789abcdef"
-	key := ""
-	for i := 0; i < 16; i++ {
-		key += string(pos[rand.Intn(len(pos)-1)])
-	}
-	return key
-}
-
-func roundFloat(val float64, precision uint) float64 {
-	ratio := math.Pow(10, float64(precision))
-	return math.Round(val*ratio) / ratio
-}
-
-func lenOfSyncMap(mp sync.Map) int {
-	var i int
-	mp.Range(func(key any, value any) bool {
-		i++
-		return true
-	})
-	return i
-}
-
-func isInArr(arr []string, needle string) bool {
-	for _, s := range arr {
-		if s == needle {
-			return true
-		}
-	}
-	return false
-}
-
-func getWindowsStats() Stats {
-
-	ps, _ := exec.LookPath("powershell.exe")
-	cpu := exec.Command(ps, "Get-CimInstance win32_processor | Measure-Object -Property LoadPercentage -Average")
-	ramTotal := exec.Command(ps, "wmic ComputerSystem get TotalPhysicalMemory")
-	ramFree := exec.Command(ps, "wmic OS get FreePhysicalMemory")
-
-	//CPU
-	var cpuout bytes.Buffer
-	cpu.Stdout = &cpuout
-	cpuerr := cpu.Run()
-	if cpuerr != nil {
-		fmt.Println(cpuerr)
-	}
-
-	cpuavreg, _ := regexp.Compile("Average  : [0-9]*")
-	cpuav := cpuavreg.FindString(cpuout.String())
-	cpureg, _ := regexp.Compile("[0-9]+")
-	cpuStat, _ := strconv.ParseFloat(cpureg.FindString(cpuav), 64)
-
-	//RAM
-	var ramTotalVal bytes.Buffer
-	var ramFreeVal bytes.Buffer
-
-	//regex
-	ramreg, _ := regexp.Compile("[0-9]+")
-
-	ramTotal.Stdout = &ramTotalVal
-	ramFree.Stdout = &ramFreeVal
-
-	ramterr := ramTotal.Run()
-
-	if ramterr != nil {
-		fmt.Println(ramterr)
-	}
-	ramferr := ramFree.Run()
-	if ramferr != nil {
-		fmt.Println(ramferr)
-	}
-
-	ramFreeF, _ := strconv.ParseFloat(ramreg.FindString(ramFreeVal.String()), 32)
-	ramTotalF, _ := strconv.ParseFloat(ramreg.FindString(ramTotalVal.String()), 32)
-
-	ramPerc := roundFloat((((ramTotalF/1000)-ramFreeF)/(ramTotalF/1000))*100, 1)
-
-	//cpu, ram
-	return Stats{cpuStat, ramPerc}
-}
-
-func getLinuxStats() Stats {
-	cpu := exec.Command("top", "-b", "-n", "1")
-	//CPU
-	var cpuout bytes.Buffer
-	cpu.Stdout = &cpuout
-	cpuerr := cpu.Run()
-	if cpuerr != nil {
-		fmt.Println(cpuerr)
-	}
-
-	cpuavreg, _ := regexp.Compile(",[ ]*[0-9.]+ id")
-	cpuavregnum, _ := regexp.Compile("[0-9.]+")
-	cpuav := cpuavreg.FindString(cpuout.String())
-	cpuidle, _ := strconv.ParseFloat(cpuavregnum.FindString(cpuav), 32)
-
-	cpuused := 100 - cpuidle
-
-	//RAM
-	ramavreg, _ := regexp.Compile("MiB Mem.*?free")
-	ramavfreereg, _ := regexp.Compile("[0-9.]+ free")
-	ramavtotalreg, _ := regexp.Compile("[0-9.]+ total")
-	ramavnumreg, _ := regexp.Compile("[0-9.]+")
-
-	ramfreeav := ramavreg.FindString(cpuout.String())
-	ramfreestr := ramavfreereg.FindString(ramfreeav)
-	ramfree, _ := strconv.ParseFloat(ramavnumreg.FindString(ramfreestr), 32)
-
-	ramtotalav := ramavreg.FindString(ramfreeav)
-	ramtotalstr := ramavtotalreg.FindString(ramtotalav)
-	ramtotal, _ := strconv.ParseFloat(ramavnumreg.FindString(ramtotalstr), 32)
-
-	ramperc := roundFloat((((ramtotal)-ramfree)/(ramtotal))*100, 1)
-	return Stats{cpuused, ramperc}
-}
-
-func getMacStats() Stats {
-	return Stats{
-		1.1,
-		2.3,
-	}
-}
-
 func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
-
+	// Return the results of the nodemap to the client
 	writeHeaders(w, []string{"all"})
 
 	nodeMapResp := []WebNodeMap{}
@@ -193,39 +30,39 @@ func nodeMapHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
-
-	global.Logger.Log("PING RECEIVED", logging.INFO)
-
-	//fetch data of ping (nodemap)
-	body, _ := ioutil.ReadAll(req.Body)
-
-	//move nodemap to local memory
+	// When we receive a ping from master we want to check if any data
+	// has changed. If it has, we want to update our local data map. We also
+	// want to check that the master is still alive with a ping from master
+	// check. If we change from master to follower quickly, it's because we've
+	// been added to the cluster by another node. We write all of the changed
+	// data to disk
 	var localTempNodes []*global.TempNode
+
+	body, _ := ioutil.ReadAll(req.Body)
 	json.Unmarshal(body, &localTempNodes)
-
-	// this can be functionizated
 	localnm := global.UnmarshalNodeMap(localTempNodes)
-
-	//add the changed node map
-	currentMasterData := global.NODE_MAP[0].Data
-	global.NODE_MAP = localnm
-
-	//only receive ping if its a follower
-	if node.Rank == global.FOLLOWER {
-		//print the rank of the node and wait for 2 secs
-		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+
-			strings.Join(global.GetNodeIps(), " "), logging.INFO)
-		//need to check for ping here (start )
-		go (*global.Node)(node).CheckForNoPingFromMaster()
-
-	} else {
-		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!", logging.WARNING)
-		node.Rank = global.FOLLOWER
-	}
-	node.Pinged = time.Now()
 
 	if len(localnm) == 0 {
 		return
+	}
+
+	node.Pinged = time.Now()
+	global.Logger.Log("PING RECEIVED", logging.INFO)
+
+	currentMasterData := global.NODE_MAP[0].Data
+	global.NODE_MAP = localnm
+
+	if node.Rank == global.FOLLOWER {
+
+		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+
+			strings.Join(global.GetNodeIps(), " "), logging.INFO)
+
+		go (*global.Node)(node).CheckForNoPingFromMaster()
+
+	} else {
+		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!",
+			logging.WARNING)
+		node.Rank = global.FOLLOWER
 	}
 
 	if lenOfSyncMap(localnm[0].Data) == 0 {
@@ -240,7 +77,6 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		global.NODE_MAP = append(global.NODE_MAP, j)
 	}
 
-	// write all changed docs to disk
 	global.NODE_MAP[0].Data.Range(func(key, value any) bool {
 		_, err := os.Stat("data/" + key.(string))
 		if os.IsNotExist(err) {
@@ -251,31 +87,27 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
-
+	// We need to connect a node to the cluster; we check for ip, if it is already
+	// in the node map, we set to active (because it must be active as it's sent a
+	// connect request). If it's not in the nodemap, we add it.
 	writeHeaders(w, []string{"ip"})
-	//find the port of client trying to connect
+
 	ip := req.URL.Query().Get("ip")
 
-	//if port isnt 0 (there is a valid port)
 	if ip != "" {
-		// add to the node map
-		// a fresh node
-		global.Logger.Log(ip+" has connected", logging.GOOD)
 		if !global.AlreadyInNodeMap(ip) {
 			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
 				PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,
 				RecentQueries: map[string]string{}, Rules: map[string]global.Rule{}})
 		} else {
-			//already in map
+
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
-			//set to active
 			global.NODE_MAP[indexOfNode].Active = true
-			//resend data
 			global.NODE_MAP[indexOfNode].PingCount = 0
 		}
+		global.Logger.Log(ip+" has connected", logging.GOOD)
 	}
 
-	//write back to the client with the rank of the node its trying to connect to
 	w.Header().Add("rank", string(node.Rank))
 
 	jsonNodeMap, _ := json.Marshal(global.NODE_MAP)
@@ -285,9 +117,11 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
+	// we want to remove a node from the node map (master only). We get the index in
+	// the node map of the node, then we update the node map (removing the 'to remove' node)
+	// then we save the changes.
 	writeHeaders(w, []string{"ip"})
 
-	//only do this if master
 	if node.Rank == global.FOLLOWER {
 		return
 	}
@@ -297,7 +131,6 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 		nodeIpToRemove = req.Header.Get("ip")
 	}
 
-	//this needs to be a function
 	indexOfNode := global.IndexOfNodeIpInNodeMap(nodeIpToRemove)
 	if indexOfNode == -1 {
 		return
@@ -310,6 +143,9 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to return all of the 'root folders in the data i.e every folder
+	// that doesnt have a folder parent. We fetch the folder names, add them to the
+	// folder map and add the corresponding document count
 	writeHeaders(w, nil)
 	var folderNames = make([]string, 0)
 	var folderMap = make(map[string]Folder, 0)
@@ -332,7 +168,6 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 
 	var folders = make([]Folder, 0)
 	node.Data.Range(func(k, value interface{}) bool {
-
 		if folder, exists := value.(map[string]interface{})["folder"].(string); exists {
 			currDocCount := folderMap[folder].DocCount
 			folderMap[folder] = Folder{
@@ -351,8 +186,9 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to add a folder, we get the folder information from the user and
+	// THIS NEEDS TO CHANGE
 	writeHeaders(w, []string{"folder"})
-	//get folders
 	folder := req.URL.Query().Get("folder")
 	if folder == "" {
 		folder = req.Header.Get("folder")
@@ -374,6 +210,7 @@ func (node *Node) addFolderHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to fetch stats based on the OS (as the method changes)
 	writeHeaders(w, nil)
 
 	os := runtime.GOOS
@@ -390,6 +227,10 @@ func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
+	// We fetch the query entered by the user, we send that to JAQL, then
+	// we send back the results to the client. We also want to add these to
+	// recent queries so the user can easily get back to queries they've
+	// previously entered.
 
 	writeHeaders(w, []string{"query"})
 
@@ -398,21 +239,16 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 		queryVal = req.Header.Get("query")
 	}
 
-	// there is some optimisation we can do
-	// here
 	query.LoadIntoMemory(global.Node(*node))
 
-	// TODO error handling
 	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
 	dataToSend := make([]SendData, 0)
 
 	for _, res := range queryResult {
-		// we want to not send lots of data
-		// let the client fetch that
-		// whem rendered
 		if res["type"] != "text" {
 			res["value"] = "file"
 		}
+
 		dataJSON, _ := json.Marshal(res)
 		var getJSON global.JsonData
 		json.Unmarshal(dataJSON, &getJSON)
@@ -424,6 +260,7 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Request) {
+	// Returns a list of recently entered queries
 	writeHeaders(w, []string{})
 
 	dataToSend := node.RecentQueries
@@ -435,9 +272,10 @@ func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Reque
 }
 
 func (node *Node) replicateFolderHandler(w http.ResponseWriter, req *http.Request) {
+	// We want a way to replicate folder data to another node outside of the cluster
+	// we get all of the data currently within this folder and send that
+	// over HTTP to the desired node.
 
-	// THIS IS UNSAFE!!!
-	// NEEDS PERMS
 	writeHeaders(w, []string{})
 
 	var replicate global.Replicate
@@ -447,7 +285,6 @@ func (node *Node) replicateFolderHandler(w http.ResponseWriter, req *http.Reques
 	localFolder := replicate.LocalFolder
 	ip := replicate.RemoteIp
 
-	// THIS IS QUITE INEFFICIENT
 	node.Data.Range(func(key, value any) bool {
 		doc := value.(map[string]interface{})
 		if doc["folder"].(string) == localFolder {
@@ -489,7 +326,6 @@ func SetupHandlers(node *Node) {
 		},
 	}
 
-	//sync
 	for fncType, handlerMap := range handlers {
 		for end, fnc := range handlerMap {
 			if fncType == "sync" {
