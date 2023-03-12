@@ -5,7 +5,6 @@ import (
 	"blazem/global"
 	"blazem/logging"
 	"blazem/query"
-	"blazem/webend"
 	"net"
 	"net/http"
 	"strconv"
@@ -161,7 +160,6 @@ func main() {
 
 	//setup endpoints
 	endpoints.SetupHandlers((*endpoints.Node)(&node))
-	webend.SetupWebend()
 
 	//add to local nodemap (will be replicated if its master)
 	global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(&node))

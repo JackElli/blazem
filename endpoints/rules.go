@@ -2,7 +2,6 @@ package endpoints
 
 import (
 	"blazem/global"
-	"blazem/query"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,42 +14,6 @@ import (
 
 	"github.com/couchbase/gocb/v2"
 )
-
-type Rule struct {
-	Tasks []JSONTask
-	Time  string
-}
-type JSONTask struct {
-	Type    string
-	Data    string
-	Require int
-}
-
-var taskFncDecoder = map[string]func(interface{}, interface{}) (interface{}, error){
-	"query": func(queryVal interface{}, requirePass interface{}) (interface{}, error) {
-		queryResult, _, _, _ := query.Execute(queryVal.(string), "")
-		return queryResult, nil
-	},
-	"export": func(hostName interface{}, requirePass interface{}) (interface{}, error) {
-		getHost, ok := hostName.(string)
-		if !ok {
-			return "", fmt.Errorf("not a string host")
-		}
-		getDocs, ok := requirePass.([]map[string]interface{})
-		if !ok {
-			return "", fmt.Errorf("cannot find docs")
-		}
-
-		if strings.Contains(getHost, "couchbase") {
-			err := addToCouchbase(getHost, getDocs)
-			if err != nil {
-				return "", fmt.Errorf("cannot connect to couchbase")
-			}
-		}
-
-		return "", nil
-	},
-}
 
 func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, []string{})
@@ -210,6 +173,7 @@ func (node *Node) removeRuleHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode("done")
 
 }
+
 func (node *Node) getRulesHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, []string{})
 

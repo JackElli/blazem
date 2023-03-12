@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-//	index of token: {
-//			SPECIAL TOKEN: {
-//					func to complete
-//			}
-//	}
-//
-// asdsas
 type DecodeFunc func(string, *QueryType,
 	*bool, *bool, *[]string, *[]string) error
 

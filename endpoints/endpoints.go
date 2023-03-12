@@ -147,39 +147,50 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	// that doesnt have a folder parent. We fetch the folder names, add them to the
 	// folder map and add the corresponding document count
 	writeHeaders(w, nil)
-	var folderNames = make([]string, 0)
-	var folderMap = make(map[string]Folder, 0)
+	var folders = make(map[string]Folder, 0)
+	// var rootFolders = make(map[string]Folder, 0)
 
 	node.Data.Range(func(k, value interface{}) bool {
 		dataType := value.(map[string]interface{})["type"]
-		_, folderExists := value.(map[string]interface{})["folder"]
-		if dataType == "folder" && !folderExists {
-			folderNames = append(folderNames, value.(map[string]interface{})["folderName"].(string))
+		if dataType == "folder" {
+			var inFolder string
+			var exists bool
+			folderKey := value.(map[string]interface{})["key"].(string)
+			folderName := value.(map[string]interface{})["folderName"].(string)
+			if inFolder, exists = value.(map[string]interface{})["folder"].(string); !exists {
+				inFolder = ""
+			}
+			folders[folderName] = Folder{
+				inFolder,
+				folderKey,
+				folderName,
+				0,
+			}
 		}
 		return true
 	})
 
-	for _, folder := range folderNames {
-		folderMap[folder] = Folder{
-			folder,
-			0,
-		}
-	}
-
-	var folders = make([]Folder, 0)
 	node.Data.Range(func(k, value interface{}) bool {
 		if folder, exists := value.(map[string]interface{})["folder"].(string); exists {
-			currDocCount := folderMap[folder].DocCount
-			folderMap[folder] = Folder{
-				folder,
+			currDocCount := folders[folder].DocCount
+			folders[folder] = Folder{
+				folders[folder].Folder,
+				folders[folder].Key,
+				folders[folder].FolderName,
 				currDocCount + 1,
 			}
 		}
 		return true
 	})
 
-	for _, folder := range folderMap {
-		folders = append(folders, folder)
+	for _, folder := range folders {
+		if folder.Folder != "" {
+			folderData, _ := node.Data.Load(folder.Key)
+			folderData.(map[string]interface{})["docCount"] = folder.DocCount
+
+			node.Data.Store(folder.Key, folderData)
+			delete(folders, folder.FolderName)
+		}
 	}
 
 	json.NewEncoder(w).Encode(folders)
