@@ -148,7 +148,6 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	// folder map and add the corresponding document count
 	writeHeaders(w, nil)
 	var folders = make(map[string]Folder, 0)
-	// var rootFolders = make(map[string]Folder, 0)
 
 	node.Data.Range(func(k, value interface{}) bool {
 		dataType := value.(map[string]interface{})["type"]
@@ -187,7 +186,6 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 		if folder.Folder != "" {
 			folderData, _ := node.Data.Load(folder.Key)
 			folderData.(map[string]interface{})["docCount"] = folder.DocCount
-
 			node.Data.Store(folder.Key, folderData)
 			delete(folders, folder.FolderName)
 		}

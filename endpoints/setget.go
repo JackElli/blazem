@@ -180,5 +180,13 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		}
 	}
 
+	sort.Slice(dataInFolder[:], func(i, j int) bool {
+		iRunes := []rune(dataInFolder[i].Data["type"].(string))
+		jRunes := []rune(dataInFolder[j].Data["type"].(string))
+		iVal := int(iRunes[0])
+		jVal := int(jRunes[0])
+		return iVal < jVal
+	})
+
 	json.NewEncoder(w).Encode(dataInFolder)
 }
