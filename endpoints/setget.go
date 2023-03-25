@@ -125,6 +125,8 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 
 	writeHeaders(w, nil)
 
+	var returnData DataInFolder
+
 	folder := req.URL.Query().Get("folder")
 	user := req.URL.Query().Get("user")
 
@@ -157,7 +159,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
 	})
 
-	var dataInFolder []SendData
+	var dataInFolder []SendData = []SendData{}
 	numOfItems := 0
 	for i, data := range nodeData {
 		key := nodeData[i]["key"].(string)
@@ -188,10 +190,34 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		return iVal < jVal
 	})
 
-	if len(dataInFolder) == 0 {
-		json.NewEncoder(w).Encode([]string{})
-		return
+	returnData.Data = dataInFolder
+	returnData.ParentFolders = node.getParentFolders(folder)
+
+	json.NewEncoder(w).Encode(returnData)
+}
+
+func (node *Node) getParentFolders(folder string) []string {
+	var folders []string
+	var folderName = folder
+
+	for folderName != "" {
+		node.Data.Range(func(key, value interface{}) bool {
+			folderInfo := value.(map[string]interface{})
+			if folderInfo["folderName"] != nil {
+				if folderInfo["folderName"].(string) == folderName {
+					if folderInfo["folder"] == nil {
+						folderName = ""
+						return true
+					}
+					folders = append(folders, folderInfo["folder"].(string))
+					folderName = folderInfo["folder"].(string)
+				}
+			}
+			return true
+		})
+		folderName = ""
 	}
 
-	json.NewEncoder(w).Encode(dataInFolder)
+	return folders
+
 }

@@ -98,48 +98,16 @@ func (node *Node) setNodeMasterAttrs() {
 		"value":      "hello this is a test",
 		"date":       time.Now().Format("2006-01-02T15:04:05"),
 	}
-	testData5 := map[string]interface{}{
-		"type":       "folder",
-		"key":        "testkey5",
-		"folderName": "TestFolder3",
-		"value":      "hello this is a test",
-		"date":       time.Now().Format("2006-01-02T15:04:05"),
-	}
-	testData6 := map[string]interface{}{
-		"type":       "folder",
-		"key":        "testkey6",
-		"folderName": "TestFolder2",
-		"value":      "hello this is a test",
-		"date":       time.Now().Format("2006-01-02T15:04:05"),
-	}
-
 	testData2 := map[string]interface{}{
 		"type":   "text",
 		"key":    "testkey2",
 		"folder": "TestFolder",
-		"value":  "hello asd",
+		"value":  "hello this is a test",
 		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
-	testData3 := map[string]interface{}{
-		"type":       "folder",
-		"key":        "testkey3",
-		"folderName": "AnotherFolder",
-		"folder":     "TestFolder",
-		"date":       time.Now().Format("2006-01-02T15:04:05"),
-	}
-	testData4 := map[string]interface{}{
-		"type":   "text",
-		"key":    "testkey4",
-		"folder": "AnotherFolder",
-		"value":  "hello testing",
-		"date":   time.Now().Format("2006-01-02T15:04:05"),
-	}
+
 	node.Data.Store("testkey", testData1)
 	node.Data.Store("testkey2", testData2)
-	node.Data.Store("testkey3", testData3)
-	node.Data.Store("testkey4", testData4)
-	node.Data.Store("testkey5", testData5)
-	node.Data.Store("testkey6", testData6)
 }
 func setupLogger() {
 	//setup file for logging

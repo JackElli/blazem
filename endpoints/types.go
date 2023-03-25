@@ -46,6 +46,11 @@ type JSONTask struct {
 	Require int
 }
 
+type DataInFolder struct {
+	ParentFolders []string   `json:"parentFolders"`
+	Data          []SendData `json:"data"`
+}
+
 var taskFncDecoder = map[string]func(interface{}, interface{}) (interface{}, error){
 	"query": func(queryVal interface{}, requirePass interface{}) (interface{}, error) {
 		queryResult, _, _, _ := query.Execute(queryVal.(string), "")
