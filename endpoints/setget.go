@@ -191,33 +191,39 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	})
 
 	returnData.Data = dataInFolder
-	returnData.ParentFolders = node.getParentFolders(folder)
+	returnData.ParentFolders = node.getParentFolders(folder, nodeData)
 
 	json.NewEncoder(w).Encode(returnData)
 }
 
-func (node *Node) getParentFolders(folder string) []string {
-	var folders []string
+func (node *Node) getParentFolders(folder string, nodeData []map[string]interface{}) []string {
+	var folders []string = []string{}
 	var folderName = folder
 
 	for folderName != "" {
-		node.Data.Range(func(key, value interface{}) bool {
-			folderInfo := value.(map[string]interface{})
+		for _, folderInfo := range nodeData {
 			if folderInfo["folderName"] != nil {
 				if folderInfo["folderName"].(string) == folderName {
-					if folderInfo["folder"] == nil {
+					if folderInfo["folder"] != nil {
+						folders = append(folders, folderInfo["folder"].(string))
+						folderName = folderInfo["folder"].(string)
+					} else {
 						folderName = ""
-						return true
 					}
-					folders = append(folders, folderInfo["folder"].(string))
-					folderName = folderInfo["folder"].(string)
 				}
 			}
-			return true
-		})
-		folderName = ""
+		}
 	}
 
-	return folders
+	return reverse(folders)
 
+}
+
+func reverse(lst []string) []string {
+	var newLst []string = []string{}
+
+	for i := len(lst) - 1; i >= 0; i-- {
+		newLst = append(newLst, lst[i])
+	}
+	return newLst
 }
