@@ -188,5 +188,10 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		return iVal < jVal
 	})
 
+	if len(dataInFolder) == 0 {
+		json.NewEncoder(w).Encode([]string{})
+		return
+	}
+
 	json.NewEncoder(w).Encode(dataInFolder)
 }
