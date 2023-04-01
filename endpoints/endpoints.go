@@ -149,6 +149,7 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	writeHeaders(w, nil)
 	var folders = make(map[string]Folder, 0)
 
+	// SPLIT THESE UP INTO SEPARATE FUNCS
 	node.Data.Range(func(k, value interface{}) bool {
 		dataType := value.(map[string]interface{})["type"]
 		if dataType == "folder" {
@@ -184,10 +185,10 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 
 	for _, folder := range folders {
 		if folder.Folder != "" {
-			folderData, _ := node.Data.Load(folder.Key)
-			folderData.(map[string]interface{})["docCount"] = folder.DocCount
-			node.Data.Store(folder.Key, folderData)
-			delete(folders, folder.FolderName)
+			// folderData, _ := node.Data.Load(folder.Key)
+			// folderData.(map[string]interface{})["docCount"] = folder.DocCount
+			// node.Data.Store(folder.Key, folderData)
+			delete(folders, folder.Key)
 		}
 	}
 

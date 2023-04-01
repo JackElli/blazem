@@ -131,7 +131,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 
 	folderId := req.URL.Query().Get("folder")
 	user := req.URL.Query().Get("user")
-	folder, _ := node.Data.Load(folderId)
+	folderName := node.GetFolderName(folderId)
 
 	if user != "jack" {
 		json.NewEncoder(w).Encode("no auth")
@@ -194,35 +194,52 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	})
 
 	returnData.Data = dataInFolder
-	returnData.FolderName = folder.(map[string]interface{})["folderName"].(string)
-	returnData.ParentFolders = node.getParentFolders(folderId, nodeData)
+	returnData.FolderName = folderName
+	returnData.ParentFolders = node.getParentFolders(folderId)
 
 	json.NewEncoder(w).Encode(returnData)
 }
 
-func (node *Node) getParentFolders(folder string, nodeData []map[string]interface{}) []string {
-	var folders []string = []string{}
-	var folderId = folder
-
+func (node *Node) getParentFolders(searchFolderId string) []Folder {
+	// This function returns all of the folders that parent the folder we are
+	// searching for recursively
+	var folderId = searchFolderId
+	var folders []Folder = []Folder{}
 	for folderId != "" {
-		for _, folderInfo := range nodeData {
-			if folderInfo["key"] != nil {
-				if folderInfo["key"].(string) == folderId {
-					if folderInfo["folder"] != nil {
-						folders = append(folders, folderInfo["folder"].(string))
-						folderId = folderInfo["key"].(string)
-					} else {
-						folderId = ""
-					}
-				}
-			}
+		folderInfo, ok := node.Data.Load(folderId)
+		if !ok {
+			folderId = ""
+			continue
 		}
+		folderMap := folderInfo.(map[string]interface{})
+		if folderId != searchFolderId {
+			folders = append(folders, Folder{
+				Folder:     "N/A",
+				Key:        folderMap["key"].(string),
+				FolderName: folderMap["folderName"].(string),
+				DocCount:   -1,
+			})
+		}
+		if folderMap["folder"] == nil {
+			folderId = ""
+			continue
+		}
+		folderId = folderMap["folder"].(string)
 	}
 	return reverse(folders)
 }
 
-func reverse(lst []string) []string {
-	var newLst []string = []string{}
+func (node *Node) GetFolderName(folderId string) string {
+	folder, ok := node.Data.Load(folderId)
+	if !ok {
+		return ""
+	}
+	folderMap := folder.(map[string]interface{})
+	return folderMap["folderName"].(string)
+}
+
+func reverse(lst []Folder) []Folder {
+	var newLst []Folder = []Folder{}
 	for i := len(lst) - 1; i >= 0; i-- {
 		newLst = append(newLst, lst[i])
 	}
