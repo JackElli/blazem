@@ -47,6 +47,7 @@ type JSONTask struct {
 }
 
 type DataInFolder struct {
+	FolderName    string     `json:"folderName"`
 	ParentFolders []string   `json:"parentFolders"`
 	Data          []SendData `json:"data"`
 }

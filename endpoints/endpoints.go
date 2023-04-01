@@ -159,7 +159,7 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 			if inFolder, exists = value.(map[string]interface{})["folder"].(string); !exists {
 				inFolder = ""
 			}
-			folders[folderName] = Folder{
+			folders[folderKey] = Folder{
 				inFolder,
 				folderKey,
 				folderName,

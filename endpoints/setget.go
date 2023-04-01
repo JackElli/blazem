@@ -123,12 +123,15 @@ func (node *Node) getDocHandler(w http.ResponseWriter, req *http.Request) {
 
 func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
 
+	// Please can we fix this function
+
 	writeHeaders(w, nil)
 
 	var returnData DataInFolder
 
-	folder := req.URL.Query().Get("folder")
+	folderId := req.URL.Query().Get("folder")
 	user := req.URL.Query().Get("user")
+	folder, _ := node.Data.Load(folderId)
 
 	if user != "jack" {
 		json.NewEncoder(w).Encode("no auth")
@@ -175,7 +178,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 			break
 		}
 
-		if data["folder"] == folder {
+		if data["folder"] == folderId {
 			sendData := SendData{key, data}
 			dataInFolder = append(dataInFolder, sendData)
 			numOfItems++
@@ -191,37 +194,35 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	})
 
 	returnData.Data = dataInFolder
-	returnData.ParentFolders = node.getParentFolders(folder, nodeData)
+	returnData.FolderName = folder.(map[string]interface{})["folderName"].(string)
+	returnData.ParentFolders = node.getParentFolders(folderId, nodeData)
 
 	json.NewEncoder(w).Encode(returnData)
 }
 
 func (node *Node) getParentFolders(folder string, nodeData []map[string]interface{}) []string {
 	var folders []string = []string{}
-	var folderName = folder
+	var folderId = folder
 
-	for folderName != "" {
+	for folderId != "" {
 		for _, folderInfo := range nodeData {
-			if folderInfo["folderName"] != nil {
-				if folderInfo["folderName"].(string) == folderName {
+			if folderInfo["key"] != nil {
+				if folderInfo["key"].(string) == folderId {
 					if folderInfo["folder"] != nil {
 						folders = append(folders, folderInfo["folder"].(string))
-						folderName = folderInfo["folder"].(string)
+						folderId = folderInfo["key"].(string)
 					} else {
-						folderName = ""
+						folderId = ""
 					}
 				}
 			}
 		}
 	}
-
 	return reverse(folders)
-
 }
 
 func reverse(lst []string) []string {
 	var newLst []string = []string{}
-
 	for i := len(lst) - 1; i >= 0; i-- {
 		newLst = append(newLst, lst[i])
 	}
