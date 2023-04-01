@@ -182,16 +182,15 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		return true
 	})
-
 	for _, folder := range folders {
 		if folder.Folder != "" {
-			// folderData, _ := node.Data.Load(folder.Key)
-			// folderData.(map[string]interface{})["docCount"] = folder.DocCount
-			// node.Data.Store(folder.Key, folderData)
+			// This stores doc count
+			folderData, _ := node.Data.Load(folder.Key)
+			folderData.(map[string]interface{})["docCount"] = folder.DocCount
+			node.Data.Store(folder.Key, folderData)
 			delete(folders, folder.Key)
 		}
 	}
-
 	json.NewEncoder(w).Encode(folders)
 }
 
