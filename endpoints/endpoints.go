@@ -155,8 +155,12 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 		if dataType == "folder" {
 			var inFolder string
 			var exists bool
+			var backedUp bool = false
 			folderKey := value.(map[string]interface{})["key"].(string)
 			folderName := value.(map[string]interface{})["folderName"].(string)
+			if value.(map[string]interface{})["backedUp"] != nil {
+				backedUp = value.(map[string]interface{})["backedUp"].(bool)
+			}
 			if inFolder, exists = value.(map[string]interface{})["folder"].(string); !exists {
 				inFolder = ""
 			}
@@ -165,19 +169,21 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 				folderKey,
 				folderName,
 				0,
+				backedUp,
 			}
 		}
 		return true
 	})
 
 	node.Data.Range(func(k, value interface{}) bool {
-		if folder, exists := value.(map[string]interface{})["folder"].(string); exists {
+		if folder, exists := value.(map[string]interface{})["folder"].(string); exists && folder != "" {
 			currDocCount := folders[folder].DocCount
 			folders[folder] = Folder{
 				folders[folder].Folder,
 				folders[folder].Key,
 				folders[folder].FolderName,
 				currDocCount + 1,
+				folders[folder].BackedUp,
 			}
 		}
 		return true

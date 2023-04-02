@@ -34,6 +34,7 @@ type Folder struct {
 	Key        string  `json:"key"`
 	FolderName string  `json:"folderName"`
 	DocCount   float64 `json:"docCount"`
+	BackedUp   bool    `json:"backedUp"`
 }
 
 type Rule struct {
