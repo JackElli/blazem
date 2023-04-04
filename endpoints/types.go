@@ -30,10 +30,11 @@ type SendQueryData struct {
 }
 
 type Folder struct {
-	Folder     string `json:"folder"`
-	Key        string `json:"key"`
-	FolderName string `json:"folderName"`
-	DocCount   int    `json:"docCount"`
+	Folder     string  `json:"folder"`
+	Key        string  `json:"key"`
+	FolderName string  `json:"folderName"`
+	DocCount   float64 `json:"docCount"`
+	BackedUp   bool    `json:"backedUp"`
 }
 
 type Rule struct {
@@ -47,7 +48,8 @@ type JSONTask struct {
 }
 
 type DataInFolder struct {
-	ParentFolders []string   `json:"parentFolders"`
+	FolderName    string     `json:"folderName"`
+	ParentFolders []Folder   `json:"parentFolders"`
 	Data          []SendData `json:"data"`
 }
 

@@ -101,12 +101,12 @@ func (node *Node) setNodeMasterAttrs() {
 	testData2 := map[string]interface{}{
 		"type":   "text",
 		"key":    "testkey2",
-		"folder": "TestFolder",
+		"folder": "testkey1",
 		"value":  "hello this is a test",
 		"date":   time.Now().Format("2006-01-02T15:04:05"),
 	}
 
-	node.Data.Store("testkey", testData1)
+	node.Data.Store("testkey1", testData1)
 	node.Data.Store("testkey2", testData2)
 }
 func setupLogger() {
