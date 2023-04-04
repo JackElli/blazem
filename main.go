@@ -15,9 +15,8 @@ import (
 
 type Node global.Node
 
-// utils
-// return the index of the node in the nodemap
 func indexOfNodeInNodeMap(node *global.Node) int {
+	// Return the index of the node in the nodemap
 	for i, n := range global.NODE_MAP {
 		if n.Ip == node.Ip {
 			return i
@@ -26,8 +25,8 @@ func indexOfNodeInNodeMap(node *global.Node) int {
 	return -1
 }
 
-// return the data stored in the nodemap
 func getNodeDatas() []sync.Map {
+	// Return the data stored in the nodemap
 	var nodedata []sync.Map
 	for _, n := range global.NODE_MAP {
 		nodedata = append(nodedata, n.Data)
@@ -36,51 +35,38 @@ func getNodeDatas() []sync.Map {
 }
 
 func getLocalIp() string {
+	// Returns the IP of this node
 	conn, _ := net.Dial("udp", "8.8.8.8:80")
-
 	defer conn.Close()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	return strings.Split(localAddr.String(), ":")[0]
 }
 
-// ping connections
 func (node *Node) tryListen(ip string) {
-
-	// //wait for 500 milliseconds
-	// time.Sleep(500 * time.Millisecond)
-
-	//listen on selected port
+	// We want to listen on a selected port for this IP
 	portstr := ip
 	if strings.Count(ip, ":") > 1 {
 		portstr = strings.Split(ip, ":")[0]
 	}
-
 	global.Logger.Log("trying on "+portstr, logging.INFO)
 	l, err := net.Listen("tcp", portstr)
-
-	//if theres an error in connecting, stop
 	if err != nil {
-		// defer l.Close()
+
 		return
 	}
-
-	//if there's no error set the nodes port to the current port
 	node.Ip = ip
 	global.Logger.Log("Blazem started up on "+ip, logging.INFO)
 
-	//serve http requests on this port
 	http.Serve(l, nil)
 }
 
 func (node *Node) pickPort(ip string) {
-
+	// We want to pick a port (default 3100) but could try 3 more so max
+	// 3103
 	connectIp := ""
-	//for each node, try to listen
 	for i := 0; i < 3; i++ {
 		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
 		node.tryListen(connectIp)
-
-		//if theres an error, break out
 		if node.Ip != "" {
 			break
 		}
@@ -88,6 +74,8 @@ func (node *Node) pickPort(ip string) {
 }
 
 func (node *Node) setNodeMasterAttrs() {
+	// Here, we want to set master attributes and add some sample data when we first
+	// start with Blazem.
 	node.Rank = global.MASTER
 	node.Data = sync.Map{}
 
@@ -115,10 +103,13 @@ func setupLogger() {
 	global.Logger = *logging.LogFile(logfile)
 }
 
-// main func
 func main() {
-
-	//init node and set to follower (true until proven otherwise)
+	// We want to initialise this node. Create a new node with default settings
+	// set up the logger and pick the correct IP and port. We want to set up the endpoints
+	// so that the UI can call it and append this node to the global NODE_MAP to be passed
+	// around each node. If we are the master, we set master attributes. We also
+	// want to load from disk to fetch any data saved locally. Then, for JAQL we need to load
+	// our query JSON into memory.
 	var node Node = Node{
 		Ip:            "",
 		Pinged:        time.Now(),
@@ -131,40 +122,27 @@ func main() {
 	}
 
 	global.GlobalNode = (*global.Node)(&node)
-
-	// setup the logger
 	setupLogger()
 
 	var masterip string = ""
-	//set ips
 	localip := getLocalIp()
 
-	//this needs to be async as port should be on other thread
 	go node.pickPort(localip)
-
-	//setup endpoints
-	endpoints.SetupHandlers((*endpoints.Node)(&node))
-
-	//add to local nodemap (will be replicated if its master)
+	endpoints.SetupEndpoints((*endpoints.Node)(&node))
 	global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(&node))
 
-	//if this node is not on the master port, then its a follower
 	if masterip == node.Ip {
 		node.setNodeMasterAttrs()
 	}
 
-	// load local storage
 	(*global.Node)(&node).ReadFromLocal()
-
-	//ping handling
 	go (*global.Node)(&node).Ping()
 
-	// run the rule checker
-	go (*endpoints.Node)(&node).CheckRules()
+	// // run the rule checker
+	// go (*endpoints.Node)(&node).CheckRules()
 
 	query.LoadIntoMemory(global.Node(node))
 
-	//like a game loop
 	for true {
 		time.Sleep(150 * time.Millisecond)
 	}
