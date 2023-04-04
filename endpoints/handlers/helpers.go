@@ -1,4 +1,4 @@
-package endpoints
+package handlers
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"sync"
 )
 
-func writeHeaders(w http.ResponseWriter, extras []string) {
+func WriteHeaders(w http.ResponseWriter, extras []string) {
 	extra := strings.Join(extras, ",")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
