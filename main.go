@@ -128,7 +128,7 @@ func main() {
 	localip := getLocalIp()
 
 	go node.pickPort(localip)
-	endpoints.SetupEndpoints((*endpoints.Node)(&node))
+	endpoints.SetupEndpoints((*global.Node)(&node))
 	global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(&node))
 
 	if masterip == node.Ip {

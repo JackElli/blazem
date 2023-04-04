@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	handlers "blazem/endpoints/handlers"
+	"blazem/global"
 	"net/http"
 )
 
@@ -13,14 +14,14 @@ const (
 )
 
 type Endpoint struct {
-	Node        *Node
+	Node        *global.Node
 	Route       string
 	Handler     func(w http.ResponseWriter, req *http.Request)
 	Description string
 	Type        EndpointType
 }
 
-func SetupEndpoints(node *Node) {
+func SetupEndpoints(node *global.Node) {
 
 	var endpoints = []Endpoint{
 		{
