@@ -1,6 +1,7 @@
 package query
 
 import (
+	"blazem/global"
 	"fmt"
 	"regexp"
 	"time"
@@ -32,8 +33,8 @@ const (
 var jsonLoad interface{}
 var UploadFileName string
 
-// contains checks where a string is in an array
 func contains(slice []string, needle string) bool {
+	// Checks where a string is in an array
 	for _, v := range slice {
 		if v == needle {
 			return true
@@ -42,26 +43,22 @@ func contains(slice []string, needle string) bool {
 	return false
 }
 
-// tonise uses regex to split the query string
 func tokenise(querystr string) []string {
+	// Uses regex to split the query string
 	regex := "(?i)([a-zA-Z-_.]*[><=/ ]*[0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
 	return regexp.MustCompile(regex).FindAllString(querystr, 100)
 }
 
-// Execute public and executes the query
-func Execute(querystr string, tablename string) ([]map[string]interface{},
+func Execute(querystr string, tablename string) ([]global.Document,
 	int64, int, []error) {
 
-	// set start time to now
-	start := time.Now()
-	// decode the query
-	decodedData, errs := decodeQuery(querystr)
-	elapsed := time.Since(start)
+	// Execute public and executes the query
+	var start = time.Now()
+	var decodedData, errs = decodeQuery(querystr)
+	var elapsed = time.Since(start)
+
 	fmt.Println("------------------")
 	fmt.Println(querystr, "executed in", elapsed.Milliseconds(), "ms")
 	fmt.Println("------------------")
-
 	return decodedData, elapsed.Milliseconds(), len(decodedData), errs
-	// calc the time taken
-	// fmt.Println("Program took ", elapsed, " to get ", len(decodedData), " docs")
 }

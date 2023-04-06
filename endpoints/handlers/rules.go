@@ -26,13 +26,17 @@ func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 	// We want to add a rule to blazem
 	WriteHeaders(w, []string{})
 	var rule Rule
+	var taskForRule = make([]global.Task, 0)
+	var executeTime *time.Time
+	var t time.Time
+	var err error
+
 	body, _ := ioutil.ReadAll(req.Body)
 	json.Unmarshal(body, &rule)
 
 	if len(rule.Tasks) == 0 {
 		return
 	}
-	var taskForRule = make([]global.Task, 0)
 	for _, task := range rule.Tasks {
 		taskForRule = append(taskForRule, global.Task{
 			Data:    task.Data,
@@ -40,9 +44,6 @@ func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 			Type:    task.Type,
 		})
 	}
-	var executeTime *time.Time
-	var t time.Time
-	var err error
 	if rule.Time != "" {
 		t, err = time.Parse("2006-01-02 15:04:05", rule.Time)
 		executeTime = &t
@@ -53,7 +54,7 @@ func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 	} else {
 		executeTime = nil
 	}
-	ruleId := "rule" + strconv.Itoa(len(node.Rules))
+	var ruleId = "rule" + strconv.Itoa(len(node.Rules))
 	node.Rules[ruleId] = global.Rule{
 		Id:          ruleId,
 		Tasks:       taskForRule,
@@ -63,24 +64,24 @@ func (node *Node) addRuleHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) removeRuleHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to remove a rule from Blazem
 	WriteHeaders(w, []string{"ruleId"})
 
-	ruleId := req.URL.Query().Get("ruleId")
+	var ruleId = req.URL.Query().Get("ruleId")
 	_, ok := node.Rules[ruleId]
 	if !ok {
 		json.NewEncoder(w).Encode("fail")
 		return
 	}
-
 	delete(node.Rules, ruleId)
 	json.NewEncoder(w).Encode("done")
-
 }
 
 func (node *Node) getRulesHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to fetch all of the rules currently available in Blazem
 	WriteHeaders(w, []string{})
 
-	jsonRules := make([]map[string]interface{}, 0)
+	var jsonRules = make([]map[string]interface{}, 0)
 	for _, rule := range node.Rules {
 		jsonTasks := make([]JSONTask, 0)
 		for _, task := range rule.Tasks {
@@ -97,45 +98,5 @@ func (node *Node) getRulesHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		jsonRules = append(jsonRules, sendRule)
 	}
-
 	json.NewEncoder(w).Encode(jsonRules)
 }
-
-// func (node *Node) runRuleHandler(w http.ResponseWriter, req *http.Request) {
-// 	WriteHeaders(w, []string{"ruleId"})
-
-// 	ruleId := req.URL.Query().Get("ruleId")
-// 	ruleTasks, ok := node.Rules[ruleId]
-// 	if !ok {
-// 		json.NewEncoder(w).Encode("fail")
-// 		return
-// 	}
-
-// 	var taskOutput = make([]interface{}, 0)
-
-// 	// getting input and
-// 	// running output
-// 	for _, task := range ruleTasks.Tasks {
-// 		runTask := taskFncDecoder[task.Type]
-// 		data := task.Data
-// 		if task.Require == -1 {
-// 			out, err := runTask(data, "")
-// 			if err != nil {
-// 				json.NewEncoder(w).Encode("fail")
-// 				return
-// 			}
-// 			taskOutput = append(taskOutput, out)
-// 			continue
-// 		}
-// 		taskOutput = append(taskOutput, "")
-// 		passData := taskOutput[task.Require]
-// 		_, err := runTask(data, passData)
-// 		if err != nil {
-// 			json.NewEncoder(w).Encode("fail")
-// 			return
-// 		}
-// 	}
-
-// 	json.NewEncoder(w).Encode("done")
-
-// }

@@ -20,7 +20,8 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
 	WriteHeaders(w, []string{"query"})
 
-	queryVal := req.URL.Query().Get("query")
+	var queryVal = req.URL.Query().Get("query")
+	var dataToSend = make([]SendData, 0)
 	if queryVal == "" {
 		queryVal = req.Header.Get("query")
 	}
@@ -28,19 +29,16 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 	query.LoadIntoMemory(global.Node(*node))
 
 	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
-	dataToSend := make([]SendData, 0)
-
 	for _, res := range queryResult {
 		if res["type"] != "text" {
 			res["value"] = "file"
 		}
 
-		dataJSON, _ := json.Marshal(res)
+		var dataJSON, _ = json.Marshal(res)
 		var getJSON global.JsonData
 		json.Unmarshal(dataJSON, &getJSON)
 		dataToSend = append(dataToSend, SendData{getJSON["key"].(string), getJSON})
 	}
-
 	node.RecentQueries[queryVal] = time.Now().Format("2006-01-02 15:04:05")
 	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
 }

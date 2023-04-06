@@ -14,6 +14,8 @@ import (
 )
 
 func WriteHeaders(w http.ResponseWriter, extras []string) {
+	// We want to write headers for each request, the content type and
+	// the CORS settings
 	extra := strings.Join(extras, ",")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -21,6 +23,7 @@ func WriteHeaders(w http.ResponseWriter, extras []string) {
 }
 
 func getHexKey() string {
+	// Returns a 'hex' key
 	pos := "0123456789abcdef"
 	key := ""
 	for i := 0; i < 16; i++ {
@@ -30,11 +33,13 @@ func getHexKey() string {
 }
 
 func roundFloat(val float64, precision uint) float64 {
+	// Round floats with precision
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
 
 func lenOfSyncMap(mp sync.Map) int {
+	// We want to get the length of a sync map
 	var i int
 	mp.Range(func(key any, value any) bool {
 		i++
@@ -44,6 +49,7 @@ func lenOfSyncMap(mp sync.Map) int {
 }
 
 func isInArr(arr []string, needle string) bool {
+	// Returns if a string is in an array
 	for _, s := range arr {
 		if s == needle {
 			return true
@@ -53,7 +59,7 @@ func isInArr(arr []string, needle string) bool {
 }
 
 func getWindowsStats() Stats {
-
+	// Runs stats for windows
 	ps, _ := exec.LookPath("powershell.exe")
 	cpu := exec.Command(ps, "Get-CimInstance win32_processor | Measure-Object -Property LoadPercentage -Average")
 	ramTotal := exec.Command(ps, "wmic ComputerSystem get TotalPhysicalMemory")
@@ -97,11 +103,11 @@ func getWindowsStats() Stats {
 
 	ramPerc := roundFloat((((ramTotalF/1000)-ramFreeF)/(ramTotalF/1000))*100, 1)
 
-	//cpu, ram
 	return Stats{cpuStat, ramPerc}
 }
 
 func getLinuxStats() Stats {
+	// Runs stats for linux
 	cpu := exec.Command("top", "-b", "-n", "1")
 	//CPU
 	var cpuout bytes.Buffer
@@ -137,6 +143,7 @@ func getLinuxStats() Stats {
 }
 
 func getMacStats() Stats {
+	// Placeholder stats for Mac
 	return Stats{
 		1.1,
 		2.3,

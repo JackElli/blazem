@@ -22,6 +22,7 @@ type Endpoint struct {
 }
 
 func SetupEndpoints(node *global.Node) {
+	// Create all of the endpoints for Blazem
 
 	var endpoints = []Endpoint{
 		{
@@ -134,7 +135,3 @@ func SetupEndpoints(node *global.Node) {
 		}
 	}
 }
-
-// DEPRECATED
-// "addFolder":       node.addFolderHandler,
-// "replicateFolder": node.replicateFolderHandler,

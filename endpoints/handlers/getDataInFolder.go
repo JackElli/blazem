@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"blazem/global"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -13,34 +14,31 @@ func GetDataInFolder(node *Node) func(w http.ResponseWriter, req *http.Request) 
 }
 
 func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to return all of the data currently stored within this folder, including
+	// folders and data
 
 	// Please can we fix this function
-
 	WriteHeaders(w, nil)
 
 	var returnData DataInFolder
-
-	folderId := req.URL.Query().Get("folder")
-	user := req.URL.Query().Get("user")
-	folderName := node.GetFolderName(folderId)
+	var folderId = req.URL.Query().Get("folder")
+	var user = req.URL.Query().Get("user")
+	var folderName = node.GetFolderName(folderId)
+	var nodeData = make([]global.Document, lenOfSyncMap(node.Data))
+	var dataInFolder []SendData = []SendData{}
+	var dataInd = 0
 
 	if user != "jack" {
 		json.NewEncoder(w).Encode("no auth")
 		return
 	}
 
-	// need to sort data by date
-	// breaking change, as added new JSON field
-	nodeData := make([]map[string]interface{}, lenOfSyncMap(node.Data))
-
-	dataInd := 0
 	node.Data.Range(func(key, value interface{}) bool {
-		nodeData[dataInd] = value.(map[string]interface{})
+		nodeData[dataInd] = value.(global.Document)
 		dataInd++
 		return true
 	})
 
-	// not sure why this is like this?
 	sort.Slice(nodeData, func(i, j int) bool {
 		if _, convOk := nodeData[i]["date"].(time.Time); !convOk {
 			dateI, errI := time.Parse("2006-01-02T15:04:05", nodeData[i]["date"].(string))
@@ -53,22 +51,15 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
 	})
 
-	var dataInFolder []SendData = []SendData{}
 	numOfItems := 0
 	for i, data := range nodeData {
 		key := nodeData[i]["key"].(string)
-
-		// push the word file instead
-		// of file data so we save
-		// on loading times
 		if data["type"] != "text" {
 			data["value"] = "file"
 		}
-
 		if numOfItems == 40 {
 			break
 		}
-
 		if data["folder"] == folderId {
 			sendData := SendData{key, data}
 			dataInFolder = append(dataInFolder, sendData)
@@ -96,7 +87,7 @@ func (node *Node) GetFolderName(folderId string) string {
 	if !ok {
 		return ""
 	}
-	folderMap := folder.(map[string]interface{})
+	folderMap := folder.(global.Document)
 	return folderMap["folderName"].(string)
 }
 
@@ -111,7 +102,7 @@ func (node *Node) getParentFolders(searchFolderId string) []Folder {
 			folderId = ""
 			continue
 		}
-		folderMap := folderInfo.(map[string]interface{})
+		folderMap := folderInfo.(global.Document)
 		if folderId != searchFolderId {
 			folders = append(folders, Folder{
 				Folder:     "N/A",
@@ -130,6 +121,7 @@ func (node *Node) getParentFolders(searchFolderId string) []Folder {
 }
 
 func reverse(lst []Folder) []Folder {
+	// Reverse order of list
 	var newLst []Folder = []Folder{}
 	for i := len(lst) - 1; i >= 0; i-- {
 		newLst = append(newLst, lst[i])
