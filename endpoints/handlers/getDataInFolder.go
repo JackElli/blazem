@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"blazem/global"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -23,7 +24,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	var folderId = req.URL.Query().Get("folder")
 	var user = req.URL.Query().Get("user")
 	var folderName = node.GetFolderName(folderId)
-	var nodeData = make([]map[string]interface{}, lenOfSyncMap(node.Data))
+	var nodeData = make([]global.Document, lenOfSyncMap(node.Data))
 	var dataInFolder []SendData = []SendData{}
 	var dataInd = 0
 
@@ -33,7 +34,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	}
 
 	node.Data.Range(func(key, value interface{}) bool {
-		nodeData[dataInd] = value.(map[string]interface{})
+		nodeData[dataInd] = value.(global.Document)
 		dataInd++
 		return true
 	})
@@ -86,7 +87,7 @@ func (node *Node) GetFolderName(folderId string) string {
 	if !ok {
 		return ""
 	}
-	folderMap := folder.(map[string]interface{})
+	folderMap := folder.(global.Document)
 	return folderMap["folderName"].(string)
 }
 
@@ -101,7 +102,7 @@ func (node *Node) getParentFolders(searchFolderId string) []Folder {
 			folderId = ""
 			continue
 		}
-		folderMap := folderInfo.(map[string]interface{})
+		folderMap := folderInfo.(global.Document)
 		if folderId != searchFolderId {
 			folders = append(folders, Folder{
 				Folder:     "N/A",

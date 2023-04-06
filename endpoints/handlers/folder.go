@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"blazem/global"
 	"encoding/json"
 	"net/http"
 )
@@ -12,23 +13,23 @@ func FolderHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	// We want to return all of the root folders in the data i.e every folder
 	// that doesnt have a folder parent. We fetch the folder names, add them to the
-	// folder map and add the corresponding document count
+	// folder map and add the corresponding global.Document count
 	WriteHeaders(w, nil)
 	var folders = make(map[string]Folder, 0)
 
 	// SPLIT THESE UP INTO SEPARATE FUNCS
 	node.Data.Range(func(k, value interface{}) bool {
-		dataType := value.(map[string]interface{})["type"]
+		dataType := value.(global.Document)["type"]
 		if dataType == "folder" {
 			var inFolder string
 			var exists bool
 			var backedUp bool = false
-			folderKey := value.(map[string]interface{})["key"].(string)
-			folderName := value.(map[string]interface{})["folderName"].(string)
-			if value.(map[string]interface{})["backedUp"] != nil {
-				backedUp = value.(map[string]interface{})["backedUp"].(bool)
+			folderKey := value.(global.Document)["key"].(string)
+			folderName := value.(global.Document)["folderName"].(string)
+			if value.(global.Document)["backedUp"] != nil {
+				backedUp = value.(global.Document)["backedUp"].(bool)
 			}
-			if inFolder, exists = value.(map[string]interface{})["folder"].(string); !exists {
+			if inFolder, exists = value.(global.Document)["folder"].(string); !exists {
 				inFolder = ""
 			}
 			folders[folderKey] = Folder{
@@ -43,7 +44,7 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	})
 
 	node.Data.Range(func(k, value interface{}) bool {
-		if folder, exists := value.(map[string]interface{})["folder"].(string); exists && folder != "" {
+		if folder, exists := value.(global.Document)["folder"].(string); exists && folder != "" {
 			currDocCount := folders[folder].DocCount
 			folders[folder] = Folder{
 				folders[folder].Folder,
@@ -59,7 +60,7 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 		if folder.Folder != "" {
 			// This stores doc count
 			folderData, _ := node.Data.Load(folder.Key)
-			folderData.(map[string]interface{})["docCount"] = folder.DocCount
+			folderData.(global.Document)["docCount"] = folder.DocCount
 			node.Data.Store(folder.Key, folderData)
 			delete(folders, folder.Key)
 		}

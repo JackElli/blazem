@@ -1,6 +1,7 @@
 package query
 
 import (
+	"blazem/global"
 	"fmt"
 	"regexp"
 	"time"
@@ -48,7 +49,7 @@ func tokenise(querystr string) []string {
 	return regexp.MustCompile(regex).FindAllString(querystr, 100)
 }
 
-func Execute(querystr string, tablename string) ([]map[string]interface{},
+func Execute(querystr string, tablename string) ([]global.Document,
 	int64, int, []error) {
 
 	// Execute public and executes the query

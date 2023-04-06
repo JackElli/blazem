@@ -1,6 +1,7 @@
 package query
 
 import (
+	"blazem/global"
 	"fmt"
 	"regexp"
 	"strings"
@@ -111,7 +112,7 @@ func decodeToken(i int, token string, queryType *QueryType,
 	return decoderError
 }
 
-func decodeQuery(querystr string) ([]map[string]interface{}, []error) {
+func decodeQuery(querystr string) ([]global.Document, []error) {
 	// decodeQuery decodes the query so that we can manipulate it
 	var tokens = tokenise(querystr)
 	var queryType QueryType

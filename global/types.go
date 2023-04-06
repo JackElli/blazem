@@ -9,6 +9,7 @@ import (
 type Rank string
 type JsonData map[string]interface{}
 type NodeData map[string]interface{}
+type Document map[string]interface{}
 
 const (
 	MASTER   Rank = "MASTER"

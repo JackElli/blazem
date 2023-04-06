@@ -9,14 +9,14 @@ import (
 	"sync"
 )
 
-func checkNest(nestparams []string, getobj map[string]interface{},
-	docin *bool) map[string]interface{} {
+func checkNest(nestparams []string, getobj global.Document,
+	docin *bool) global.Document {
 	// This is for non-where clause tokens
 	for _, nestparam := range nestparams {
 		if v, exists := getobj[nestparam]; exists {
 			if reflect.TypeOf(v).String() ==
 				"map[string]interface {}" {
-				getobj = v.(map[string]interface{})
+				getobj = v.(global.Document)
 			}
 		} else {
 			*docin = false
@@ -24,9 +24,9 @@ func checkNest(nestparams []string, getobj map[string]interface{},
 	}
 	return getobj
 }
-func pushDocs(all bool, wherejson []map[string]interface{},
-	newmap *[]map[string]interface{},
-	fetchKeys []string) []map[string]interface{} {
+func pushDocs(all bool, wherejson []global.Document,
+	newmap *[]global.Document,
+	fetchKeys []string) []global.Document {
 	// We want to push the documents that fit the query params
 	if all {
 		return wherejson
@@ -34,7 +34,7 @@ func pushDocs(all bool, wherejson []map[string]interface{},
 
 	for _, doc := range wherejson {
 		var docin = true
-		var newobj = make(map[string]interface{})
+		var newobj = make(global.Document)
 		var getobj = doc
 
 		for _, fetchkey := range fetchKeys {
@@ -63,7 +63,7 @@ func pushDocs(all bool, wherejson []map[string]interface{},
 }
 
 func checkParamHolds(ok bool, paramsplit []string,
-	getobj map[string]interface{}, mathOp MathOp, holds *int) {
+	getobj global.Document, mathOp MathOp, holds *int) {
 	// We want to check whether a certain paramater holds for that specific document
 	if !ok {
 		*holds = *holds & 0
@@ -80,7 +80,7 @@ func checkParamHolds(ok bool, paramsplit []string,
 		for _, nestparam := range nestparams {
 			if v, exists := getobj[nestparam]; exists {
 				if reflect.TypeOf(v).String() == "map[string]interface {}" {
-					getobj = v.(map[string]interface{})
+					getobj = v.(global.Document)
 				}
 			}
 		}
@@ -104,16 +104,16 @@ func checkParamHolds(ok bool, paramsplit []string,
 // executeQuery is the query chain
 func executeQuery(queryType QueryType, whereParams []string,
 	fetchKeys []string, jsondata interface{},
-	all bool) []map[string]interface{} {
+	all bool) []global.Document {
 
 	var newjsondata = jsondata.(sync.Map)
-	var newmap []map[string]interface{}
-	var wherejson []map[string]interface{}
+	var newmap []global.Document
+	var wherejson []global.Document
 
 	if len(whereParams) > 0 {
 		newjsondata.Range(func(key, doc any) bool {
 			var holds = 1
-			var getobj = doc.(map[string]interface{})
+			var getobj = doc.(global.Document)
 
 			for _, param := range whereParams {
 				var paramsplit []string
@@ -129,7 +129,7 @@ func executeQuery(queryType QueryType, whereParams []string,
 		})
 	} else {
 		newjsondata.Range(func(key, doc any) bool {
-			wherejson = append(wherejson, doc.(map[string]interface{}))
+			wherejson = append(wherejson, doc.(global.Document))
 			return true
 		})
 	}
@@ -143,7 +143,7 @@ func executeQuery(queryType QueryType, whereParams []string,
 				key := doc["key"].(string)
 				global.GlobalNode.Data.Delete(key)
 			}
-			return []map[string]interface{}{}
+			return []global.Document{}
 		}
 	}
 	return newmap

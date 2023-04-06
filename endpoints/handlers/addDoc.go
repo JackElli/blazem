@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-type Document map[string]interface{}
-
 func AddDocHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.addDocHandler
 }
@@ -23,7 +21,7 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var dataToAdd map[string]interface{}
+	var dataToAdd global.Document
 	body, _ := ioutil.ReadAll(req.Body)
 	err := json.Unmarshal(body, &dataToAdd)
 	if err != nil {
@@ -39,7 +37,7 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode("done")
 }
 
-func (node *Node) transformNewDoc(dataToAdd Document) Document {
+func (node *Node) transformNewDoc(dataToAdd global.Document) global.Document {
 	// We want to transform the document coming in, to something that is optimised and
 	// info-full for retrieval
 	var document = dataToAdd
@@ -49,13 +47,13 @@ func (node *Node) transformNewDoc(dataToAdd Document) Document {
 	}
 
 	if loadDoc, ok := node.Data.Load(dataToAdd["key"]); ok {
-		return updateDocument(document, loadDoc.(Document))
+		return updateDocument(document, loadDoc.(global.Document))
 	}
 	document["date"] = time.Now().Format("2006-01-02T15:04:05")
 	return document
 }
 
-func updateDocument(document Document, loadDoc Document) Document {
+func updateDocument(document global.Document, loadDoc global.Document) global.Document {
 	// If we're not adding a new document, we're updating an existing one, we want
 	// to keep the date the same
 	document["date"] = loadDoc["date"].(string)

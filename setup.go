@@ -17,14 +17,14 @@ func (node *Node) setNodeMasterAttrs() {
 	node.Rank = global.MASTER
 	node.Data = sync.Map{}
 
-	testData1 := map[string]interface{}{
+	testData1 := global.Document{
 		"type":       "folder",
 		"key":        "testkey1",
 		"folderName": "TestFolder",
 		"value":      "hello this is a test",
 		"date":       time.Now().Format("2006-01-02T15:04:05"),
 	}
-	testData2 := map[string]interface{}{
+	testData2 := global.Document{
 		"type":   "text",
 		"key":    "testkey2",
 		"folder": "testkey1",
