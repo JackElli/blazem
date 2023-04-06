@@ -11,6 +11,43 @@ import (
 	"time"
 )
 
+func (node *Node) setNodeMasterAttrs() {
+	// Here, we want to set master attributes and add some sample data when we first
+	// start with Blazem.
+	node.Rank = global.MASTER
+	node.Data = sync.Map{}
+
+	testData1 := map[string]interface{}{
+		"type":       "folder",
+		"key":        "testkey1",
+		"folderName": "TestFolder",
+		"value":      "hello this is a test",
+		"date":       time.Now().Format("2006-01-02T15:04:05"),
+	}
+	testData2 := map[string]interface{}{
+		"type":   "text",
+		"key":    "testkey2",
+		"folder": "testkey1",
+		"value":  "hello this is a test",
+		"date":   time.Now().Format("2006-01-02T15:04:05"),
+	}
+
+	node.Data.Store("testkey1", testData1)
+	node.Data.Store("testkey2", testData2)
+}
+
+func (node *Node) pickPort(ip string) {
+	// We want to pick a port (default 3100) but could try 3 more so max 3103
+	connectIp := ""
+	for i := 0; i < 3; i++ {
+		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
+		node.tryListen(connectIp)
+		if node.Ip != "" {
+			break
+		}
+	}
+}
+
 func indexOfNodeInNodeMap(node *global.Node) int {
 	// Return the index of the node in the nodemap
 	for i, n := range global.NODE_MAP {
@@ -47,51 +84,11 @@ func (node *Node) tryListen(ip string) {
 	global.Logger.Log("trying on "+portstr, logging.INFO)
 	l, err := net.Listen("tcp", portstr)
 	if err != nil {
-
 		return
 	}
 	node.Ip = ip
 	global.Logger.Log("Blazem started up on "+ip, logging.INFO)
-
 	http.Serve(l, nil)
-}
-
-func (node *Node) pickPort(ip string) {
-	// We want to pick a port (default 3100) but could try 3 more so max
-	// 3103
-	connectIp := ""
-	for i := 0; i < 3; i++ {
-		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
-		node.tryListen(connectIp)
-		if node.Ip != "" {
-			break
-		}
-	}
-}
-
-func (node *Node) setNodeMasterAttrs() {
-	// Here, we want to set master attributes and add some sample data when we first
-	// start with Blazem.
-	node.Rank = global.MASTER
-	node.Data = sync.Map{}
-
-	testData1 := map[string]interface{}{
-		"type":       "folder",
-		"key":        "testkey1",
-		"folderName": "TestFolder",
-		"value":      "hello this is a test",
-		"date":       time.Now().Format("2006-01-02T15:04:05"),
-	}
-	testData2 := map[string]interface{}{
-		"type":   "text",
-		"key":    "testkey2",
-		"folder": "testkey1",
-		"value":  "hello this is a test",
-		"date":   time.Now().Format("2006-01-02T15:04:05"),
-	}
-
-	node.Data.Store("testkey1", testData1)
-	node.Data.Store("testkey2", testData2)
 }
 
 func setupLogger() {

@@ -11,6 +11,7 @@ func DeleteDocHandler(node *Node) func(w http.ResponseWriter, req *http.Request)
 }
 
 func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
+	// We want to delete a document from Blazem
 	WriteHeaders(w, []string{})
 
 	docKey := req.URL.Query().Get("key")
@@ -18,5 +19,4 @@ func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
 	global.DataChanged = true
 
 	json.NewEncoder(w).Encode("done")
-
 }

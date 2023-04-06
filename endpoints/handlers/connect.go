@@ -3,8 +3,8 @@ package handlers
 import (
 	"blazem/global"
 	"blazem/logging"
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -28,7 +28,6 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 				PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,
 				RecentQueries: map[string]string{}, Rules: map[string]global.Rule{}})
 		} else {
-
 			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
 			global.NODE_MAP[indexOfNode].Active = true
 			global.NODE_MAP[indexOfNode].PingCount = 0
@@ -36,10 +35,10 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 	}
 
-	w.Header().Add("rank", string(node.Rank))
-
-	jsonNodeMap, _ := json.Marshal(global.NODE_MAP)
-	sendData := bytes.NewBuffer(jsonNodeMap)
-
-	w.Write(sendData.Bytes())
+	jsonNodeMap, err := json.Marshal(global.NODE_MAP)
+	if err != nil {
+		fmt.Println("Cannot Marshal json")
+		return
+	}
+	json.NewEncoder(w).Encode(jsonNodeMap)
 }

@@ -8,25 +8,21 @@ import (
 	"time"
 )
 
+type Document map[string]interface{}
+
 func AddDocHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.addDocHandler
 }
 
 func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
-	// This could be done using sockets rather than
-	// http requests
+	// We want to add a document to Blazem, we check if it's a POST, unmarshal the data
+	// coming in, write to disk and add to the map
 	WriteHeaders(w, []string{"all"})
 
-	if node.Rank != global.MASTER {
+	if node.Rank != global.MASTER || req.Method != "POST" {
 		return
 	}
 
-	if req.Method != "POST" {
-		return
-	}
-
-	// changed to map[string]interface{}
-	// to allow any fields to be passed
 	var dataToAdd map[string]interface{}
 	body, _ := ioutil.ReadAll(req.Body)
 	err := json.Unmarshal(body, &dataToAdd)
@@ -34,49 +30,34 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// a bit of processing on the incoming
-	// doc
-	value := node.getNewDoc(dataToAdd)
-	// if the data is not just text
-	// we need to add it to disk
-	// this is for backup
-	global.WriteDocToDisk(value)
+	document := node.transformNewDoc(dataToAdd)
+	global.WriteDocToDisk(document)
 
-	// so we can replicate changes
+	node.Data.Store(dataToAdd["key"], document)
 	global.DataChanged = true
 
-	// store the doc
-	node.Data.Store(dataToAdd["key"], value)
-
 	json.NewEncoder(w).Encode("done")
-	return
 }
 
-func (node *Node) getNewDoc(dataToAdd map[string]interface{}) map[string]interface{} {
-	// changed to map[string]interface{}
-	// to add to mem index
-	// and if we want custom JSON later
-	value := dataToAdd
+func (node *Node) transformNewDoc(dataToAdd Document) Document {
+	// We want to transform the document coming in, to something that is optimised and
+	// info-full for retrieval
+	var document = dataToAdd
 
-	// if its not text, set the value
-	// to not text so we dont add
-	// the image/file to memory
-	if value["type"].(string) != "text" {
-		// value["value"] = "file"
-		// set the file_name field if its not
-		// just text
-		value["file_name"] = dataToAdd["file_name"]
+	if document["type"].(string) != "text" {
+		document["file_name"] = dataToAdd["file_name"]
 	}
-	// have to be really careful with casting
-	// maybe have a struct like
-	// key, folder, type, date and fields
-	// if doc key exists dont update date
-	if _, ok := node.Data.Load(dataToAdd["key"]); ok {
-		getDocTime, _ := node.Data.Load(dataToAdd["key"])
-		docTime := getDocTime.(map[string]interface{})
-		value["date"] = docTime["date"].(string)
-		return value
+
+	if loadDoc, ok := node.Data.Load(dataToAdd["key"]); ok {
+		return updateDocument(document, loadDoc.(Document))
 	}
-	value["date"] = time.Now().Format("2006-01-02T15:04:05")
-	return value
+	document["date"] = time.Now().Format("2006-01-02T15:04:05")
+	return document
+}
+
+func updateDocument(document Document, loadDoc Document) Document {
+	// If we're not adding a new document, we're updating an existing one, we want
+	// to keep the date the same
+	document["date"] = loadDoc["date"].(string)
+	return document
 }

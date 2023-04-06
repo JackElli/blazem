@@ -11,8 +11,7 @@ import (
 
 func checkNest(nestparams []string, getobj map[string]interface{},
 	docin *bool) map[string]interface{} {
-
-	// this is for non-where clause tokens
+	// This is for non-where clause tokens
 	for _, nestparam := range nestparams {
 		if v, exists := getobj[nestparam]; exists {
 			if reflect.TypeOf(v).String() ==
@@ -28,25 +27,19 @@ func checkNest(nestparams []string, getobj map[string]interface{},
 func pushDocs(all bool, wherejson []map[string]interface{},
 	newmap *[]map[string]interface{},
 	fetchKeys []string) []map[string]interface{} {
-	// if the select param is all return all data
+	// We want to push the documents that fit the query params
 	if all {
 		return wherejson
 	}
-	// this is essentially a Primary Index
-	// for each doc in filtered query
+
 	for _, doc := range wherejson {
-		docin := true
-		// allocate memory for the obj
-		newobj := make(map[string]interface{})
-		getobj := doc
-		// for each key in the token fetch keys
+		var docin = true
+		var newobj = make(map[string]interface{})
+		var getobj = doc
+
 		for _, fetchkey := range fetchKeys {
-			// if the key exists in the data
 			if strings.Contains(fetchkey, ".") {
-				//genius
-				// getobj is the filtered doc
-				// down to the nested value
-				nestparams := strings.Split(fetchkey, ".")
+				var nestparams = strings.Split(fetchkey, ".")
 				getobj = checkNest(nestparams, getobj, &docin)
 				if v, exists :=
 					getobj[nestparams[len(nestparams)-1]]; exists {
@@ -62,7 +55,6 @@ func pushDocs(all bool, wherejson []map[string]interface{},
 			}
 			docin = false
 		}
-		// append this data to the new map to return
 		if docin {
 			*newmap = append(*newmap, newobj)
 		}
@@ -72,19 +64,19 @@ func pushDocs(all bool, wherejson []map[string]interface{},
 
 func checkParamHolds(ok bool, paramsplit []string,
 	getobj map[string]interface{}, mathOp MathOp, holds *int) {
+	// We want to check whether a certain paramater holds for that specific document
 	if !ok {
 		*holds = *holds & 0
 		return
 	}
-	// this is the where key
-	wherekey := paramsplit[0]
+
+	var wherekey = paramsplit[0]
 	wherekey = strings.Trim(wherekey, " ")
-	// where value, value of the where param
 
 	if strings.Contains(wherekey, ".") {
-		wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z0-9-_ ]+\"|[0-9]*").FindString(paramsplit[1])
-		//genius
-		nestparams := strings.Split(wherekey, ".")
+		var wherevalue = regexp.MustCompile("(?i)\"[a-zA-Z0-9-_ ]+\"|[0-9]*").FindString(paramsplit[1])
+		var nestparams = strings.Split(wherekey, ".")
+
 		for _, nestparam := range nestparams {
 			if v, exists := getobj[nestparam]; exists {
 				if reflect.TypeOf(v).String() == "map[string]interface {}" {
@@ -101,13 +93,11 @@ func checkParamHolds(ok bool, paramsplit []string,
 			return
 		}
 	}
-	// lazy way of getting around the where clause problem
-	wherevalue := strings.Trim(regexp.MustCompile("(?i)[a-zA-Z0-9-_ ]+").FindString(paramsplit[1]), " ")
+	var wherevalue = strings.Trim(regexp.MustCompile("(?i)[a-zA-Z0-9-_ ]+").FindString(paramsplit[1]), " ")
 	if v, exists := getobj[wherekey]; exists {
 		checkIfDocHolds(mathOp, v, wherevalue, holds)
 		return
 	}
-	// if param doesnt exists, it cant hold
 	*holds = *holds & 0
 }
 
@@ -117,31 +107,21 @@ func executeQuery(queryType QueryType, whereParams []string,
 	all bool) []map[string]interface{} {
 
 	var newjsondata = jsondata.(sync.Map)
-	// jsondata = jsondata.(map[string]interface{})
 	var newmap []map[string]interface{}
-
 	var wherejson []map[string]interface{}
-	// if there are whereParams
-	//filter
+
 	if len(whereParams) > 0 {
-		// for each document
 		newjsondata.Range(func(key, doc any) bool {
-			// this is seeing if the doc matches the query
-			holds := 1
-			//could be better
-			getobj := doc.(map[string]interface{})
-			// for each param
+			var holds = 1
+			var getobj = doc.(map[string]interface{})
+
 			for _, param := range whereParams {
-				// split the paramstring
 				var paramsplit []string
-				// math operator <>=
 				var mathOp MathOp
-				//decodes the paramater, splitting int paramsplit and mathop
-				ok := decodeParam(param, &mathOp, &paramsplit)
-				checkParamHolds(ok, paramsplit, getobj,
-					mathOp, &holds)
+
+				var ok = decodeParam(param, &mathOp, &paramsplit)
+				checkParamHolds(ok, paramsplit, getobj, mathOp, &holds)
 			}
-			// if the doc matches the query
 			if holds == 1 {
 				wherejson = append(wherejson, getobj)
 			}
@@ -152,10 +132,8 @@ func executeQuery(queryType QueryType, whereParams []string,
 			wherejson = append(wherejson, doc.(map[string]interface{}))
 			return true
 		})
-
 	}
-	//push docs
-	pushed := pushDocs(all, wherejson, &newmap, fetchKeys)
+	var pushed = pushDocs(all, wherejson, &newmap, fetchKeys)
 	if pushed != nil {
 		if queryType == SELECT {
 			return pushed
@@ -168,6 +146,5 @@ func executeQuery(queryType QueryType, whereParams []string,
 			return []map[string]interface{}{}
 		}
 	}
-
 	return newmap
 }

@@ -6,6 +6,21 @@ import (
 	"time"
 )
 
+type Rank string
+type JsonData map[string]interface{}
+type NodeData map[string]interface{}
+
+const (
+	MASTER   Rank = "MASTER"
+	FOLLOWER Rank = "FOLLOWER"
+)
+
+var PORT_START = 3100
+var NODE_MAP []*Node
+var Logger logging.Logger
+var DataChanged bool = false
+var GlobalNode *Node
+
 type Node struct {
 	Ip            string
 	Pinged        time.Time
@@ -45,19 +60,3 @@ type Replicate struct {
 	LocalFolder string `json:"localFolder"`
 	RemoteIp    string `json:"remoteIp"`
 }
-
-type Rank string
-type JsonData map[string]interface{}
-type NodeData map[string]interface{}
-
-const (
-	MASTER   Rank = "MASTER"
-	FOLLOWER Rank = "FOLLOWER"
-)
-
-// global vars will clean up
-var PORT_START = 3100
-var NODE_MAP []*Node
-var Logger logging.Logger
-var DataChanged bool = false
-var GlobalNode *Node

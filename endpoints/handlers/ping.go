@@ -26,7 +26,7 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 
 	body, _ := ioutil.ReadAll(req.Body)
 	json.Unmarshal(body, &localTempNodes)
-	localnm := global.UnmarshalNodeMap(localTempNodes)
+	var localnm = global.UnmarshalNodeMap(localTempNodes)
 
 	if len(localnm) == 0 {
 		return
@@ -35,16 +35,14 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	node.Pinged = time.Now()
 	global.Logger.Log("PING RECEIVED", logging.INFO)
 
-	currentMasterData := global.NODE_MAP[0].Data
+	var currentMasterData = global.NODE_MAP[0].Data
 	global.NODE_MAP = localnm
 
 	if node.Rank == global.FOLLOWER {
-
 		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+
 			strings.Join(global.GetNodeIps(), " "), logging.INFO)
 
 		go (*global.Node)(node).CheckForNoPingFromMaster()
-
 	} else {
 		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!",
 			logging.WARNING)
@@ -56,6 +54,10 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	node.updateData(localnm)
+}
+
+func (node *Node) updateData(localnm []*global.Node) {
 	global.Logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
 
 	global.NODE_MAP = []*global.Node{}

@@ -15,40 +15,29 @@ import (
 )
 
 func MarshalNodeMap(nodeMap []*Node) []*TempNode {
-
-	// this is for sending data across to
-	// other nodes
+	// We want to send data across nodes
 	var SEND_MAP []*TempNode
 	for _, node := range NODE_MAP {
 		var nodeData = make(map[string]interface{}, 0)
 		files, _ := ioutil.ReadDir("data/")
 
 		node.Data.Range(func(key, value any) bool {
-			docKey := key.(string)
+			var docKey = key.(string)
 			var jsonData map[string]interface{}
 			if value.(map[string]interface{})["type"] != "text" {
-
-				// if its a file we want
-				// to get its "disk" value
 				if len(files) == 0 {
 					return true
 				}
-
-				// this is not very efficient
-				// will change
 				for _, file := range files {
-					key := file.Name()
-					data, _ := ioutil.ReadFile("data/" + key)
+					var key = file.Name()
+					var data, _ = ioutil.ReadFile("data/" + key)
 					if key != docKey {
 						continue
 					}
-					// put json text val into
-					// map and send it
 					json.Unmarshal(data, &jsonData)
 					nodeData[docKey] = jsonData
 					return true
 				}
-
 			}
 			nodeData[docKey] = value
 			return true
@@ -69,6 +58,7 @@ func MarshalNodeMap(nodeMap []*Node) []*TempNode {
 }
 
 func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
+	// The opposite of Marshal, for retrieving data from nodes
 	var SEND_MAP []*Node
 	for _, node := range nodeMap {
 		var nodeData sync.Map
@@ -89,19 +79,16 @@ func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
 	return SEND_MAP
 }
 
-// PingRetry retries the ping 3 times and if
-// afer 3 pings there's no response,
-// node is 'paused'
 func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
+	// PingRetry retries the ping 3 times and if afer 3 pings there's no response,
+	// node is 'paused'
 
 	if n == nil || n.Active == false {
 		return false
 	}
-
 	for i := 0; i < 3; i++ {
 		time.Sleep(500 * time.Millisecond)
-		_, err := http.Post("http://"+n.Ip+"/ping",
-			"application/json", sendData)
+		_, err := http.Post("http://"+n.Ip+"/ping", "application/json", sendData)
 		if err == nil {
 			return true
 		}
@@ -111,34 +98,22 @@ func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 }
 
 func (node *Node) PingEachConnection(jsonNodeMap []byte) {
+	// We want to ping each follower node to make sure they know, the master is still active
 	for _, n := range NODE_MAP {
 		go func(loopn *Node) {
-
-			//don't ping to itself
 			if loopn.Ip == node.Ip {
 				return
 			}
-
-			//ping non active node every 8 seconds
 			if loopn.Active == false {
-
-				//2n and 2n+1 (all cases)
-				//maybe a better way would be to send a ping to master
-				//if node comes back
-				if time.Now().Second()%7 != 0 &&
-					time.Now().Second()%8 != 0 {
+				if time.Now().Second()%7 != 0 && time.Now().Second()%8 != 0 {
 					return
 				}
 			}
+			var sendData = bytes.NewBuffer(jsonNodeMap)
 
-			sendData := bytes.NewBuffer(jsonNodeMap)
-
-			//ping connection
 			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
-			_, err := http.Post("http://"+loopn.Ip+"/ping",
-				"application/json", sendData)
+			_, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
 
-			//retry logic
 			if err != nil {
 				if !loopn.PingRetry(sendData) {
 					Logger.Log("Cannot connect to "+loopn.Ip,
@@ -148,22 +123,14 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 					return
 				}
 			}
-			//send all data to new joiner
-			//TODO check if data is the same on nodes
 			if loopn.PingCount == 0 {
-				Logger.Log("SENDING MAP TO FIRST JOINER",
-					logging.INFO)
-				//marshall so we're able to send over TCP
+				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
 				jsonNodeMap, _ := json.Marshal(MarshalNodeMap(NODE_MAP))
 				sendData := bytes.NewBuffer(jsonNodeMap)
-				_, err = http.Post("http://"+loopn.Ip+"/ping",
-					"application/json", sendData)
+				_, err = http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
 			}
-			//increase connection ping count
 			loopn.PingCount++
-			Logger.Log("PING RECEIVED FROM "+loopn.Ip,
-				logging.INFO)
-
+			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
 			if loopn.Active == false {
 				loopn.Active = true
 			}
@@ -173,101 +140,85 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 }
 
 func (node *Node) Ping() {
-	//while true
+	// Every for seconds, we want to ping each connection
 	for true {
 		time.Sleep(4 * time.Second)
-		//break out if follower (shouldnt be pinging if follower)
 		if node.Rank == FOLLOWER {
 			return
 		}
-
-		if node.Rank == MASTER {
-			Logger.Log(string(node.Rank)+" at "+node.Ip+
-				" nodemap: "+strings.Join(GetNodeIps(), " "),
-				logging.INFO)
-		}
-
 		if len(NODE_MAP) == 1 {
 			continue
 		}
 
-		//check if the data has changed from the data on the map
-		jsonNodeMap := checkIfDataChanged()
+		Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(GetNodeIps(), " "),
+			logging.INFO)
+
+		var jsonNodeMap = checkIfDataChanged()
 		node.PingEachConnection(jsonNodeMap)
 	}
 }
 
 func (node *Node) CheckForNoPingFromMaster() {
-
-	//master shouldnt be checking
+	// We want to check if the master is still alive
 	if node.Rank == MASTER {
 		return
 	}
-	//wait for 5 seconds after ping
+
 	time.Sleep(4100 * time.Millisecond)
-	timeSinceLastPingAbs := time.Now().Sub(node.Pinged).Seconds()
-	// if there has been a ping in that time, good!
+	var timeSinceLastPingAbs = time.Now().Sub(node.Pinged).Seconds()
 	if timeSinceLastPingAbs < 1 {
 		return
 	}
-	Logger.Log("Slow response first check at "+
-		fmt.Sprintf("%f", timeSinceLastPingAbs)+"s", logging.WARNING)
-	//if not, check for retry ping
+
+	Logger.Log("Slow response first check at "+fmt.Sprintf("%f", timeSinceLastPingAbs)+"s",
+		logging.WARNING)
+
 	time.Sleep(4100 * time.Millisecond)
 	timeSinceLastPingAbs = time.Now().Sub(node.Pinged).Seconds()
 	if timeSinceLastPingAbs < 8.2 {
 		return
 	}
-	//if no pings in that time, master is down
 	Logger.Log("NO PING FROM MASTER!!!", logging.INFO)
-
-	//if node is not next in line, break out
-	if !node.isNextInLine() {
-		return
+	if node.isNextInLine() {
+		node.setToMaster()
 	}
-	//set that node to master
-	node.setToMaster()
 }
 
 func (node *Node) setToMaster() {
+	// Set this node to master status and put all 'replicas' to 'active'
 	node.Rank = MASTER
-	// pass all data over
 	node.Data = NODE_MAP[0].Data
 	node.RecentQueries = NODE_MAP[0].RecentQueries
 	node.Rules = NODE_MAP[0].Rules
 
-	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
+	var waitingTimeStr = strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
 	Logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
-	// update node map
+
 	NODE_MAP = NODE_MAP[1:]
 	NODE_MAP[0] = node
 	go node.Ping()
 }
 
 func (node *Node) ReadFromLocal() {
-	// reads from data storage
-	// puts all docs to memory
-	// on load
-	files, _ := ioutil.ReadDir("data/")
+	// reads from data storage puts all docs to memory on load
+	var files, _ = ioutil.ReadDir("data/")
 	if len(files) == 0 {
 		return
 	}
 	for _, file := range files {
-		key := file.Name()
-		data, _ := ioutil.ReadFile("data/" + key)
+		var key = file.Name()
+		var data, _ = ioutil.ReadFile("data/" + key)
 		var dataJSON JsonData
 		json.Unmarshal(data, &dataJSON)
-		// I can do a cast to map[string]interface{}
-		// keep forgetting
 		node.Data.Store(key, (map[string]interface{})(dataJSON))
 	}
 	Logger.Log("Loaded files into memory.", logging.INFO)
 }
 
 func WriteDocToDisk(value map[string]interface{}) {
+	// We want to write a document to disk
 	dataToWrite, _ := json.Marshal(value)
 	path := "data/"
 	_ = os.MkdirAll(path, os.ModePerm)
-	os.WriteFile("data/"+value["key"].(string),
-		[]byte(dataToWrite), os.ModePerm)
+	os.WriteFile("data/"+value["key"].(string), []byte(dataToWrite), os.ModePerm)
 }

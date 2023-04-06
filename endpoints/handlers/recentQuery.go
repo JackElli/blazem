@@ -13,7 +13,7 @@ func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Reque
 	// Returns a list of recently entered queries
 	WriteHeaders(w, []string{})
 
-	dataToSend := node.RecentQueries
+	var dataToSend = node.RecentQueries
 	if len(dataToSend) == 0 {
 		json.NewEncoder(w).Encode([]uint8{})
 		return

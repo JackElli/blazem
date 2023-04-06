@@ -9,9 +9,15 @@ import (
 type DecodeFunc func(string, *QueryType,
 	*bool, *bool, *[]string, *[]string) error
 
-// decodeParam decodes the paramaters and sets up the next step in the query chain
-func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
+var specialTokens = map[string]bool{
+	"SELECT": true,
+	"WHERE":  true,
+	"DELETE": true,
+	"LIKE":   true,
+}
 
+func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
+	// DecodeParam decodes the paramaters and sets up the next step in the query chain
 	if strings.Contains(param, "=") && !strings.Contains(param, "/") {
 		*paramsplit = strings.Split(param, "=")
 		*mathOp = EQ
@@ -36,7 +42,6 @@ func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
 	return false
 }
 
-// ANY being any token
 var decodeTokenTable = map[int]map[string]DecodeFunc{
 	0: {
 		"SELECT": func(token string, queryType *QueryType,
@@ -84,31 +89,18 @@ var decodeTokenTable = map[int]map[string]DecodeFunc{
 	},
 }
 
-var specialTokens = map[string]bool{
-	"SELECT": true,
-	"WHERE":  true,
-	"DELETE": true,
-	"LIKE":   true,
-}
-
-// decodeTokens gets each token and decides what it is
 func decodeToken(i int, token string, queryType *QueryType,
 	all *bool, where *bool, fetchKeys *[]string, whereParams *[]string) error {
-	// If there is a where clause
-	// get all predicates after the where
-	// do this first
+	// DecodeTokens gets each token and decides what it is
+	var decoderError error
 	if *where && i > 2 {
-		// get rid of unnecessary white space
-		noWhiteSpaceReg := regexp.MustCompile("[a-zA-Z-_.= ]*")
-		findSection := noWhiteSpaceReg.FindString(token)
-		findSectionNoWhiteSpace := strings.ReplaceAll(findSection, " ", "")
-		trimmedToken := strings.ReplaceAll(token, findSection, findSectionNoWhiteSpace)
+		var noWhiteSpaceReg = regexp.MustCompile("[a-zA-Z-_.= ]*")
+		var findSection = noWhiteSpaceReg.FindString(token)
+		var findSectionNoWhiteSpace = strings.ReplaceAll(findSection, " ", "")
+		var trimmedToken = strings.ReplaceAll(token, findSection, findSectionNoWhiteSpace)
 		*whereParams = append(*whereParams, string(trimmedToken))
 		return nil
 	}
-	// this is for the decoder
-	// before the where clause
-	var decoderError error
 	if _, ok := specialTokens[token]; ok {
 		decoderError = decodeTokenTable[i][token](token, queryType, all,
 			where, fetchKeys, whereParams)
@@ -116,15 +108,13 @@ func decodeToken(i int, token string, queryType *QueryType,
 		decoderError = decodeTokenTable[i]["ANY"](token, queryType, all,
 			where, fetchKeys, whereParams)
 	}
-
 	return decoderError
 }
 
-// decodeQuery decodes the query so that we can manipulate it
 func decodeQuery(querystr string) ([]map[string]interface{}, []error) {
+	// decodeQuery decodes the query so that we can manipulate it
 	var tokens = tokenise(querystr)
 	var queryType QueryType
-
 	var fetchKeys []string
 	var whereParams []string
 	var where bool
@@ -143,7 +133,7 @@ func decodeQuery(querystr string) ([]map[string]interface{}, []error) {
 		}
 	}
 
-	jsondata, loaderr := loadTable(jsonLoad)
+	var jsondata, loaderr = loadTable(jsonLoad)
 	if loaderr != nil {
 		errs = append(errs, loaderr)
 	}

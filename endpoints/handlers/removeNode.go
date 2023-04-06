@@ -21,12 +21,12 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	nodeIpToRemove := req.URL.Query().Get("ip")
+	var nodeIpToRemove = req.URL.Query().Get("ip")
 	if nodeIpToRemove == "" {
 		nodeIpToRemove = req.Header.Get("ip")
 	}
 
-	indexOfNode := global.IndexOfNodeIpInNodeMap(nodeIpToRemove)
+	var indexOfNode = global.IndexOfNodeIpInNodeMap(nodeIpToRemove)
 	if indexOfNode == -1 {
 		return
 	}
@@ -34,5 +34,4 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 
 	global.NODE_MAP = append(global.NODE_MAP[:indexOfNode], global.NODE_MAP[indexOfNode+1:]...)
 	json.NewEncoder(w).Encode("removed node")
-
 }

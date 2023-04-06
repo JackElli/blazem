@@ -8,18 +8,16 @@ import (
 	"time"
 )
 
-// checkIfDocHolds checks if the document matches the query
 func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds *int) {
-
+	// checkIfDocHolds checks if the document matches the query
 	// v is currently in map
 	// wherevalue is what user is searching
-
 	// REMEMBER holds is 1 by default
 	// we need to prove that it
 	// does not hold
 
 	var doesWhereCast bool
-	opType := fmt.Sprintf("%T", v)
+	var opType = fmt.Sprintf("%T", v)
 	switch opType {
 	case "time.Time":
 		_, doesWhereCast = wherevalue.(time.Time)
@@ -31,18 +29,12 @@ func checkIfDocHolds(mathOp MathOp, v interface{}, wherevalue interface{}, holds
 		_, doesWhereCast = wherevalue.(string)
 	}
 
-	// These are the opposites
-	// check if doesnt cast
 	if (mathOp == EQ || mathOp == NE) && !doesWhereCast {
 		*holds = *holds & 0
 		return
 	}
 
-	// make wherevalue cast to correct
-	// type
 	if doesWhereCast {
-		// where value will always be string
-		// user input
 		switch opType {
 		case "float64":
 			wherevalue, _ = strconv.ParseFloat(wherevalue.(string), 64)

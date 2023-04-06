@@ -10,7 +10,7 @@ func FolderHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 }
 
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
-	// We want to return all of the 'root folders in the data i.e every folder
+	// We want to return all of the root folders in the data i.e every folder
 	// that doesnt have a folder parent. We fetch the folder names, add them to the
 	// folder map and add the corresponding document count
 	WriteHeaders(w, nil)
