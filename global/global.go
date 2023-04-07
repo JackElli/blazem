@@ -210,12 +210,12 @@ func (node *Node) ReadFromLocal() {
 		var data, _ = ioutil.ReadFile("data/" + key)
 		var dataJSON JsonData
 		json.Unmarshal(data, &dataJSON)
-		node.Data.Store(key, (map[string]interface{})(dataJSON))
+		node.Data.Store(key, (Document)(dataJSON))
 	}
 	Logger.Log("Loaded files into memory.", logging.INFO)
 }
 
-func WriteDocToDisk(value map[string]interface{}) {
+func WriteDocToDisk(value Document) {
 	// We want to write a document to disk
 	dataToWrite, _ := json.Marshal(value)
 	path := "data/"
