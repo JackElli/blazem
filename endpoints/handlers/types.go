@@ -52,7 +52,7 @@ type DataInFolder struct {
 }
 
 type EndpointResponse struct {
-	Code int
-	Msg  string
-	Data interface{}
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
 }

@@ -41,12 +41,11 @@ func (node *Node) getAllFolders() map[string]Folder {
 
 	node.Data.Range(func(k, value interface{}) bool {
 		var dataType = value.(global.Document)["type"]
-		var folderKey = value.(global.Document)["key"].(string)
-		var folderName = value.(global.Document)["folderName"].(string)
-
 		if dataType != "folder" {
 			return true
 		}
+		var folderKey = value.(global.Document)["key"].(string)
+		var folderName = value.(global.Document)["folderName"].(string)
 
 		var inFolder string
 		var exists bool
