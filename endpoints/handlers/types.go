@@ -1,6 +1,10 @@
 package handlers
 
-import "blazem/global"
+import (
+	"blazem/global"
+	"encoding/json"
+	"net/http"
+)
 
 type Node global.Node
 
@@ -47,4 +51,15 @@ type DataInFolder struct {
 	FolderName    string     `json:"folderName"`
 	ParentFolders []Folder   `json:"parentFolders"`
 	Data          []SendData `json:"data"`
+}
+
+type EndpointResponse struct {
+	Code int
+	Msg  string
+	Data interface{}
+}
+
+func JsonResponse(w http.ResponseWriter, response EndpointResponse) {
+	// Send a JSON response back
+	json.NewEncoder(w).Encode(response)
 }

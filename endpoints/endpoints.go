@@ -1,7 +1,7 @@
 package endpoints
 
 import (
-	handlers "blazem/endpoints/handlers"
+	"blazem/endpoints/handlers"
 	"blazem/global"
 	"net/http"
 )

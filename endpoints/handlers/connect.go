@@ -3,8 +3,7 @@ package handlers
 import (
 	"blazem/global"
 	"blazem/logging"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -20,25 +19,58 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	// connect request). If it's not in the nodemap, we add it.
 	WriteHeaders(w, []string{"ip"})
 
-	ip := req.URL.Query().Get("ip")
-
-	if ip != "" {
-		if !global.AlreadyInNodeMap(ip) {
-			global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
-				PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,
-				RecentQueries: map[string]string{}, Rules: map[string]global.Rule{}})
-		} else {
-			indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
-			global.NODE_MAP[indexOfNode].Active = true
-			global.NODE_MAP[indexOfNode].PingCount = 0
-		}
-		global.Logger.Log(ip+" has connected", logging.GOOD)
-	}
-
-	jsonNodeMap, err := json.Marshal(global.NODE_MAP)
-	if err != nil {
-		fmt.Println("Cannot Marshal json")
+	if req.Method != "POST" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Should not be getting",
+			nil,
+		})
 		return
 	}
-	json.NewEncoder(w).Encode(jsonNodeMap)
+
+	var ip = req.URL.Query().Get("ip")
+	var err = updateNodeMap(ip)
+
+	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			err.Error(),
+			nil,
+		})
+		return
+	}
+
+	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Cannot marshal nodemap",
+			nil,
+		})
+		return
+	}
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Successfully connected",
+		global.NODE_MAP,
+	})
+}
+
+func updateNodeMap(ip string) error {
+
+	if ip == "" {
+		return errors.New("IP nothing")
+	}
+
+	if !global.AlreadyInNodeMap(ip) {
+		global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
+			PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,
+			RecentQueries: map[string]string{}, Rules: map[string]global.Rule{}})
+		global.Logger.Log(ip+" has connected", logging.GOOD)
+		return nil
+	}
+
+	indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
+	global.NODE_MAP[indexOfNode].Active = true
+	global.NODE_MAP[indexOfNode].PingCount = 0
+	return nil
 }

@@ -17,24 +17,54 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	// coming in, write to disk and add to the map
 	WriteHeaders(w, []string{"all"})
 
-	if node.Rank != global.MASTER || req.Method != "POST" {
+	if req.Method != "POST" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Should not be getting",
+			nil,
+		})
+		return
+	}
+
+	if node.Rank != global.MASTER {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Should be master",
+			nil,
+		})
 		return
 	}
 
 	var dataToAdd global.Document
-	body, _ := ioutil.ReadAll(req.Body)
-	err := json.Unmarshal(body, &dataToAdd)
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Cannot read request body",
+			nil,
+		})
+		return
+	}
+	err = json.Unmarshal(body, &dataToAdd)
+	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Cannot unmarshal JSON request",
+			nil,
+		})
 		return
 	}
 
-	document := node.transformNewDoc(dataToAdd)
+	var document = node.transformNewDoc(dataToAdd)
 	global.WriteDocToDisk(document)
-
 	node.Data.Store(dataToAdd["key"], document)
-	global.DataChanged = true
 
-	json.NewEncoder(w).Encode("done")
+	global.DataChanged = true
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Added document successfully",
+		nil,
+	})
 }
 
 func (node *Node) transformNewDoc(dataToAdd global.Document) global.Document {
