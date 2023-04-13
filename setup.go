@@ -1,8 +1,10 @@
 package main
 
 import (
+	"blazem/endpoints"
 	"blazem/global"
 	"blazem/logging"
+	"blazem/query"
 	"net"
 	"net/http"
 	"strconv"
@@ -10,6 +12,29 @@ import (
 	"sync"
 	"time"
 )
+
+func (node *Node) RunSetup() {
+	var masterip string = ""
+	var localip = getLocalIp()
+
+	global.GlobalNode = (*global.Node)(node)
+	setupLogger()
+
+	go node.pickPort(localip)
+	endpoints.SetupEndpoints((*global.Node)(node))
+	global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(node))
+
+	if masterip == node.Ip {
+		node.setNodeMasterAttrs()
+	}
+
+	(*global.Node)(node).ReadFromLocal()
+	go (*global.Node)(node).Ping()
+
+	query.LoadIntoMemory(global.Node(*node))
+
+	// go (*endpoints.Node)(&node).CheckRules()
+}
 
 func (node *Node) setNodeMasterAttrs() {
 	// Here, we want to set master attributes and add some sample data when we first
@@ -48,6 +73,22 @@ func (node *Node) pickPort(ip string) {
 	}
 }
 
+func (node *Node) tryListen(ip string) {
+	// We want to listen on a selected port for this IP
+	portstr := ip
+	if strings.Count(ip, ":") > 1 {
+		portstr = strings.Split(ip, ":")[0]
+	}
+	global.Logger.Log("trying on "+portstr, logging.INFO)
+	l, err := net.Listen("tcp", portstr)
+	if err != nil {
+		return
+	}
+	node.Ip = ip
+	global.Logger.Log("Blazem started up on "+ip, logging.INFO)
+	http.Serve(l, nil)
+}
+
 func indexOfNodeInNodeMap(node *global.Node) int {
 	// Return the index of the node in the nodemap
 	for i, n := range global.NODE_MAP {
@@ -73,22 +114,6 @@ func getLocalIp() string {
 	defer conn.Close()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	return strings.Split(localAddr.String(), ":")[0]
-}
-
-func (node *Node) tryListen(ip string) {
-	// We want to listen on a selected port for this IP
-	portstr := ip
-	if strings.Count(ip, ":") > 1 {
-		portstr = strings.Split(ip, ":")[0]
-	}
-	global.Logger.Log("trying on "+portstr, logging.INFO)
-	l, err := net.Listen("tcp", portstr)
-	if err != nil {
-		return
-	}
-	node.Ip = ip
-	global.Logger.Log("Blazem started up on "+ip, logging.INFO)
-	http.Serve(l, nil)
 }
 
 func setupLogger() {

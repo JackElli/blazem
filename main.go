@@ -1,9 +1,7 @@
 package main
 
 import (
-	"blazem/endpoints"
 	"blazem/global"
-	"blazem/query"
 	"sync"
 	"time"
 )
@@ -28,27 +26,7 @@ func main() {
 		Rules:         map[string]global.Rule{},
 	}
 
-	var masterip string = ""
-	var localip = getLocalIp()
-
-	global.GlobalNode = (*global.Node)(&node)
-	setupLogger()
-
-	go node.pickPort(localip)
-	endpoints.SetupEndpoints((*global.Node)(&node))
-	global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(&node))
-
-	if masterip == node.Ip {
-		node.setNodeMasterAttrs()
-	}
-
-	(*global.Node)(&node).ReadFromLocal()
-	go (*global.Node)(&node).Ping()
-
-	// // run the rule checker
-	// go (*endpoints.Node)(&node).CheckRules()
-
-	query.LoadIntoMemory(global.Node(node))
+	node.RunSetup()
 
 	for true {
 		time.Sleep(150 * time.Millisecond)

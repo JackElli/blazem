@@ -14,71 +14,6 @@ import (
 	"time"
 )
 
-func MarshalNodeMap(nodeMap []*Node) []*TempNode {
-	// We want to send data across nodes
-	var SEND_MAP []*TempNode
-	for _, node := range NODE_MAP {
-		var nodeData = make(map[string]interface{}, 0)
-		files, _ := ioutil.ReadDir("data/")
-
-		node.Data.Range(func(key, value any) bool {
-			var docKey = key.(string)
-			var jsonData map[string]interface{}
-			if value.(map[string]interface{})["type"] != "text" {
-				if len(files) == 0 {
-					return true
-				}
-				for _, file := range files {
-					var key = file.Name()
-					var data, _ = ioutil.ReadFile("data/" + key)
-					if key != docKey {
-						continue
-					}
-					json.Unmarshal(data, &jsonData)
-					nodeData[docKey] = jsonData
-					return true
-				}
-			}
-			nodeData[docKey] = value
-			return true
-		})
-		tempNode := TempNode{
-			node.Ip,
-			node.Pinged,
-			node.PingCount,
-			node.Rank,
-			nodeData,
-			node.Active,
-			node.RecentQueries,
-			node.Rules,
-		}
-		SEND_MAP = append(SEND_MAP, &tempNode)
-	}
-	return SEND_MAP
-}
-
-func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
-	// The opposite of Marshal, for retrieving data from nodes
-	var SEND_MAP []*Node
-	for _, node := range nodeMap {
-		var nodeData sync.Map
-		for key, value := range node.Data {
-			nodeData.Store(key, value)
-		}
-		SEND_MAP = append(SEND_MAP, &Node{
-			Ip:            node.Ip,
-			Pinged:        node.Pinged,
-			PingCount:     node.PingCount,
-			Rank:          node.Rank,
-			Data:          nodeData,
-			Active:        node.Active,
-			RecentQueries: node.RecentQueries,
-			Rules:         node.Rules,
-		})
-	}
-	return SEND_MAP
-}
-
 func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 	// PingRetry retries the ping 3 times and if afer 3 pings there's no response,
 	// node is 'paused'
@@ -213,6 +148,71 @@ func (node *Node) ReadFromLocal() {
 		node.Data.Store(key, (Document)(dataJSON))
 	}
 	Logger.Log("Loaded files into memory.", logging.INFO)
+}
+
+func MarshalNodeMap(nodeMap []*Node) []*TempNode {
+	// We want to send data across nodes
+	var SEND_MAP []*TempNode
+	for _, node := range NODE_MAP {
+		var nodeData = make(map[string]interface{}, 0)
+		files, _ := ioutil.ReadDir("data/")
+
+		node.Data.Range(func(key, value any) bool {
+			var docKey = key.(string)
+			var jsonData map[string]interface{}
+			if value.(map[string]interface{})["type"] != "text" {
+				if len(files) == 0 {
+					return true
+				}
+				for _, file := range files {
+					var key = file.Name()
+					var data, _ = ioutil.ReadFile("data/" + key)
+					if key != docKey {
+						continue
+					}
+					json.Unmarshal(data, &jsonData)
+					nodeData[docKey] = jsonData
+					return true
+				}
+			}
+			nodeData[docKey] = value
+			return true
+		})
+		tempNode := TempNode{
+			node.Ip,
+			node.Pinged,
+			node.PingCount,
+			node.Rank,
+			nodeData,
+			node.Active,
+			node.RecentQueries,
+			node.Rules,
+		}
+		SEND_MAP = append(SEND_MAP, &tempNode)
+	}
+	return SEND_MAP
+}
+
+func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
+	// The opposite of Marshal, for retrieving data from nodes
+	var SEND_MAP []*Node
+	for _, node := range nodeMap {
+		var nodeData sync.Map
+		for key, value := range node.Data {
+			nodeData.Store(key, value)
+		}
+		SEND_MAP = append(SEND_MAP, &Node{
+			Ip:            node.Ip,
+			Pinged:        node.Pinged,
+			PingCount:     node.PingCount,
+			Rank:          node.Rank,
+			Data:          nodeData,
+			Active:        node.Active,
+			RecentQueries: node.RecentQueries,
+			Rules:         node.Rules,
+		})
+	}
+	return SEND_MAP
 }
 
 func WriteDocToDisk(value Document) {
