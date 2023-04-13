@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"blazem/global"
-	"blazem/logging"
-	"encoding/json"
 	"net/http"
 )
 
@@ -17,21 +15,47 @@ func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
 	// then we save the changes.
 	WriteHeaders(w, []string{"ip"})
 
+	if req.Method != "DELETE" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Wrong method",
+			nil,
+		})
+		return
+	}
+
 	if node.Rank == global.FOLLOWER {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Must be a master node to complete this action",
+			nil,
+		})
 		return
 	}
 
 	var nodeIpToRemove = req.URL.Query().Get("ip")
 	if nodeIpToRemove == "" {
-		nodeIpToRemove = req.Header.Get("ip")
+		JsonResponse(w, EndpointResponse{
+			500,
+			"No IP passed",
+			nil,
+		})
+		return
 	}
 
 	var indexOfNode = global.IndexOfNodeIpInNodeMap(nodeIpToRemove)
 	if indexOfNode == -1 {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Invalid node",
+			nil,
+		})
 		return
 	}
-	global.Logger.Log("removed node: "+nodeIpToRemove+" from the nodemap", logging.GOOD)
-
 	global.NODE_MAP = append(global.NODE_MAP[:indexOfNode], global.NODE_MAP[indexOfNode+1:]...)
-	json.NewEncoder(w).Encode("removed node")
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Successfully removed node from nodemap",
+		nil,
+	})
 }

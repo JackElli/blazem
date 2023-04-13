@@ -2,16 +2,29 @@ package handlers
 
 import (
 	"blazem/global"
-	"encoding/json"
 	"net/http"
 )
 
 func NodeMapHandler(w http.ResponseWriter, req *http.Request) {
 	// Return the results of the nodemap to the client
 	WriteHeaders(w, []string{"all"})
-	nodeMapResp := []WebNodeMap{}
-	for _, n := range global.NODE_MAP {
-		nodeMapResp = append(nodeMapResp, WebNodeMap{n.Ip, n.Active})
+
+	if req.Method != "GET" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Wrong method",
+			nil,
+		})
+		return
 	}
-	json.NewEncoder(w).Encode(nodeMapResp)
+
+	var nodeMap = make([]WebNodeMap, 0)
+	for _, n := range global.NODE_MAP {
+		nodeMap = append(nodeMap, WebNodeMap{n.Ip, n.Active})
+	}
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Successfully retrieved nodemap",
+		nodeMap,
+	})
 }

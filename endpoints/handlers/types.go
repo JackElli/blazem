@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"blazem/global"
-	"encoding/json"
-	"net/http"
 )
 
 type Node global.Node
@@ -57,9 +55,4 @@ type EndpointResponse struct {
 	Code int
 	Msg  string
 	Data interface{}
-}
-
-func JsonResponse(w http.ResponseWriter, response EndpointResponse) {
-	// Send a JSON response back
-	json.NewEncoder(w).Encode(response)
 }

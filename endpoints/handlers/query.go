@@ -20,25 +20,67 @@ func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
 
 	WriteHeaders(w, []string{"query"})
 
-	var queryVal = req.URL.Query().Get("query")
-	var dataToSend = make([]SendData, 0)
-	if queryVal == "" {
-		queryVal = req.Header.Get("query")
+	if req.Method != "GET" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Wrong method",
+			nil,
+		})
+		return
 	}
 
+	var queryVal = req.URL.Query().Get("query")
+	if queryVal == "" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"No query param sent",
+			nil,
+		})
+		return
+	}
+	var dataToSend = make([]SendData, 0)
 	query.LoadIntoMemory(global.Node(*node))
 
-	queryResult, timeTaken, _, _ := query.Execute(queryVal, "")
+	queryResult, timeTaken, _, errors := query.Execute(queryVal, "")
+	if len(errors) != 0 {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Errors found in query response",
+			errors,
+		})
+		return
+	}
+
 	for _, res := range queryResult {
 		if res["type"] != "text" {
 			res["value"] = "file"
 		}
+		var dataJSON, err = json.Marshal(res)
+		if err != nil {
+			JsonResponse(w, EndpointResponse{
+				500,
+				"Cannot marshal query data {" + err.Error() + "}",
+				nil,
+			})
+			return
+		}
 
-		var dataJSON, _ = json.Marshal(res)
 		var getJSON global.JsonData
-		json.Unmarshal(dataJSON, &getJSON)
+		err = json.Unmarshal(dataJSON, &getJSON)
+		if err != nil {
+			JsonResponse(w, EndpointResponse{
+				500,
+				"Cannot unmarshal query data {" + err.Error() + "}",
+				nil,
+			})
+			return
+		}
 		dataToSend = append(dataToSend, SendData{getJSON["key"].(string), getJSON})
 	}
 	node.RecentQueries[queryVal] = time.Now().Format("2006-01-02 15:04:05")
-	json.NewEncoder(w).Encode(SendQueryData{dataToSend, timeTaken})
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Completed query successfully",
+		SendQueryData{dataToSend, timeTaken},
+	})
 }

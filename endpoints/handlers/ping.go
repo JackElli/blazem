@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -22,13 +21,42 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	// check. If we change from master to follower quickly, it's because we've
 	// been added to the cluster by another node. We write all of the changed
 	// data to disk
-	var localTempNodes []*global.TempNode
 
-	body, _ := ioutil.ReadAll(req.Body)
-	json.Unmarshal(body, &localTempNodes)
+	if req.Method != "POST" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Wrong method",
+			nil,
+		})
+		return
+	}
+	var localTempNodes = make([]*global.TempNode, 0)
+
+	var body, err = ioutil.ReadAll(req.Body)
+	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Error reading request body {" + err.Error() + "}",
+			nil,
+		})
+		return
+	}
+	err = json.Unmarshal(body, &localTempNodes)
+	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Error unmarshalling request body {" + err.Error() + "}",
+			nil,
+		})
+		return
+	}
 	var localnm = global.UnmarshalNodeMap(localTempNodes)
-
 	if len(localnm) == 0 {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"No nodes found to marshal",
+			nil,
+		})
 		return
 	}
 
@@ -39,28 +67,31 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	global.NODE_MAP = localnm
 
 	if node.Rank == global.FOLLOWER {
-		global.Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+
-			strings.Join(global.GetNodeIps(), " "), logging.INFO)
-
 		go (*global.Node)(node).CheckForNoPingFromMaster()
 	} else {
-		global.Logger.Log("SOMETHINGS GONE WRONG or CONNECTED FROM WEBUI!",
-			logging.WARNING)
 		node.Rank = global.FOLLOWER
 	}
 
 	if lenOfSyncMap(localnm[0].Data) == 0 {
 		global.NODE_MAP[0].Data = currentMasterData
+		JsonResponse(w, EndpointResponse{
+			200,
+			"Successfull ping",
+			nil,
+		})
 		return
 	}
-
 	node.updateData(localnm)
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Successfull ping",
+		nil,
+	})
 }
 
 func (node *Node) updateData(localnm []*global.Node) {
-	global.Logger.Log("UPDATED DATA ON THIS NODE!", logging.GOOD)
 
-	global.NODE_MAP = []*global.Node{}
+	global.NODE_MAP = make([]*global.Node, 0)
 	for _, j := range localnm {
 		global.NODE_MAP = append(global.NODE_MAP, j)
 	}

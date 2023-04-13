@@ -20,7 +20,7 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		JsonResponse(w, EndpointResponse{
 			500,
-			"Should not be getting",
+			"Wrong method",
 			nil,
 		})
 		return
@@ -40,7 +40,7 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		JsonResponse(w, EndpointResponse{
 			500,
-			"Cannot read request body",
+			"Cannot read request body {" + err.Error() + "}",
 			nil,
 		})
 		return
@@ -49,7 +49,7 @@ func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		JsonResponse(w, EndpointResponse{
 			500,
-			"Cannot unmarshal JSON request",
+			"Cannot unmarshal JSON request {" + err.Error() + "}",
 			nil,
 		})
 		return

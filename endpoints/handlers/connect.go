@@ -22,7 +22,7 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		JsonResponse(w, EndpointResponse{
 			500,
-			"Should not be getting",
+			"Wrong method",
 			nil,
 		})
 		return
@@ -43,7 +43,7 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		JsonResponse(w, EndpointResponse{
 			500,
-			"Cannot marshal nodemap",
+			"Cannot marshal nodemap {" + err.Error() + "}",
 			nil,
 		})
 		return

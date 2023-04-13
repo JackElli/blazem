@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -20,6 +21,11 @@ func WriteHeaders(w http.ResponseWriter, extras []string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
+}
+
+func JsonResponse(w http.ResponseWriter, response EndpointResponse) {
+	// Send a JSON response back
+	json.NewEncoder(w).Encode(response)
 }
 
 func getHexKey() string {
