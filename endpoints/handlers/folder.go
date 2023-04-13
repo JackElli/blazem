@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"blazem/global"
-	"encoding/json"
 	"net/http"
 )
 
@@ -15,34 +14,66 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	// that doesnt have a folder parent. We fetch the folder names, add them to the
 	// folder map and add the corresponding global.Document count
 	WriteHeaders(w, nil)
+
+	if req.Method != "GET" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Wrong method",
+			nil,
+		})
+		return
+	}
+
+	var folders = node.getAllFolders()
+	folders = node.getFolderDocCount(folders)
+	folders = node.storeDocCount(folders)
+
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Successfully retrieved folders",
+		folders,
+	})
+}
+
+func (node *Node) getAllFolders() map[string]Folder {
+	// We want to get all of the folders currently in Blazem
 	var folders = make(map[string]Folder, 0)
 
-	// SPLIT THESE UP INTO SEPARATE FUNCS
 	node.Data.Range(func(k, value interface{}) bool {
-		dataType := value.(global.Document)["type"]
-		if dataType == "folder" {
-			var inFolder string
-			var exists bool
-			var backedUp bool = false
-			folderKey := value.(global.Document)["key"].(string)
-			folderName := value.(global.Document)["folderName"].(string)
-			if value.(global.Document)["backedUp"] != nil {
-				backedUp = value.(global.Document)["backedUp"].(bool)
-			}
-			if inFolder, exists = value.(global.Document)["folder"].(string); !exists {
-				inFolder = ""
-			}
-			folders[folderKey] = Folder{
-				inFolder,
-				folderKey,
-				folderName,
-				0,
-				backedUp,
-			}
+		var dataType = value.(global.Document)["type"]
+		var folderKey = value.(global.Document)["key"].(string)
+		var folderName = value.(global.Document)["folderName"].(string)
+
+		if dataType != "folder" {
+			return true
+		}
+
+		var inFolder string
+		var exists bool
+		var backedUp bool = false
+
+		if value.(global.Document)["backedUp"] != nil {
+			backedUp = value.(global.Document)["backedUp"].(bool)
+		}
+
+		if inFolder, exists = value.(global.Document)["folder"].(string); !exists {
+			inFolder = ""
+		}
+
+		folders[folderKey] = Folder{
+			inFolder,
+			folderKey,
+			folderName,
+			0,
+			backedUp,
 		}
 		return true
 	})
+	return folders
+}
 
+func (node *Node) getFolderDocCount(folders map[string]Folder) map[string]Folder {
+	// We want to get all of the folder doc counts
 	node.Data.Range(func(k, value interface{}) bool {
 		if folder, exists := value.(global.Document)["folder"].(string); exists && folder != "" {
 			currDocCount := folders[folder].DocCount
@@ -56,14 +87,19 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		return true
 	})
+	return folders
+}
+
+func (node *Node) storeDocCount(folders map[string]Folder) map[string]Folder {
+	// We want to store the doc counts in blazem
 	for _, folder := range folders {
-		if folder.Folder != "" {
-			// This stores doc count
-			folderData, _ := node.Data.Load(folder.Key)
-			folderData.(global.Document)["docCount"] = folder.DocCount
-			node.Data.Store(folder.Key, folderData)
-			delete(folders, folder.Key)
+		if folder.Folder == "" {
+			continue
 		}
+		folderData, _ := node.Data.Load(folder.Key)
+		folderData.(global.Document)["docCount"] = folder.DocCount
+		node.Data.Store(folder.Key, folderData)
+		delete(folders, folder.Key)
 	}
-	json.NewEncoder(w).Encode(folders)
+	return folders
 }

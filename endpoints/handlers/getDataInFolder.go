@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"blazem/global"
-	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"sort"
@@ -20,18 +20,37 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	// Please can we fix this function
 	WriteHeaders(w, nil)
 
-	var returnData DataInFolder
-	var folderId = req.URL.Query().Get("folder")
-	var user = req.URL.Query().Get("user")
-	var folderName = node.GetFolderName(folderId)
-	var nodeData = make([]global.Document, lenOfSyncMap(node.Data))
-	var dataInFolder []SendData = []SendData{}
-	var dataInd = 0
-
-	if user != "jack" {
-		json.NewEncoder(w).Encode("no auth")
+	if req.Method != "GET" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"Wrong method",
+			nil,
+		})
 		return
 	}
+
+	var returnData DataInFolder
+	var folderId = req.URL.Query().Get("folder")
+	if folderId == "" {
+		JsonResponse(w, EndpointResponse{
+			500,
+			"No folder passed",
+			nil,
+		})
+		return
+	}
+	var folderName, err = node.GetFolderName(folderId)
+	if err != nil {
+		JsonResponse(w, EndpointResponse{
+			500,
+			err.Error(),
+			nil,
+		})
+		return
+	}
+	var nodeData = make([]global.Document, lenOfSyncMap(node.Data))
+	var dataInFolder = make([]SendData, 0)
+	var dataInd = 0
 
 	node.Data.Range(func(key, value interface{}) bool {
 		nodeData[dataInd] = value.(global.Document)
@@ -51,9 +70,9 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
 	})
 
-	numOfItems := 0
+	var numOfItems = 0
 	for i, data := range nodeData {
-		key := nodeData[i]["key"].(string)
+		var key = nodeData[i]["key"].(string)
 		if data["type"] != "text" {
 			data["value"] = "file"
 		}
@@ -61,7 +80,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 			break
 		}
 		if data["folder"] == folderId {
-			sendData := SendData{key, data}
+			var sendData = SendData{key, data}
 			dataInFolder = append(dataInFolder, sendData)
 			numOfItems++
 		}
@@ -79,30 +98,37 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	returnData.FolderName = folderName
 	returnData.ParentFolders = node.getParentFolders(folderId)
 
-	json.NewEncoder(w).Encode(returnData)
+	JsonResponse(w, EndpointResponse{
+		200,
+		"Successfully retrieved data in folder",
+		returnData,
+	})
 }
 
-func (node *Node) GetFolderName(folderId string) string {
+func (node *Node) GetFolderName(folderId string) (string, error) {
 	folder, ok := node.Data.Load(folderId)
 	if !ok {
-		return ""
+		return "", errors.New("No document with that key")
 	}
-	folderMap := folder.(global.Document)
-	return folderMap["folderName"].(string)
+	var folderMap = folder.(global.Document)
+	if folderMap["type"] != "folder" {
+		return "", errors.New("No folder with that key")
+	}
+	return folderMap["folderName"].(string), nil
 }
 
 func (node *Node) getParentFolders(searchFolderId string) []Folder {
 	// This function returns all of the folders that parent the folder we are
 	// searching for recursively
 	var folderId = searchFolderId
-	var folders []Folder = []Folder{}
+	var folders = make([]Folder, 0)
 	for folderId != "" {
-		folderInfo, ok := node.Data.Load(folderId)
+		var folderInfo, ok = node.Data.Load(folderId)
 		if !ok {
 			folderId = ""
 			continue
 		}
-		folderMap := folderInfo.(global.Document)
+		var folderMap = folderInfo.(global.Document)
 		if folderId != searchFolderId {
 			folders = append(folders, Folder{
 				Folder:     "N/A",
@@ -122,7 +148,7 @@ func (node *Node) getParentFolders(searchFolderId string) []Folder {
 
 func reverse(lst []Folder) []Folder {
 	// Reverse order of list
-	var newLst []Folder = []Folder{}
+	var newLst = make([]Folder, 0)
 	for i := len(lst) - 1; i >= 0; i-- {
 		newLst = append(newLst, lst[i])
 	}
