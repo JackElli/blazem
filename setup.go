@@ -5,6 +5,7 @@ import (
 	"blazem/global"
 	"blazem/logging"
 	"blazem/query"
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -13,26 +14,109 @@ import (
 	"time"
 )
 
+type SetupManager struct {
+	Steps []SetupStep
+	Node  *Node
+}
+
+type SetupStep struct {
+	Description string
+	Fn          func() error
+}
+
+// Returns a setupmgr with the steps to complete and the node
+func (node *Node) CreateSetupMgr(steps []SetupStep) SetupManager {
+	return SetupManager{
+		Steps: steps,
+		Node:  node,
+	}
+}
+
+// Runs all the steps in order
+func (mgr *SetupManager) RunSteps() {
+	fmt.Println("Setting up Blazem")
+	for _, step := range mgr.Steps {
+		fmt.Println("Running step:", step.Description)
+		if err := step.Fn(); err != nil {
+			fmt.Println("Found error in", step.Description, err)
+			continue
+		}
+		fmt.Println("Completed step.")
+	}
+	fmt.Println("All steps completed successfully :)")
+}
+
+// We want a way to track progress of setup
 func (node *Node) RunSetup() {
 	var masterip string = ""
 	var localip = getLocalIp()
-
 	global.GlobalNode = (*global.Node)(node)
-	setupLogger()
 
-	go node.pickPort(localip)
-	endpoints.SetupEndpoints((*global.Node)(node))
-	global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(node))
-
-	if masterip == node.Ip {
-		node.setNodeMasterAttrs()
-	}
-
-	(*global.Node)(node).ReadFromLocal()
-	go (*global.Node)(node).Ping()
-
-	query.LoadIntoMemory(global.Node(*node))
-
+	mgr := node.CreateSetupMgr([]SetupStep{
+		{
+			Description: "Sets up the logger for logging",
+			Fn: func() error {
+				if err := setupLogger(); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			Description: "Picks port for blazem to start on",
+			Fn: func() error {
+				go node.pickPort(localip)
+				return nil
+			},
+		},
+		{
+			Description: "Sets up blazem endpoints",
+			Fn: func() error {
+				if err := endpoints.SetupEndpoints((*global.Node)(node)); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
+		{
+			Description: "Adds this node to the nodemap",
+			Fn: func() error {
+				global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(node))
+				return nil
+			},
+		},
+		{
+			Description: "If this node is the master, set master attrs",
+			Fn: func() error {
+				if masterip == node.Ip {
+					node.setNodeMasterAttrs()
+				}
+				return nil
+			},
+		},
+		{
+			Description: "Read from local storage",
+			Fn: func() error {
+				(*global.Node)(node).ReadFromLocal()
+				return nil
+			},
+		},
+		{
+			Description: "First ping and ping either the master or followers",
+			Fn: func() error {
+				go (*global.Node)(node).Ping()
+				return nil
+			},
+		},
+		{
+			Description: "Load all query data into memory",
+			Fn: func() error {
+				query.LoadIntoMemory(global.Node(*node))
+				return nil
+			},
+		},
+	})
+	mgr.RunSteps()
 	// go (*endpoints.Node)(&node).CheckRules()
 }
 
@@ -62,7 +146,8 @@ func (node *Node) setNodeMasterAttrs() {
 }
 
 // We want to pick a port (default 3100) but could try 3 more so max 3103
-func (node *Node) pickPort(ip string) {
+func (node *Node) pickPort(ip string) error {
+	fmt.Println("Picking port")
 	connectIp := ""
 	for i := 0; i < 3; i++ {
 		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
@@ -71,6 +156,7 @@ func (node *Node) pickPort(ip string) {
 			break
 		}
 	}
+	return nil
 }
 
 // We want to listen on a selected port for this IP
@@ -117,7 +203,10 @@ func getLocalIp() string {
 }
 
 // setup file for logging
-func setupLogger() {
+func setupLogger() error {
 	logfile := "logging/"
 	global.Logger = *logging.LogFile(logfile)
+	return nil
 }
+
+//TODO put all func defs inside of the setup

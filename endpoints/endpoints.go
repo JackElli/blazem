@@ -22,7 +22,7 @@ type Endpoint struct {
 }
 
 // Create all of the endpoints for Blazem
-func SetupEndpoints(node *global.Node) {
+func SetupEndpoints(node *global.Node) error {
 	var endpoints = []Endpoint{
 		{
 			Route:       "/nodemap",
@@ -133,4 +133,5 @@ func SetupEndpoints(node *global.Node) {
 			go http.HandleFunc(endpoint.Route, endpoint.Handler)
 		}
 	}
+	return nil
 }
