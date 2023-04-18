@@ -36,9 +36,9 @@ func (node *Node) RunSetup() {
 	// go (*endpoints.Node)(&node).CheckRules()
 }
 
+// Here, we want to set master attributes and add some sample data when we first
+// start with Blazem.
 func (node *Node) setNodeMasterAttrs() {
-	// Here, we want to set master attributes and add some sample data when we first
-	// start with Blazem.
 	node.Rank = global.MASTER
 	node.Data = sync.Map{}
 
@@ -61,8 +61,8 @@ func (node *Node) setNodeMasterAttrs() {
 	node.Data.Store("testkey2", testData2)
 }
 
+// We want to pick a port (default 3100) but could try 3 more so max 3103
 func (node *Node) pickPort(ip string) {
-	// We want to pick a port (default 3100) but could try 3 more so max 3103
 	connectIp := ""
 	for i := 0; i < 3; i++ {
 		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
@@ -73,8 +73,8 @@ func (node *Node) pickPort(ip string) {
 	}
 }
 
+// We want to listen on a selected port for this IP
 func (node *Node) tryListen(ip string) {
-	// We want to listen on a selected port for this IP
 	portstr := ip
 	if strings.Count(ip, ":") > 1 {
 		portstr = strings.Split(ip, ":")[0]
@@ -89,8 +89,8 @@ func (node *Node) tryListen(ip string) {
 	http.Serve(l, nil)
 }
 
+// Return the index of the node in the nodemap
 func indexOfNodeInNodeMap(node *global.Node) int {
-	// Return the index of the node in the nodemap
 	for i, n := range global.NODE_MAP {
 		if n.Ip == node.Ip {
 			return i
@@ -99,8 +99,8 @@ func indexOfNodeInNodeMap(node *global.Node) int {
 	return -1
 }
 
+// Return the data stored in the nodemap
 func getNodeDatas() []sync.Map {
-	// Return the data stored in the nodemap
 	var nodedata []sync.Map
 	for _, n := range global.NODE_MAP {
 		nodedata = append(nodedata, n.Data)
@@ -108,16 +108,16 @@ func getNodeDatas() []sync.Map {
 	return nodedata
 }
 
+// Returns the IP of this node
 func getLocalIp() string {
-	// Returns the IP of this node
 	conn, _ := net.Dial("udp", "8.8.8.8:80")
 	defer conn.Close()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	return strings.Split(localAddr.String(), ":")[0]
 }
 
+// setup file for logging
 func setupLogger() {
-	//setup file for logging
 	logfile := "logging/"
 	global.Logger = *logging.LogFile(logfile)
 }

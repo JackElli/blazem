@@ -17,8 +17,8 @@ var specialTokens = map[string]bool{
 	"LIKE":   true,
 }
 
+// DecodeParam decodes the paramaters and sets up the next step in the query chain
 func decodeParam(param string, mathOp *MathOp, paramsplit *[]string) bool {
-	// DecodeParam decodes the paramaters and sets up the next step in the query chain
 	if strings.Contains(param, "=") && !strings.Contains(param, "/") {
 		*paramsplit = strings.Split(param, "=")
 		*mathOp = EQ
@@ -90,9 +90,9 @@ var decodeTokenTable = map[int]map[string]DecodeFunc{
 	},
 }
 
+// DecodeTokens gets each token and decides what it is
 func decodeToken(i int, token string, queryType *QueryType,
 	all *bool, where *bool, fetchKeys *[]string, whereParams *[]string) error {
-	// DecodeTokens gets each token and decides what it is
 	var decoderError error
 	if *where && i > 2 {
 		var noWhiteSpaceReg = regexp.MustCompile("[a-zA-Z-_.= ]*")
@@ -112,8 +112,8 @@ func decodeToken(i int, token string, queryType *QueryType,
 	return decoderError
 }
 
+// decodeQuery decodes the query so that we can manipulate it
 func decodeQuery(querystr string) ([]global.Document, []error) {
-	// decodeQuery decodes the query so that we can manipulate it
 	var tokens = tokenise(querystr)
 	var queryType QueryType
 	var fetchKeys []string

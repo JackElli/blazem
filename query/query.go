@@ -33,8 +33,8 @@ const (
 var jsonLoad interface{}
 var UploadFileName string
 
+// Checks where a string is in an array
 func contains(slice []string, needle string) bool {
-	// Checks where a string is in an array
 	for _, v := range slice {
 		if v == needle {
 			return true
@@ -43,16 +43,15 @@ func contains(slice []string, needle string) bool {
 	return false
 }
 
+// Uses regex to split the query string
 func tokenise(querystr string) []string {
-	// Uses regex to split the query string
 	regex := "(?i)([a-zA-Z-_.]*[><=/ ]*[0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
 	return regexp.MustCompile(regex).FindAllString(querystr, 100)
 }
 
+// Execute public and executes the query
 func Execute(querystr string, tablename string) ([]global.Document,
 	int64, int, []error) {
-
-	// Execute public and executes the query
 	var start = time.Now()
 	var decodedData, errs = decodeQuery(querystr)
 	var elapsed = time.Since(start)

@@ -12,12 +12,11 @@ func QueryHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.queryHandler
 }
 
+// We fetch the query entered by the user, we send that to JAQL, then
+// we send back the results to the client. We also want to add these to
+// recent queries so the user can easily get back to queries they've
+// previously entered.
 func (node *Node) queryHandler(w http.ResponseWriter, req *http.Request) {
-	// We fetch the query entered by the user, we send that to JAQL, then
-	// we send back the results to the client. We also want to add these to
-	// recent queries so the user can easily get back to queries they've
-	// previously entered.
-
 	WriteHeaders(w, []string{"query"})
 
 	if req.Method != "GET" {

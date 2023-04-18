@@ -14,10 +14,9 @@ import (
 	"time"
 )
 
+// PingRetry retries the ping 3 times and if afer 3 pings there's no response,
+// node is 'paused'
 func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
-	// PingRetry retries the ping 3 times and if afer 3 pings there's no response,
-	// node is 'paused'
-
 	if n == nil || n.Active == false {
 		return false
 	}
@@ -32,8 +31,9 @@ func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 	return false
 }
 
+// We want to ping each follower node to make sure they know, the
+// master is still active
 func (node *Node) PingEachConnection(jsonNodeMap []byte) {
-	// We want to ping each follower node to make sure they know, the master is still active
 	for _, n := range NODE_MAP {
 		go func(loopn *Node) {
 			if loopn.Ip == node.Ip {
@@ -74,8 +74,8 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 	node.PingCount++
 }
 
+// Every for seconds, we want to ping each connection
 func (node *Node) Ping() {
-	// Every for seconds, we want to ping each connection
 	for true {
 		time.Sleep(4 * time.Second)
 		if node.Rank == FOLLOWER {
@@ -93,8 +93,8 @@ func (node *Node) Ping() {
 	}
 }
 
+// We want to check if the master is still alive
 func (node *Node) CheckForNoPingFromMaster() {
-	// We want to check if the master is still alive
 	if node.Rank == MASTER {
 		return
 	}
@@ -119,8 +119,8 @@ func (node *Node) CheckForNoPingFromMaster() {
 	}
 }
 
+// Set this node to master status and put all 'replicas' to 'active'
 func (node *Node) setToMaster() {
-	// Set this node to master status and put all 'replicas' to 'active'
 	node.Rank = MASTER
 	node.Data = NODE_MAP[0].Data
 	node.RecentQueries = NODE_MAP[0].RecentQueries
@@ -134,8 +134,8 @@ func (node *Node) setToMaster() {
 	go node.Ping()
 }
 
+// reads from data storage puts all docs to memory on load
 func (node *Node) ReadFromLocal() {
-	// reads from data storage puts all docs to memory on load
 	var files, _ = ioutil.ReadDir("data/")
 	if len(files) == 0 {
 		return
@@ -150,8 +150,8 @@ func (node *Node) ReadFromLocal() {
 	Logger.Log("Loaded files into memory.", logging.INFO)
 }
 
+// We want to send data across nodes
 func MarshalNodeMap(nodeMap []*Node) []*TempNode {
-	// We want to send data across nodes
 	var SEND_MAP []*TempNode
 	for _, node := range NODE_MAP {
 		var nodeData = make(map[string]interface{}, 0)
@@ -193,8 +193,8 @@ func MarshalNodeMap(nodeMap []*Node) []*TempNode {
 	return SEND_MAP
 }
 
+// The opposite of Marshal, for retrieving data from nodes
 func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
-	// The opposite of Marshal, for retrieving data from nodes
 	var SEND_MAP []*Node
 	for _, node := range nodeMap {
 		var nodeData sync.Map
@@ -215,8 +215,8 @@ func UnmarshalNodeMap(nodeMap []*TempNode) []*Node {
 	return SEND_MAP
 }
 
+// We want to write a document to disk
 func WriteDocToDisk(value Document) {
-	// We want to write a document to disk
 	dataToWrite, _ := json.Marshal(value)
 	path := "data/"
 	_ = os.MkdirAll(path, os.ModePerm)

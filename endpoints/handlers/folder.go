@@ -9,10 +9,10 @@ func FolderHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.folderHandler
 }
 
+// We want to return all of the root folders in the data i.e every folder
+// that doesnt have a folder parent. We fetch the folder names, add them to the
+// folder map and add the corresponding global.Document count
 func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
-	// We want to return all of the root folders in the data i.e every folder
-	// that doesnt have a folder parent. We fetch the folder names, add them to the
-	// folder map and add the corresponding global.Document count
 	WriteHeaders(w, nil)
 
 	if req.Method != "GET" {
@@ -35,12 +35,12 @@ func (node *Node) folderHandler(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// We want to get all of the folders currently in Blazem
 func (node *Node) getAllFolders() map[string]Folder {
-	// We want to get all of the folders currently in Blazem
 	var folders = make(map[string]Folder, 0)
 
 	node.Data.Range(func(k, value interface{}) bool {
-		var dataType = value.(global.Document)["type"]
+		dataType := value.(global.Document)["type"]
 		if dataType != "folder" {
 			return true
 		}
@@ -71,8 +71,8 @@ func (node *Node) getAllFolders() map[string]Folder {
 	return folders
 }
 
+// We want to get all of the folder doc counts
 func (node *Node) getFolderDocCount(folders map[string]Folder) map[string]Folder {
-	// We want to get all of the folder doc counts
 	node.Data.Range(func(k, value interface{}) bool {
 		if folder, exists := value.(global.Document)["folder"].(string); exists && folder != "" {
 			currDocCount := folders[folder].DocCount
@@ -89,8 +89,8 @@ func (node *Node) getFolderDocCount(folders map[string]Folder) map[string]Folder
 	return folders
 }
 
+// We want to store the doc counts in blazem
 func (node *Node) storeDocCount(folders map[string]Folder) map[string]Folder {
-	// We want to store the doc counts in blazem
 	for _, folder := range folders {
 		if folder.Folder == "" {
 			continue

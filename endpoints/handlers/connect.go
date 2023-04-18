@@ -13,10 +13,10 @@ func ConnectHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.connectHandler
 }
 
+// We need to connect a node to the cluster; we check for ip, if it is already
+// in the node map, we set to active (because it must be active as it's sent a
+// connect request). If it's not in the nodemap, we add it.
 func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
-	// We need to connect a node to the cluster; we check for ip, if it is already
-	// in the node map, we set to active (because it must be active as it's sent a
-	// connect request). If it's not in the nodemap, we add it.
 	WriteHeaders(w, []string{"ip"})
 
 	if req.Method != "POST" {
@@ -55,12 +55,13 @@ func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// We need to append a node to the nodemap or, if the node is already in
+// the nodemap, we can activate it again
 func updateNodeMap(ip string) error {
 
 	if ip == "" {
 		return errors.New("IP nothing")
 	}
-
 	if !global.AlreadyInNodeMap(ip) {
 		global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
 			PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,

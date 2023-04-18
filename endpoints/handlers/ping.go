@@ -14,14 +14,13 @@ func PingHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.pingHandler
 }
 
+// When we receive a ping from master we want to check if any data
+// has changed. If it has, we want to update our local data map. We also
+// want to check that the master is still alive with a ping from master
+// check. If we change from master to follower quickly, it's because we've
+// been added to the cluster by another node. We write all of the changed
+// data to disk
 func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
-	// When we receive a ping from master we want to check if any data
-	// has changed. If it has, we want to update our local data map. We also
-	// want to check that the master is still alive with a ping from master
-	// check. If we change from master to follower quickly, it's because we've
-	// been added to the cluster by another node. We write all of the changed
-	// data to disk
-
 	if req.Method != "POST" {
 		JsonResponse(w, EndpointResponse{
 			500,
@@ -89,8 +88,9 @@ func (node *Node) pingHandler(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// We want to add any nodes not in the nodemap to the nodemap.
+// We also want to write doc to disk if it doesn't exist.
 func (node *Node) updateData(localnm []*global.Node) {
-
 	global.NODE_MAP = make([]*global.Node, 0)
 	for _, j := range localnm {
 		global.NODE_MAP = append(global.NODE_MAP, j)

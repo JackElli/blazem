@@ -14,22 +14,23 @@ import (
 	"sync"
 )
 
+// We want to write headers for each request, the content type and
+// the CORS settings
 func WriteHeaders(w http.ResponseWriter, extras []string) {
-	// We want to write headers for each request, the content type and
-	// the CORS settings
 	extra := strings.Join(extras, ",")
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
 }
 
+// Send a JSON response back
 func JsonResponse(w http.ResponseWriter, response EndpointResponse) {
-	// Send a JSON response back
+	w.WriteHeader(response.Code)
 	json.NewEncoder(w).Encode(response)
 }
 
+// Returns a 'hex' key
 func getHexKey() string {
-	// Returns a 'hex' key
 	pos := "0123456789abcdef"
 	key := ""
 	for i := 0; i < 16; i++ {
@@ -38,14 +39,14 @@ func getHexKey() string {
 	return key
 }
 
+// Round floats with precision
 func roundFloat(val float64, precision uint) float64 {
-	// Round floats with precision
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
 
+// We want to get the length of a sync map
 func lenOfSyncMap(mp sync.Map) int {
-	// We want to get the length of a sync map
 	var i int
 	mp.Range(func(key any, value any) bool {
 		i++

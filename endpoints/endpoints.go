@@ -21,9 +21,8 @@ type Endpoint struct {
 	Type        EndpointType
 }
 
+// Create all of the endpoints for Blazem
 func SetupEndpoints(node *global.Node) {
-	// Create all of the endpoints for Blazem
-
 	var endpoints = []Endpoint{
 		{
 			Route:       "/nodemap",

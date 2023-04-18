@@ -16,8 +16,8 @@ func StatsHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.statsHandler
 }
 
+// We want to fetch stats based on the OS (as the method changes)
 func (node *Node) statsHandler(w http.ResponseWriter, req *http.Request) {
-	// We want to fetch stats based on the OS (as the method changes)
 	WriteHeaders(w, nil)
 	var os = runtime.GOOS
 	var stats = osStats[os]()

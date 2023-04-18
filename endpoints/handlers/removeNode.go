@@ -9,10 +9,10 @@ func RemoveNodeHandler(node *Node) func(w http.ResponseWriter, req *http.Request
 	return node.removeNodeHandler
 }
 
+// We want to remove a node from the node map (master only). We get the index in
+// the node map of the node, then we update the node map (removing the 'to remove' node)
+// then we save the changes.
 func (node *Node) removeNodeHandler(w http.ResponseWriter, req *http.Request) {
-	// we want to remove a node from the node map (master only). We get the index in
-	// the node map of the node, then we update the node map (removing the 'to remove' node)
-	// then we save the changes.
 	WriteHeaders(w, []string{"ip"})
 
 	if req.Method != "DELETE" {

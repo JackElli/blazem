@@ -9,8 +9,8 @@ func DeleteDocHandler(node *Node) func(w http.ResponseWriter, req *http.Request)
 	return node.deleteDocHandler
 }
 
+// We want to delete a document from Blazem
 func (node *Node) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
-	// We want to delete a document from Blazem
 	WriteHeaders(w, []string{})
 
 	if req.Method != "DELETE" {

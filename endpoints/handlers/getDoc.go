@@ -10,8 +10,9 @@ import (
 func GetDocHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 	return node.getDocHandler
 }
+
+// We want to fetch a document and return it to the user
 func (node *Node) getDocHandler(w http.ResponseWriter, req *http.Request) {
-	// We want to fetch a document and return it to the user
 	WriteHeaders(w, []string{"key"})
 
 	if req.Method != "GET" {
@@ -59,6 +60,8 @@ func (node *Node) getDocHandler(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
+// We want to do a bit of manipulation to the document for instance
+// we want to read from disk if it's not a text file or a folder
 func formatData(getData global.Document, dataKey string) global.Document {
 	if getData["type"] == "text" {
 		return getData

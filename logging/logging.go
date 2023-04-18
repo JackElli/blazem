@@ -19,14 +19,14 @@ type Logger struct {
 	LogFileHandle *os.File
 }
 
+// Return a nice human time
 func (logger *Logger) getNiceTime() string {
-	// Return a nice human time
 	var nicetime = time.Now().Format("2006-01-02 15:04:05")
 	return nicetime
 }
 
+// Log to file
 func LogFile(logfilepath string) *Logger {
-	// Log to file
 	var logfile, err = os.OpenFile(logfilepath+"jserver.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println(err)
@@ -40,8 +40,8 @@ func LogFile(logfilepath string) *Logger {
 	return &Logger{LogFileHandle: logfile}
 }
 
+// Log to console
 func (logger *Logger) Log(str string, logType LOG_TYPE) {
-	// Log to console
 	go func() {
 		var log = string(logType) + " " + logger.getNiceTime() + "\t " + str
 		logger.LogFileHandle.Write([]byte(log + "\n"))

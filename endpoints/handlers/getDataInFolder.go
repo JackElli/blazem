@@ -13,11 +13,9 @@ func GetDataInFolder(node *Node) func(w http.ResponseWriter, req *http.Request) 
 	return node.getDataInFolderHandler
 }
 
+// We want to return all of the data currently stored within this folder, including
+// folders and data
 func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
-	// We want to return all of the data currently stored within this folder, including
-	// folders and data
-
-	// Please can we fix this function
 	WriteHeaders(w, nil)
 
 	if req.Method != "GET" {
@@ -105,6 +103,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 	})
 }
 
+// Returns the name of the folder, given the folderId
 func (node *Node) GetFolderName(folderId string) (string, error) {
 	folder, ok := node.Data.Load(folderId)
 	if !ok {
@@ -117,9 +116,9 @@ func (node *Node) GetFolderName(folderId string) (string, error) {
 	return folderMap["folderName"].(string), nil
 }
 
+// This function returns all of the folders that parent the folder we are
+// searching for recursively
 func (node *Node) getParentFolders(searchFolderId string) []Folder {
-	// This function returns all of the folders that parent the folder we are
-	// searching for recursively
 	var folderId = searchFolderId
 	var folders = make([]Folder, 0)
 	for folderId != "" {

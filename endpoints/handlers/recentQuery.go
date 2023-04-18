@@ -8,8 +8,8 @@ func GetRecentQueriesHandler(node *Node) func(w http.ResponseWriter, req *http.R
 	return node.getRecentQueriesHandler
 }
 
+// Returns a list of recently entered queries
 func (node *Node) getRecentQueriesHandler(w http.ResponseWriter, req *http.Request) {
-	// Returns a list of recently entered queries
 	WriteHeaders(w, []string{})
 
 	if req.Method != "GET" {

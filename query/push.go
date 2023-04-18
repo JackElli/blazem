@@ -9,9 +9,9 @@ import (
 	"sync"
 )
 
+// This is for non-where clause tokens
 func checkNest(nestparams []string, getobj global.Document,
 	docin *bool) global.Document {
-	// This is for non-where clause tokens
 	for _, nestparam := range nestparams {
 		if v, exists := getobj[nestparam]; exists {
 			if reflect.TypeOf(v).String() ==
@@ -24,10 +24,11 @@ func checkNest(nestparams []string, getobj global.Document,
 	}
 	return getobj
 }
+
+// We want to push the documents that fit the query params
 func pushDocs(all bool, wherejson []global.Document,
 	newmap *[]global.Document,
 	fetchKeys []string) []global.Document {
-	// We want to push the documents that fit the query params
 	if all {
 		return wherejson
 	}
@@ -62,9 +63,9 @@ func pushDocs(all bool, wherejson []global.Document,
 	return nil
 }
 
+// We want to check whether a certain paramater holds for that specific document
 func checkParamHolds(ok bool, paramsplit []string,
 	getobj global.Document, mathOp MathOp, holds *int) {
-	// We want to check whether a certain paramater holds for that specific document
 	if !ok {
 		*holds = *holds & 0
 		return

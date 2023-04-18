@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
+// Return the results of the nodemap to the client
 func NodeMapHandler(w http.ResponseWriter, req *http.Request) {
-	// Return the results of the nodemap to the client
 	WriteHeaders(w, []string{"all"})
 
 	if req.Method != "GET" {
