@@ -44,8 +44,8 @@ func (node *Node) getAllFolders() map[string]Folder {
 		if dataType != "folder" {
 			return true
 		}
-		var folderKey = value.(global.Document)["key"].(string)
-		var folderName = value.(global.Document)["folderName"].(string)
+		folderKey := value.(global.Document)["key"].(string)
+		folderName := value.(global.Document)["folderName"].(string)
 
 		var inFolder string
 		var exists bool

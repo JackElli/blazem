@@ -36,17 +36,17 @@ func (node *Node) CreateSetupMgr(steps []SetupStep) SetupManager {
 func (mgr *SetupManager) RunSteps() {
 	fmt.Println("Setting up Blazem")
 	for _, step := range mgr.Steps {
-		fmt.Println("Running step:", step.Description)
 		if err := step.Fn(); err != nil {
 			fmt.Println("Found error in", step.Description, err)
-			continue
+			return
 		}
 		fmt.Println("Completed step.")
 	}
 	fmt.Println("All steps completed successfully :)")
 }
 
-// We want a way to track progress of setup
+// Run the setup process by creating a setup mgr and running each
+// step
 func (node *Node) RunSetup() {
 	var masterip string = ""
 	var localip = getLocalIp()
@@ -54,8 +54,8 @@ func (node *Node) RunSetup() {
 
 	mgr := node.CreateSetupMgr([]SetupStep{
 		{
-			Description: "Sets up the logger for logging",
-			Fn: func() error {
+			"Sets up the logger for logging",
+			func() error {
 				if err := setupLogger(); err != nil {
 					return err
 				}
@@ -63,15 +63,15 @@ func (node *Node) RunSetup() {
 			},
 		},
 		{
-			Description: "Picks port for blazem to start on",
-			Fn: func() error {
+			"Picks port for blazem to start on",
+			func() error {
 				go node.pickPort(localip)
 				return nil
 			},
 		},
 		{
-			Description: "Sets up blazem endpoints",
-			Fn: func() error {
+			"Sets up blazem endpoints",
+			func() error {
 				if err := endpoints.SetupEndpoints((*global.Node)(node)); err != nil {
 					return err
 				}
@@ -79,15 +79,15 @@ func (node *Node) RunSetup() {
 			},
 		},
 		{
-			Description: "Adds this node to the nodemap",
-			Fn: func() error {
+			"Adds this node to the nodemap",
+			func() error {
 				global.NODE_MAP = append(global.NODE_MAP, (*global.Node)(node))
 				return nil
 			},
 		},
 		{
-			Description: "If this node is the master, set master attrs",
-			Fn: func() error {
+			"If this node is the master, set master attrs",
+			func() error {
 				if masterip == node.Ip {
 					node.setNodeMasterAttrs()
 				}
@@ -95,22 +95,22 @@ func (node *Node) RunSetup() {
 			},
 		},
 		{
-			Description: "Read from local storage",
-			Fn: func() error {
+			"Read from local storage",
+			func() error {
 				(*global.Node)(node).ReadFromLocal()
 				return nil
 			},
 		},
 		{
-			Description: "First ping and ping either the master or followers",
-			Fn: func() error {
+			"First ping and ping either the master or followers",
+			func() error {
 				go (*global.Node)(node).Ping()
 				return nil
 			},
 		},
 		{
-			Description: "Load all query data into memory",
-			Fn: func() error {
+			"Load all query data into memory",
+			func() error {
 				query.LoadIntoMemory(global.Node(*node))
 				return nil
 			},
@@ -210,3 +210,4 @@ func setupLogger() error {
 }
 
 //TODO put all func defs inside of the setup
+//TODO remove struct keys
