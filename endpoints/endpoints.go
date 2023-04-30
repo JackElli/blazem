@@ -67,6 +67,7 @@ func SetupEndpoints(node *global.Node) error {
 			Handler:     query.NewQueryHandler(nil),
 			Description: "We want to execute a query on blazem",
 			Type:        types.SYNC,
+			Node:        node,
 		},
 		{
 			Route:       "/getRecentQueries",
