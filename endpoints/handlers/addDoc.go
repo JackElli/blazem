@@ -17,10 +17,14 @@ func AddDocHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
 func (node *Node) addDocHandler(w http.ResponseWriter, req *http.Request) {
 	WriteHeaders(w, []string{"all"})
 
+	if req.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	if req.Method != "POST" {
 		JsonResponse(w, EndpointResponse{
 			500,
-			"Wrong method",
+			"Wrong method " + req.Method + "!=POST",
 			nil,
 		})
 		return

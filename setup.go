@@ -147,7 +147,6 @@ func (node *Node) setNodeMasterAttrs() {
 
 // We want to pick a port (default 3100) but could try 3 more so max 3103
 func (node *Node) pickPort(ip string) error {
-	fmt.Println("Picking port")
 	connectIp := ""
 	for i := 0; i < 3; i++ {
 		connectIp = ip + ":" + strconv.Itoa(global.PORT_START+i)
