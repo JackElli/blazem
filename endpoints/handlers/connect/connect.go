@@ -1,6 +1,7 @@
-package handlers
+package connect
 
 import (
+	types "blazem/domain/endpoint"
 	"blazem/global"
 	"blazem/logging"
 	"errors"
@@ -9,56 +10,48 @@ import (
 	"time"
 )
 
-func ConnectHandler(node *Node) func(w http.ResponseWriter, req *http.Request) {
-	return node.connectHandler
+func NewConnectHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
+	return ConnectHandler
+}
+
+func ConnectHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
+	ce := &ConnectEndpoint{
+		Endpoint: *e,
+	}
+	return ce.connectHandler
 }
 
 // We need to connect a node to the cluster; we check for ip, if it is already
 // in the node map, we set to active (because it must be active as it's sent a
 // connect request). If it's not in the nodemap, we add it.
-func (node *Node) connectHandler(w http.ResponseWriter, req *http.Request) {
-	WriteHeaders(w, []string{"ip"})
-
+func (e *ConnectEndpoint) connectHandler(w http.ResponseWriter, req *http.Request) {
+	e.Endpoint.WriteHeaders(w, []string{"ip"})
 	if req.Method != "POST" {
-		JsonResponse(w, EndpointResponse{
-			500,
-			"Wrong method",
-			nil,
+		e.Endpoint.Respond(w, types.EndpointResponse{
+			Code: 500,
+			Msg:  "Wrong method",
 		})
 		return
 	}
-
-	var ip = req.URL.Query().Get("ip")
-	var err = updateNodeMap(ip)
-
+	ip := req.URL.Query().Get("ip")
+	err := updateNodeMap(ip)
 	if err != nil {
-		JsonResponse(w, EndpointResponse{
-			500,
-			err.Error(),
-			nil,
+		e.Endpoint.Respond(w, types.EndpointResponse{
+			Code: 500,
+			Msg:  err.Error(),
 		})
 		return
 	}
-
-	if err != nil {
-		JsonResponse(w, EndpointResponse{
-			500,
-			"Cannot marshal nodemap {" + err.Error() + "}",
-			nil,
-		})
-		return
-	}
-	JsonResponse(w, EndpointResponse{
-		200,
-		"Successfully connected",
-		global.NODE_MAP,
+	e.Endpoint.Respond(w, types.EndpointResponse{
+		Code: 200,
+		Msg:  "Successfully connected",
+		Data: global.NODE_MAP,
 	})
 }
 
 // We need to append a node to the nodemap or, if the node is already in
 // the nodemap, we can activate it again
 func updateNodeMap(ip string) error {
-
 	if ip == "" {
 		return errors.New("IP nothing")
 	}
@@ -69,7 +62,6 @@ func updateNodeMap(ip string) error {
 		global.Logger.Log(ip+" has connected", logging.GOOD)
 		return nil
 	}
-
 	indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
 	global.NODE_MAP[indexOfNode].Active = true
 	global.NODE_MAP[indexOfNode].PingCount = 0

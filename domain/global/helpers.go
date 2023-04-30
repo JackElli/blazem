@@ -1,33 +1,15 @@
-package handlers
+package global
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
-	"net/http"
 	"os/exec"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 )
-
-// We want to write headers for each request, the content type and
-// the CORS settings
-func WriteHeaders(w http.ResponseWriter, extras []string) {
-	extra := strings.Join(extras, ",")
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
-}
-
-// Send a JSON response back
-func JsonResponse(w http.ResponseWriter, response EndpointResponse) {
-	w.WriteHeader(response.Code)
-	json.NewEncoder(w).Encode(response)
-}
 
 // Returns a 'hex' key
 func getHexKey() string {
@@ -46,7 +28,7 @@ func roundFloat(val float64, precision uint) float64 {
 }
 
 // We want to get the length of a sync map
-func lenOfSyncMap(mp sync.Map) int {
+func LenOfSyncMap(mp sync.Map) int {
 	var i int
 	mp.Range(func(key any, value any) bool {
 		i++

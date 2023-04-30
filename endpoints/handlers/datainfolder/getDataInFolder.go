@@ -1,6 +1,8 @@
-package handlers
+package datainfolder
 
 import (
+	types "blazem/domain/endpoint"
+	global_types "blazem/domain/global"
 	"blazem/global"
 	"errors"
 	"log"
@@ -9,48 +11,52 @@ import (
 	"time"
 )
 
-func GetDataInFolder(node *Node) func(w http.ResponseWriter, req *http.Request) {
-	return node.getDataInFolderHandler
+func NewGetDataFolderHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
+	return GetDataFolderHandler
+}
+
+func GetDataFolderHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
+	de := &DataInFolderEndpoint{
+		Endpoint: *e,
+	}
+	return de.getDataInFolderHandler
 }
 
 // We want to return all of the data currently stored within this folder, including
 // folders and data
-func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
-	WriteHeaders(w, nil)
+func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
+	e.Endpoint.WriteHeaders(w, nil)
 
 	if req.Method != "GET" {
-		JsonResponse(w, EndpointResponse{
-			500,
-			"Wrong method",
-			nil,
+		e.Endpoint.Respond(w, types.EndpointResponse{
+			Code: 500,
+			Msg:  "Wrong method",
 		})
 		return
 	}
 
-	var returnData DataInFolder
-	var folderId = req.URL.Query().Get("folder")
+	var returnData global_types.DataInFolder
+	folderId := req.URL.Query().Get("folder")
 	if folderId == "" {
-		JsonResponse(w, EndpointResponse{
-			500,
-			"No folder passed",
-			nil,
+		e.Endpoint.Respond(w, types.EndpointResponse{
+			Code: 500,
+			Msg:  "No folder passed",
 		})
 		return
 	}
-	var folderName, err = node.GetFolderName(folderId)
+	folderName, err := GetFolderName(e.Endpoint.Node, folderId)
 	if err != nil {
-		JsonResponse(w, EndpointResponse{
-			500,
-			err.Error(),
-			nil,
+		e.Endpoint.Respond(w, types.EndpointResponse{
+			Code: 500,
+			Msg:  err.Error(),
 		})
 		return
 	}
-	var nodeData = make([]global.Document, lenOfSyncMap(node.Data))
-	var dataInFolder = make([]SendData, 0)
-	var dataInd = 0
+	nodeData := make([]global.Document, global_types.LenOfSyncMap(e.Endpoint.Node.Data))
+	dataInFolder := make([]global_types.SendData, 0)
+	dataInd := 0
 
-	node.Data.Range(func(key, value interface{}) bool {
+	e.Endpoint.Node.Data.Range(func(key, value interface{}) bool {
 		nodeData[dataInd] = value.(global.Document)
 		dataInd++
 		return true
@@ -67,8 +73,7 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 		}
 		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
 	})
-
-	var numOfItems = 0
+	numOfItems := 0
 	for i, data := range nodeData {
 		var key = nodeData[i]["key"].(string)
 		if data["type"] != "text" {
@@ -78,7 +83,10 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 			break
 		}
 		if data["folder"] == folderId {
-			var sendData = SendData{key, data}
+			sendData := global_types.SendData{
+				Key:  key,
+				Data: data,
+			}
 			dataInFolder = append(dataInFolder, sendData)
 			numOfItems++
 		}
@@ -94,17 +102,17 @@ func (node *Node) getDataInFolderHandler(w http.ResponseWriter, req *http.Reques
 
 	returnData.Data = dataInFolder
 	returnData.FolderName = folderName
-	returnData.ParentFolders = node.getParentFolders(folderId)
+	returnData.ParentFolders = GetParentFolders(e.Endpoint.Node, folderId)
 
-	JsonResponse(w, EndpointResponse{
-		200,
-		"Successfully retrieved data in folder",
-		returnData,
+	e.Endpoint.Respond(w, types.EndpointResponse{
+		Code: 200,
+		Msg:  "Successfully retrieved data in folder",
+		Data: returnData,
 	})
 }
 
 // Returns the name of the folder, given the folderId
-func (node *Node) GetFolderName(folderId string) (string, error) {
+func GetFolderName(node *global.Node, folderId string) (string, error) {
 	folder, ok := node.Data.Load(folderId)
 	if !ok {
 		return "", errors.New("No document with that key")
@@ -118,9 +126,9 @@ func (node *Node) GetFolderName(folderId string) (string, error) {
 
 // This function returns all of the folders that parent the folder we are
 // searching for recursively
-func (node *Node) getParentFolders(searchFolderId string) []Folder {
+func GetParentFolders(node *global.Node, searchFolderId string) []global_types.Folder {
 	var folderId = searchFolderId
-	var folders = make([]Folder, 0)
+	var folders = make([]global_types.Folder, 0)
 	for folderId != "" {
 		var folderInfo, ok = node.Data.Load(folderId)
 		if !ok {
@@ -129,7 +137,7 @@ func (node *Node) getParentFolders(searchFolderId string) []Folder {
 		}
 		var folderMap = folderInfo.(global.Document)
 		if folderId != searchFolderId {
-			folders = append(folders, Folder{
+			folders = append(folders, global_types.Folder{
 				Folder:     "N/A",
 				Key:        folderMap["key"].(string),
 				FolderName: folderMap["folderName"].(string),
@@ -145,9 +153,9 @@ func (node *Node) getParentFolders(searchFolderId string) []Folder {
 	return reverse(folders)
 }
 
-func reverse(lst []Folder) []Folder {
-	// Reverse order of list
-	var newLst = make([]Folder, 0)
+// Reverse order of list
+func reverse(lst []global_types.Folder) []global_types.Folder {
+	newLst := make([]global_types.Folder, 0)
 	for i := len(lst) - 1; i >= 0; i-- {
 		newLst = append(newLst, lst[i])
 	}

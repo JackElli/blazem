@@ -1,4 +1,4 @@
-package handlers
+package global
 
 import (
 	"blazem/global"
@@ -49,10 +49,4 @@ type DataInFolder struct {
 	FolderName    string     `json:"folderName"`
 	ParentFolders []Folder   `json:"parentFolders"`
 	Data          []SendData `json:"data"`
-}
-
-type EndpointResponse struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
 }
