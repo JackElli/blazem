@@ -1,7 +1,7 @@
 package main
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"sync"
 	"time"
 )

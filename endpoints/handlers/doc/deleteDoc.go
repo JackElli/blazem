@@ -2,7 +2,7 @@ package doc
 
 import (
 	types "blazem/domain/endpoint"
-	"blazem/global"
+	"blazem/domain/global"
 	"net/http"
 )
 

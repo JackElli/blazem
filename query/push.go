@@ -1,7 +1,7 @@
 package query
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"fmt"
 	"reflect"
 	"regexp"

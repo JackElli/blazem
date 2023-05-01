@@ -1,19 +1,18 @@
 package doc
 
 import (
-	endpoint_types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	types "blazem/domain/endpoint"
+	"blazem/domain/global"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 )
 
-func NewGetDocHandler(e *endpoint_types.Endpoint) func(e *endpoint_types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
+func NewGetDocHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
 	return GetDocHandler
 }
 
-func GetDocHandler(e *endpoint_types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
+func GetDocHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
 	de := &DocEndpoint{
 		Endpoint: *e,
 	}
@@ -25,7 +24,7 @@ func (e *DocEndpoint) getDocHandler(w http.ResponseWriter, req *http.Request) {
 	e.Endpoint.WriteHeaders(w, []string{"key"})
 
 	if req.Method != "GET" {
-		e.Endpoint.Respond(w, endpoint_types.EndpointResponse{
+		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 500,
 			Msg:  "Wrong method",
 		})
@@ -33,7 +32,7 @@ func (e *DocEndpoint) getDocHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if e.Endpoint.Node.Rank == global.FOLLOWER {
-		e.Endpoint.Respond(w, endpoint_types.EndpointResponse{
+		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 500,
 			Msg:  "Cannot fetch doc from a follower node",
 		})
@@ -41,7 +40,7 @@ func (e *DocEndpoint) getDocHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	var dataKey = req.URL.Query().Get("key")
 	if dataKey == "" {
-		e.Endpoint.Respond(w, endpoint_types.EndpointResponse{
+		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 500,
 			Msg:  "Doc key not provided",
 		})
@@ -49,18 +48,18 @@ func (e *DocEndpoint) getDocHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	var getData, ok = global.NODE_MAP[0].Data.Load(dataKey)
 	if !ok {
-		e.Endpoint.Respond(w, endpoint_types.EndpointResponse{
+		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 404,
 			Msg:  "Doc not found",
 		})
 		return
 	}
 	sendDataJson := formatData(getData.(global.Document), dataKey)
-	sendData := global_types.SendData{
+	sendData := types.SendData{
 		Key:  dataKey,
 		Data: sendDataJson,
 	}
-	e.Endpoint.Respond(w, endpoint_types.EndpointResponse{
+	e.Endpoint.Respond(w, types.EndpointResponse{
 		Code: 200,
 		Msg:  "Successfully retrieved doc",
 		Data: sendData,

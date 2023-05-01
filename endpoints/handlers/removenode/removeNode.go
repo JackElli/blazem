@@ -2,7 +2,7 @@ package removenode
 
 import (
 	types "blazem/domain/endpoint"
-	"blazem/global"
+	"blazem/domain/global"
 	"net/http"
 )
 

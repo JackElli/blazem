@@ -2,8 +2,7 @@ package datainfolder
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	"blazem/domain/global"
 	"errors"
 	"log"
 	"net/http"
@@ -35,7 +34,7 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 		return
 	}
 
-	var returnData global_types.DataInFolder
+	var returnData types.DataInFolder
 	folderId := req.URL.Query().Get("folder")
 	if folderId == "" {
 		e.Endpoint.Respond(w, types.EndpointResponse{
@@ -52,8 +51,8 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 		})
 		return
 	}
-	nodeData := make([]global.Document, global_types.LenOfSyncMap(e.Endpoint.Node.Data))
-	dataInFolder := make([]global_types.SendData, 0)
+	nodeData := make([]global.Document, types.LenOfSyncMap(e.Endpoint.Node.Data))
+	dataInFolder := make([]types.SendData, 0)
 	dataInd := 0
 
 	e.Endpoint.Node.Data.Range(func(key, value interface{}) bool {
@@ -83,7 +82,7 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 			break
 		}
 		if data["folder"] == folderId {
-			sendData := global_types.SendData{
+			sendData := types.SendData{
 				Key:  key,
 				Data: data,
 			}
@@ -126,9 +125,9 @@ func GetFolderName(node *global.Node, folderId string) (string, error) {
 
 // This function returns all of the folders that parent the folder we are
 // searching for recursively
-func GetParentFolders(node *global.Node, searchFolderId string) []global_types.Folder {
+func GetParentFolders(node *global.Node, searchFolderId string) []types.Folder {
 	var folderId = searchFolderId
-	var folders = make([]global_types.Folder, 0)
+	var folders = make([]types.Folder, 0)
 	for folderId != "" {
 		var folderInfo, ok = node.Data.Load(folderId)
 		if !ok {
@@ -137,7 +136,7 @@ func GetParentFolders(node *global.Node, searchFolderId string) []global_types.F
 		}
 		var folderMap = folderInfo.(global.Document)
 		if folderId != searchFolderId {
-			folders = append(folders, global_types.Folder{
+			folders = append(folders, types.Folder{
 				Folder:     "N/A",
 				Key:        folderMap["key"].(string),
 				FolderName: folderMap["folderName"].(string),
@@ -154,8 +153,8 @@ func GetParentFolders(node *global.Node, searchFolderId string) []global_types.F
 }
 
 // Reverse order of list
-func reverse(lst []global_types.Folder) []global_types.Folder {
-	newLst := make([]global_types.Folder, 0)
+func reverse(lst []types.Folder) []types.Folder {
+	newLst := make([]types.Folder, 0)
 	for i := len(lst) - 1; i >= 0; i-- {
 		newLst = append(newLst, lst[i])
 	}

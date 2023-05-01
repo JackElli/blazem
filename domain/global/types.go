@@ -1,43 +1,58 @@
 package global
 
 import (
-	"blazem/global"
+	"blazem/logging"
+	"sync"
+	"time"
 )
 
-type Node global.Node
+type Rank string
+type JsonData map[string]interface{}
+type NodeData map[string]interface{}
+type Document map[string]interface{}
 
-type WebNodeMap struct {
-	Ip     string `json:"ip"`
-	Active bool   `json:"active"`
+const (
+	MASTER   Rank = "MASTER"
+	FOLLOWER Rank = "FOLLOWER"
+)
+
+var PORT_START = 3100
+var NODE_MAP []*Node
+var Logger logging.Logger
+var DataChanged bool = false
+var GlobalNode *Node
+
+type Node struct {
+	Ip            string
+	Pinged        time.Time
+	PingCount     int
+	Rank          Rank
+	Data          sync.Map
+	Active        bool
+	RecentQueries map[string]string //time
+	Rules         map[string]Rule
 }
 
-type Stats struct {
-	Cpu float64 `json:"cpu"`
-	Ram float64 `json:"ram"`
+type TempNode struct {
+	Ip            string
+	Pinged        time.Time
+	PingCount     int
+	Rank          Rank
+	Data          map[string]interface{}
+	Active        bool
+	RecentQueries map[string]string //time
+	Rules         map[string]Rule
 }
 
-type SendData struct {
-	Key  string                 `json:"key"`
-	Data map[string]interface{} `json:"data"`
-}
-
-type SendQueryData struct {
-	Docs      []SendData `json:"docs"`
-	TimeTaken int64      `json:"timeTaken"`
-}
-
-type Folder struct {
-	Folder     string  `json:"folder"`
-	Key        string  `json:"key"`
-	FolderName string  `json:"folderName"`
-	DocCount   float64 `json:"docCount"`
-	BackedUp   bool    `json:"backedUp"`
-}
-
-type JSONTask struct {
-	Type    string
+type Task struct {
 	Data    string
 	Require int
+	Type    string
+}
+
+type Replicate struct {
+	LocalFolder string `json:"localFolder"`
+	RemoteIp    string `json:"remoteIp"`
 }
 
 type Rule struct {
@@ -45,8 +60,8 @@ type Rule struct {
 	Time  string
 }
 
-type DataInFolder struct {
-	FolderName    string     `json:"folderName"`
-	ParentFolders []Folder   `json:"parentFolders"`
-	Data          []SendData `json:"data"`
+type JSONTask struct {
+	Type    string
+	Data    string
+	Require int
 }

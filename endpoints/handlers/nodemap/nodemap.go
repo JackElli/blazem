@@ -2,8 +2,7 @@ package nodemap
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	"blazem/domain/global"
 	"net/http"
 )
 
@@ -28,9 +27,9 @@ func (e *NodeMapEndpoint) NodeMapHandler(w http.ResponseWriter, req *http.Reques
 		})
 		return
 	}
-	nodeMap := make([]global_types.WebNodeMap, 0)
+	nodeMap := make([]types.WebNodeMap, 0)
 	for _, n := range global.NODE_MAP {
-		nodeMap = append(nodeMap, global_types.WebNodeMap{
+		nodeMap = append(nodeMap, types.WebNodeMap{
 			Ip:     n.Ip,
 			Active: n.Active,
 		})

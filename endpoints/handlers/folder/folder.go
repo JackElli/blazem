@@ -2,8 +2,7 @@ package folder
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	"blazem/domain/global"
 	"net/http"
 )
 
@@ -42,8 +41,8 @@ func (e *FolderEndpoint) folderHandler(w http.ResponseWriter, req *http.Request)
 }
 
 // We want to get all of the folders currently in Blazem
-func GetAllFolders(node *global.Node) map[string]global_types.Folder {
-	folders := make(map[string]global_types.Folder, 0)
+func GetAllFolders(node *global.Node) map[string]types.Folder {
+	folders := make(map[string]types.Folder, 0)
 	node.Data.Range(func(k, value interface{}) bool {
 		dataType := value.(global.Document)["type"]
 		if dataType != "folder" {
@@ -61,7 +60,7 @@ func GetAllFolders(node *global.Node) map[string]global_types.Folder {
 		if inFolder, exists = value.(global.Document)["folder"].(string); !exists {
 			inFolder = ""
 		}
-		folders[folderKey] = global_types.Folder{
+		folders[folderKey] = types.Folder{
 			Folder:     inFolder,
 			Key:        folderKey,
 			FolderName: folderName,
@@ -74,11 +73,11 @@ func GetAllFolders(node *global.Node) map[string]global_types.Folder {
 }
 
 // We want to get all of the folder doc counts
-func GetFolderDocCount(node *global.Node, folders map[string]global_types.Folder) map[string]global_types.Folder {
+func GetFolderDocCount(node *global.Node, folders map[string]types.Folder) map[string]types.Folder {
 	node.Data.Range(func(k, value interface{}) bool {
 		if folder, exists := value.(global.Document)["folder"].(string); exists && folder != "" {
 			currDocCount := folders[folder].DocCount
-			folders[folder] = global_types.Folder{
+			folders[folder] = types.Folder{
 				Folder:     folders[folder].Folder,
 				Key:        folders[folder].Key,
 				FolderName: folders[folder].FolderName,
@@ -92,7 +91,7 @@ func GetFolderDocCount(node *global.Node, folders map[string]global_types.Folder
 }
 
 // We want to store the doc counts in blazem
-func StoreDocCount(node *global.Node, folders map[string]global_types.Folder) map[string]global_types.Folder {
+func StoreDocCount(node *global.Node, folders map[string]types.Folder) map[string]types.Folder {
 	for _, folder := range folders {
 		if folder.Folder == "" {
 			continue

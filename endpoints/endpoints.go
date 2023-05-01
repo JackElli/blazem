@@ -2,10 +2,11 @@ package endpoints
 
 import (
 	types "blazem/domain/endpoint"
+	"blazem/domain/global"
 	"blazem/endpoints/handlers/connect"
 	"blazem/endpoints/handlers/datainfolder"
 	"blazem/endpoints/handlers/doc"
-	folders "blazem/endpoints/handlers/folder"
+	"blazem/endpoints/handlers/folder"
 	"blazem/endpoints/handlers/nodemap"
 	"blazem/endpoints/handlers/ping"
 	"blazem/endpoints/handlers/query"
@@ -13,7 +14,6 @@ import (
 	"blazem/endpoints/handlers/removenode"
 	"blazem/endpoints/handlers/rules"
 	"blazem/endpoints/handlers/stats"
-	"blazem/global"
 	"net/http"
 )
 
@@ -43,7 +43,7 @@ func SetupEndpoints(node *global.Node) error {
 		},
 		{
 			Route:       "/folders",
-			Handler:     folders.NewFolderHandler(nil),
+			Handler:     folder.NewFolderHandler(nil),
 			Description: "We want to fetch all of the root folders currently stored in blazem",
 			Type:        types.SYNC,
 			Node:        node,
