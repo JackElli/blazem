@@ -1,10 +1,10 @@
 package main
 
 import (
-	"blazem/domain/global"
-	"blazem/endpoints"
-	"blazem/logging"
-	"blazem/query"
+	"blazem/pkg/domain/global"
+	"blazem/pkg/endpoints"
+	"blazem/pkg/logging"
+	"blazem/pkg/query"
 	"fmt"
 	"net"
 	"net/http"
