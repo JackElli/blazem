@@ -31,9 +31,8 @@ type Folder struct {
 }
 
 type DataInFolder struct {
-	FolderName    string     `json:"folderName"`
-	ParentFolders []Folder   `json:"parentFolders"`
-	Data          []SendData `json:"data"`
+	FolderName string     `json:"folderName"`
+	Data       []SendData `json:"data"`
 }
 
 // We want to get the length of a sync map

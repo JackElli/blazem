@@ -8,6 +8,7 @@ import (
 	"blazem/endpoints/handlers/doc"
 	"blazem/endpoints/handlers/folder"
 	"blazem/endpoints/handlers/nodemap"
+	"blazem/endpoints/handlers/parent"
 	"blazem/endpoints/handlers/ping"
 	"blazem/endpoints/handlers/query"
 	"blazem/endpoints/handlers/recentquery"
@@ -129,6 +130,13 @@ func SetupEndpoints(node *global.Node) error {
 			Route:       "/addDoc",
 			Handler:     doc.NewAddDocHandler(nil),
 			Description: "We want to add a document to blazem",
+			Type:        types.ASYNC,
+			Node:        node,
+		},
+		{
+			Route:       "/parents",
+			Handler:     parent.NewParentHandler(nil),
+			Description: "We want get the parent folders of that folder",
 			Type:        types.ASYNC,
 			Node:        node,
 		},
