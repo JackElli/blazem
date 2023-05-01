@@ -1,8 +1,8 @@
 package main
 
 import (
+	"blazem/domain/global"
 	"blazem/endpoints"
-	"blazem/global"
 	"blazem/logging"
 	"blazem/query"
 	"fmt"

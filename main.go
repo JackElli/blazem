@@ -1,7 +1,7 @@
 package main
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"sync"
 	"time"
 )
@@ -25,9 +25,7 @@ func main() {
 		RecentQueries: map[string]string{},
 		Rules:         map[string]global.Rule{},
 	}
-
 	node.RunSetup()
-
 	for true {
 		time.Sleep(150 * time.Millisecond)
 	}

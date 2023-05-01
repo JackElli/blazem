@@ -1,7 +1,7 @@
 package blazem_testing
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"sync"
 	"time"
 )

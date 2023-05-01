@@ -2,18 +2,19 @@ package endpoints
 
 import (
 	types "blazem/domain/endpoint"
+	"blazem/domain/global"
 	"blazem/endpoints/handlers/connect"
 	"blazem/endpoints/handlers/datainfolder"
 	"blazem/endpoints/handlers/doc"
-	folders "blazem/endpoints/handlers/folder"
+	"blazem/endpoints/handlers/folder"
 	"blazem/endpoints/handlers/nodemap"
+	"blazem/endpoints/handlers/parent"
 	"blazem/endpoints/handlers/ping"
 	"blazem/endpoints/handlers/query"
 	"blazem/endpoints/handlers/recentquery"
 	"blazem/endpoints/handlers/removenode"
 	"blazem/endpoints/handlers/rules"
 	"blazem/endpoints/handlers/stats"
-	"blazem/global"
 	"net/http"
 )
 
@@ -43,7 +44,7 @@ func SetupEndpoints(node *global.Node) error {
 		},
 		{
 			Route:       "/folders",
-			Handler:     folders.NewFolderHandler(nil),
+			Handler:     folder.NewFolderHandler(nil),
 			Description: "We want to fetch all of the root folders currently stored in blazem",
 			Type:        types.SYNC,
 			Node:        node,
@@ -129,6 +130,13 @@ func SetupEndpoints(node *global.Node) error {
 			Route:       "/addDoc",
 			Handler:     doc.NewAddDocHandler(nil),
 			Description: "We want to add a document to blazem",
+			Type:        types.ASYNC,
+			Node:        node,
+		},
+		{
+			Route:       "/parents",
+			Handler:     parent.NewParentHandler(nil),
+			Description: "We want get the parent folders of that folder",
 			Type:        types.ASYNC,
 			Node:        node,
 		},

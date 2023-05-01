@@ -2,13 +2,12 @@ package stats
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
 	"encoding/json"
 	"net/http"
 	"runtime"
 )
 
-var osStats = map[string]func() global_types.Stats{
+var osStats = map[string]func() types.Stats{
 	"windows": nil,
 	"linux":   nil,
 	"darwin":  nil,

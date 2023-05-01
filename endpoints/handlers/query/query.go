@@ -2,8 +2,7 @@ package query
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	"blazem/domain/global"
 	"blazem/query"
 	"encoding/json"
 	"net/http"
@@ -43,7 +42,7 @@ func (e *QueryEndpoint) queryHandler(w http.ResponseWriter, req *http.Request) {
 		})
 		return
 	}
-	var dataToSend = make([]global_types.SendData, 0)
+	var dataToSend = make([]types.SendData, 0)
 	query.LoadIntoMemory(*e.Endpoint.Node)
 
 	queryResult, timeTaken, _, errors := query.Execute(queryVal, "")
@@ -77,7 +76,7 @@ func (e *QueryEndpoint) queryHandler(w http.ResponseWriter, req *http.Request) {
 			})
 			return
 		}
-		dataToSend = append(dataToSend, global_types.SendData{
+		dataToSend = append(dataToSend, types.SendData{
 			Key:  getJSON["key"].(string),
 			Data: getJSON,
 		})
@@ -86,7 +85,7 @@ func (e *QueryEndpoint) queryHandler(w http.ResponseWriter, req *http.Request) {
 	e.Endpoint.Respond(w, types.EndpointResponse{
 		Code: 200,
 		Msg:  "Completed query successfully",
-		Data: global_types.SendQueryData{
+		Data: types.SendQueryData{
 			Docs:      dataToSend,
 			TimeTaken: timeTaken,
 		},

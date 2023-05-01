@@ -1,7 +1,7 @@
 package query
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"fmt"
 	"regexp"
 	"strings"
@@ -142,4 +142,10 @@ func decodeQuery(querystr string) ([]global.Document, []error) {
 		return nil, errs
 	}
 	return executeQuery(queryType, whereParams, fetchKeys, jsondata, all), errs
+}
+
+// loadTable turns JSON input to one
+// we can understand
+func loadTable(i interface{}) (interface{}, error) {
+	return i, nil
 }

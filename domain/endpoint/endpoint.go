@@ -1,7 +1,7 @@
 package endpoint
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"encoding/json"
 	"net/http"
 	"strings"

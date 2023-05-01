@@ -2,14 +2,13 @@ package rules
 
 import (
 	types "blazem/domain/endpoint"
+	"blazem/domain/global"
 	global_types "blazem/domain/global"
-	"blazem/global"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func NewAddRuleHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
@@ -50,8 +49,7 @@ func (e *RuleEndpoint) addRuleHandler(w http.ResponseWriter, req *http.Request) 
 	e.Endpoint.WriteHeaders(w, []string{})
 	var rule global_types.Rule
 	var taskForRule = make([]global.Task, 0)
-	var executeTime *time.Time
-	var t time.Time
+
 	var err error
 
 	body, _ := ioutil.ReadAll(req.Body)
@@ -68,21 +66,13 @@ func (e *RuleEndpoint) addRuleHandler(w http.ResponseWriter, req *http.Request) 
 		})
 	}
 	if rule.Time != "" {
-		t, err = time.Parse("2006-01-02 15:04:05", rule.Time)
-		executeTime = &t
 		if err != nil {
 			fmt.Println("Failed to add rule")
 			json.NewEncoder(w).Encode("fail")
 		}
-	} else {
-		executeTime = nil
 	}
 	var ruleId = "rule" + strconv.Itoa(len(e.Endpoint.Node.Rules))
-	e.Endpoint.Node.Rules[ruleId] = global.Rule{
-		Id:          ruleId,
-		Tasks:       taskForRule,
-		ExecuteTime: executeTime,
-	}
+	e.Endpoint.Node.Rules[ruleId] = global.Rule{}
 	json.NewEncoder(w).Encode("done")
 }
 
@@ -114,11 +104,7 @@ func (e *RuleEndpoint) getRulesHandler(w http.ResponseWriter, req *http.Request)
 				Require: task.Require,
 			})
 		}
-		sendRule := map[string]interface{}{
-			"tasks":    jsonTasks,
-			"execTime": rule.ExecuteTime.Format("2006-01-02 15:04:05"),
-			"id":       rule.Id,
-		}
+		sendRule := map[string]interface{}{}
 		jsonRules = append(jsonRules, sendRule)
 	}
 	json.NewEncoder(w).Encode(jsonRules)

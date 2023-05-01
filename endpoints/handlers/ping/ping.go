@@ -2,8 +2,7 @@ package ping
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	"blazem/domain/global"
 	"blazem/logging"
 	"encoding/json"
 	"io/ioutil"
@@ -73,7 +72,7 @@ func (e *PingEndpoint) pingHandler(w http.ResponseWriter, req *http.Request) {
 		e.Endpoint.Node.Rank = global.FOLLOWER
 	}
 
-	if global_types.LenOfSyncMap(localnm[0].Data) == 0 {
+	if types.LenOfSyncMap(localnm[0].Data) == 0 {
 		global.NODE_MAP[0].Data = currentMasterData
 		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 200,

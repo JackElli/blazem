@@ -2,8 +2,7 @@ package datainfolder
 
 import (
 	types "blazem/domain/endpoint"
-	global_types "blazem/domain/global"
-	"blazem/global"
+	"blazem/domain/global"
 	"errors"
 	"log"
 	"net/http"
@@ -26,7 +25,6 @@ func GetDataFolderHandler(e *types.Endpoint) func(w http.ResponseWriter, req *ht
 // folders and data
 func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req *http.Request) {
 	e.Endpoint.WriteHeaders(w, nil)
-
 	if req.Method != "GET" {
 		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 500,
@@ -34,8 +32,7 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 		})
 		return
 	}
-
-	var returnData global_types.DataInFolder
+	var returnData types.DataInFolder
 	folderId := req.URL.Query().Get("folder")
 	if folderId == "" {
 		e.Endpoint.Respond(w, types.EndpointResponse{
@@ -52,16 +49,14 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 		})
 		return
 	}
-	nodeData := make([]global.Document, global_types.LenOfSyncMap(e.Endpoint.Node.Data))
-	dataInFolder := make([]global_types.SendData, 0)
+	nodeData := make([]global.Document, types.LenOfSyncMap(e.Endpoint.Node.Data))
+	dataInFolder := make([]types.SendData, 0)
 	dataInd := 0
-
 	e.Endpoint.Node.Data.Range(func(key, value interface{}) bool {
 		nodeData[dataInd] = value.(global.Document)
 		dataInd++
 		return true
 	})
-
 	sort.Slice(nodeData, func(i, j int) bool {
 		if _, convOk := nodeData[i]["date"].(time.Time); !convOk {
 			dateI, errI := time.Parse("2006-01-02T15:04:05", nodeData[i]["date"].(string))
@@ -83,7 +78,7 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 			break
 		}
 		if data["folder"] == folderId {
-			sendData := global_types.SendData{
+			sendData := types.SendData{
 				Key:  key,
 				Data: data,
 			}
@@ -102,7 +97,6 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 
 	returnData.Data = dataInFolder
 	returnData.FolderName = folderName
-	returnData.ParentFolders = GetParentFolders(e.Endpoint.Node, folderId)
 
 	e.Endpoint.Respond(w, types.EndpointResponse{
 		Code: 200,
@@ -122,42 +116,4 @@ func GetFolderName(node *global.Node, folderId string) (string, error) {
 		return "", errors.New("No folder with that key")
 	}
 	return folderMap["folderName"].(string), nil
-}
-
-// This function returns all of the folders that parent the folder we are
-// searching for recursively
-func GetParentFolders(node *global.Node, searchFolderId string) []global_types.Folder {
-	var folderId = searchFolderId
-	var folders = make([]global_types.Folder, 0)
-	for folderId != "" {
-		var folderInfo, ok = node.Data.Load(folderId)
-		if !ok {
-			folderId = ""
-			continue
-		}
-		var folderMap = folderInfo.(global.Document)
-		if folderId != searchFolderId {
-			folders = append(folders, global_types.Folder{
-				Folder:     "N/A",
-				Key:        folderMap["key"].(string),
-				FolderName: folderMap["folderName"].(string),
-				DocCount:   -1,
-			})
-		}
-		if folderMap["folder"] == nil {
-			folderId = ""
-			continue
-		}
-		folderId = folderMap["folder"].(string)
-	}
-	return reverse(folders)
-}
-
-// Reverse order of list
-func reverse(lst []global_types.Folder) []global_types.Folder {
-	newLst := make([]global_types.Folder, 0)
-	for i := len(lst) - 1; i >= 0; i-- {
-		newLst = append(newLst, lst[i])
-	}
-	return newLst
 }

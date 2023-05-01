@@ -1,7 +1,7 @@
 package query
 
 import (
-	"blazem/global"
+	"blazem/domain/global"
 	"fmt"
 	"regexp"
 	"time"
@@ -33,16 +33,6 @@ const (
 var jsonLoad interface{}
 var UploadFileName string
 
-// Checks where a string is in an array
-func contains(slice []string, needle string) bool {
-	for _, v := range slice {
-		if v == needle {
-			return true
-		}
-	}
-	return false
-}
-
 // Uses regex to split the query string
 func tokenise(querystr string) []string {
 	regex := "(?i)([a-zA-Z-_.]*[><=/ ]*[0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
@@ -60,4 +50,10 @@ func Execute(querystr string, tablename string) ([]global.Document,
 	fmt.Println(querystr, "executed in", elapsed.Milliseconds(), "ms")
 	fmt.Println("------------------")
 	return decodedData, elapsed.Milliseconds(), len(decodedData), errs
+}
+
+// LoadIntoMemory loads file or API into mem
+func LoadIntoMemory(node global.Node) string {
+	jsonLoad = node.Data
+	return ""
 }

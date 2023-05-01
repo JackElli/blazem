@@ -2,7 +2,7 @@ package connect
 
 import (
 	types "blazem/domain/endpoint"
-	"blazem/global"
+	"blazem/domain/global"
 	"blazem/logging"
 	"errors"
 	"net/http"
