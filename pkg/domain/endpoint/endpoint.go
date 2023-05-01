@@ -47,6 +47,7 @@ func (e *Endpoint) WriteHeaders(w http.ResponseWriter, extras []string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, "+extra)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE, GET")
 }
 
 // We want to get the length of a sync map

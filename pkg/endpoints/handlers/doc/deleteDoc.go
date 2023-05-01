@@ -19,8 +19,11 @@ func DeleteDocHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.R
 
 // We want to delete a document from Blazem
 func (e *DocEndpoint) deleteDocHandler(w http.ResponseWriter, req *http.Request) {
-	e.Endpoint.WriteHeaders(w, []string{})
-
+	e.Endpoint.WriteHeaders(w, []string{"all"})
+	if req.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	if req.Method != "DELETE" {
 		e.Endpoint.Respond(w, types.EndpointResponse{
 			Code: 500,
