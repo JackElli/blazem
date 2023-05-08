@@ -5,6 +5,7 @@ import (
 	"blazem/pkg/domain/global"
 	"errors"
 	"log"
+	"math"
 	"net/http"
 	"sort"
 	"time"
@@ -32,7 +33,6 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 		})
 		return
 	}
-	var returnData types.DataInFolder
 	folderId := req.URL.Query().Get("folder")
 	if folderId == "" {
 		e.Endpoint.Respond(w, types.EndpointResponse{
@@ -49,53 +49,43 @@ func (e *DataInFolderEndpoint) getDataInFolderHandler(w http.ResponseWriter, req
 		})
 		return
 	}
-	nodeData := make([]global.Document, types.LenOfSyncMap(e.Endpoint.Node.Data))
+
+	var DOCS_TO_RENDER float64
+	var returnData types.DataInFolder
+	MAX_DOCS := 30
 	dataInFolder := make([]types.SendData, 0)
-	dataInd := 0
+
+	// Could do the sorting on the fly?
+	// like a tree of some sort?
 	e.Endpoint.Node.Data.Range(func(key, value interface{}) bool {
-		nodeData[dataInd] = value.(global.Document)
-		dataInd++
+		doc := value.(global.Document)
+		if _, ok := doc["folder"]; ok {
+			if doc["folder"].(string) == folderId {
+				docKey := doc["key"].(string)
+				dataInFolder = append(dataInFolder, types.SendData{
+					Key:  docKey,
+					Data: doc,
+				})
+			}
+		}
 		return true
 	})
-	sort.Slice(nodeData, func(i, j int) bool {
-		if _, convOk := nodeData[i]["date"].(time.Time); !convOk {
-			dateI, errI := time.Parse("2006-01-02T15:04:05", nodeData[i]["date"].(string))
-			dateJ, errJ := time.Parse("2006-01-02T15:04:05", nodeData[j]["date"].(string))
+
+	DOCS_TO_RENDER = math.Min(float64(MAX_DOCS), float64(len(dataInFolder)))
+
+	sort.Slice(dataInFolder, func(i, j int) bool {
+		if _, convOk := dataInFolder[i].Data["date"].(time.Time); !convOk {
+			dateI, errI := time.Parse("2006-01-02T15:04:05", dataInFolder[i].Data["date"].(string))
+			dateJ, errJ := time.Parse("2006-01-02T15:04:05", dataInFolder[j].Data["date"].(string))
 			if errI != nil || errJ != nil {
 				log.Fatal(errI)
 			}
 			return dateI.Unix() > dateJ.Unix()
 		}
-		return nodeData[i]["date"].(time.Time).Unix() > nodeData[j]["date"].(time.Time).Unix()
-	})
-	numOfItems := 0
-	for i, data := range nodeData {
-		var key = nodeData[i]["key"].(string)
-		if data["type"] != "text" {
-			data["value"] = "file"
-		}
-		if numOfItems == 40 {
-			break
-		}
-		if data["folder"] == folderId {
-			sendData := types.SendData{
-				Key:  key,
-				Data: data,
-			}
-			dataInFolder = append(dataInFolder, sendData)
-			numOfItems++
-		}
-	}
-
-	sort.Slice(dataInFolder[:], func(i, j int) bool {
-		iRunes := []rune(dataInFolder[i].Data["type"].(string))
-		jRunes := []rune(dataInFolder[j].Data["type"].(string))
-		iVal := int(iRunes[0])
-		jVal := int(jRunes[0])
-		return iVal < jVal
+		return dataInFolder[i].Data["date"].(time.Time).Unix() > dataInFolder[j].Data["date"].(time.Time).Unix()
 	})
 
-	returnData.Data = dataInFolder
+	returnData.Data = dataInFolder[0:int(DOCS_TO_RENDER)]
 	returnData.FolderName = folderName
 
 	e.Endpoint.Respond(w, types.EndpointResponse{
