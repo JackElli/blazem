@@ -9,14 +9,6 @@ import (
 
 func NodeMap(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"all"})
-		if req.Method != "GET" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
 		nodeMap := make([]types.WebNodeMap, 0)
 		for _, n := range global.NODE_MAP {
 			nodeMap = append(nodeMap, types.WebNodeMap{

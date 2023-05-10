@@ -14,7 +14,6 @@ import (
 // We want to add a rule to blazem
 func AddRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{})
 		var rule global_types.Rule
 		var taskForRule = make([]global.Task, 0)
 
@@ -48,7 +47,6 @@ func AddRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.R
 // We want to remove a rule from Blazem
 func RemoveRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"ruleId"})
 
 		var ruleId = req.URL.Query().Get("ruleId")
 		_, ok := r.Node.Rules[ruleId]
@@ -64,7 +62,6 @@ func RemoveRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *htt
 // We want to fetch all of the rules currently available in Blazem
 func GetRulesHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{})
 
 		var jsonRules = make([]map[string]interface{}, 0)
 		for _, rule := range r.Node.Rules {

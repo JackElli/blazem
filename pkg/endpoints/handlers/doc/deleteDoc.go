@@ -5,32 +5,22 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // We want to delete a document from Blazem
 func DeleteDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"all"})
-		if req.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		if req.Method != "DELETE" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
-		docKey := req.URL.Query().Get("key")
-		if docKey == "" {
+		docId := mux.Vars(req)["id"]
+		if docId == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Doc key not provided",
 			})
 			return
 		}
-		_, docFound := r.Node.Data.Load(docKey)
+		_, docFound := r.Node.Data.Load(docId)
 		if !docFound {
 			r.Respond(w, types.EndpointResponse{
 				Code: 404,
@@ -38,7 +28,7 @@ func DeleteDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Reques
 			})
 			return
 		}
-		r.Node.Data.Delete(docKey)
+		r.Node.Data.Delete(docId)
 		global.DataChanged = true
 		r.Respond(w, types.EndpointResponse{
 			Code: 200,

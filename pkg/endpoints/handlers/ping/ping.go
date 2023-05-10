@@ -20,13 +20,6 @@ import (
 // data to disk
 func Ping(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != "POST" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
 		localTempNodes := make([]*global.TempNode, 0)
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {

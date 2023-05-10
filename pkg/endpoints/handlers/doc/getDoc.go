@@ -7,21 +7,13 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // We want to fetch a document and return it to the user
 func GetDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"key"})
-
-		if req.Method != "GET" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
-
 		if r.Node.Rank == global.FOLLOWER {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
@@ -29,15 +21,15 @@ func GetDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) 
 			})
 			return
 		}
-		var dataKey = req.URL.Query().Get("key")
-		if dataKey == "" {
+		docId := mux.Vars(req)["id"]
+		if docId == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Doc key not provided",
 			})
 			return
 		}
-		var getData, ok = global.NODE_MAP[0].Data.Load(dataKey)
+		var getData, ok = global.NODE_MAP[0].Data.Load(docId)
 		if !ok {
 			r.Respond(w, types.EndpointResponse{
 				Code: 404,
@@ -45,9 +37,9 @@ func GetDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) 
 			})
 			return
 		}
-		sendDataJson := formatData(getData.(global.Document), dataKey)
+		sendDataJson := formatData(getData.(global.Document), docId)
 		sendData := types.SendData{
-			Key:  dataKey,
+			Key:  docId,
 			Data: sendDataJson,
 		}
 		r.Respond(w, types.EndpointResponse{

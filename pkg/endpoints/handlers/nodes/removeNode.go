@@ -1,10 +1,12 @@
-package removenode
+package nodes
 
 import (
 	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // We want to remove a node from the node map (master only). We get the index in
@@ -12,14 +14,6 @@ import (
 // then we save the changes.
 func RemoveNode(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"ip"})
-		if req.Method != "DELETE" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
 		if r.Node.Rank == global.FOLLOWER {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
@@ -27,7 +21,7 @@ func RemoveNode(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Reque
 			})
 			return
 		}
-		nodeIpToRemove := req.URL.Query().Get("ip")
+		nodeIpToRemove := mux.Vars(req)["ip"]
 		if nodeIpToRemove == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,

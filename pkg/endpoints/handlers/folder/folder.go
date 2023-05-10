@@ -4,93 +4,92 @@ import (
 	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"errors"
+	"log"
+	"math"
 	"net/http"
+	"sort"
+	"time"
+
+	"github.com/gorilla/mux"
 )
 
-// We want to return all of the root folders in the data i.e every folder
-// that doesnt have a folder parent. We fetch the folder names, add them to the
-// folder map and add the corresponding global.Document count
-func Folder(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+// We want to return all of the data currently stored within this folder, including
+// folders and data
+func GetDataFolder(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, nil)
-		if req.Method != "GET" {
+		folderId := mux.Vars(req)["id"]
+		if folderId == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
-				Msg:  "Wrong method",
+				Msg:  "No folder passed",
 			})
 			return
 		}
-		folders := GetAllFolders(r.Node)
-		folders = GetFolderDocCount(r.Node, folders)
-		folders = StoreDocCount(r.Node, folders)
+		folderName, err := GetFolderName(r.Node, folderId)
+		if err != nil {
+			r.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  err.Error(),
+			})
+			return
+		}
+
+		var DOCS_TO_RENDER float64
+		var returnData types.DataInFolder
+		MAX_DOCS := 30
+		dataInFolder := make([]types.SendData, 0)
+
+		// Could do the sorting on the fly?
+		// like a tree of some sort?
+		r.Node.Data.Range(func(key, value interface{}) bool {
+			doc := value.(global.Document)
+			if _, ok := doc["folder"]; ok {
+				if doc["folder"].(string) == folderId {
+					docKey := doc["key"].(string)
+					dataInFolder = append(dataInFolder, types.SendData{
+						Key:  docKey,
+						Data: doc,
+					})
+				}
+			}
+			return true
+		})
+
+		DOCS_TO_RENDER = math.Min(float64(MAX_DOCS), float64(len(dataInFolder)))
+
+		sort.Slice(dataInFolder, func(i, j int) bool {
+			if _, convOk := dataInFolder[i].Data["date"].(time.Time); !convOk {
+				dateI, errI := time.Parse("2006-01-02T15:04:05", dataInFolder[i].Data["date"].(string))
+				dateJ, errJ := time.Parse("2006-01-02T15:04:05", dataInFolder[j].Data["date"].(string))
+				if errI != nil || errJ != nil {
+					log.Fatal(errI)
+				}
+				return dateI.Unix() > dateJ.Unix()
+			}
+			return dataInFolder[i].Data["date"].(time.Time).Unix() > dataInFolder[j].Data["date"].(time.Time).Unix()
+		})
+
+		returnData.Data = dataInFolder[0:int(DOCS_TO_RENDER)]
+		returnData.FolderName = folderName
+
 		r.Respond(w, types.EndpointResponse{
 			Code: 200,
-			Msg:  "Successfully retrieved folders",
-			Data: folders,
+			Msg:  "Successfully retrieved data in folder",
+			Data: returnData,
 		})
 	}
 }
 
-// We want to get all of the folders currently in Blazem
-func GetAllFolders(node *global.Node) map[string]types.Folder {
-	folders := make(map[string]types.Folder, 0)
-	node.Data.Range(func(k, value interface{}) bool {
-		dataType := value.(global.Document)["type"]
-		if dataType != "folder" {
-			return true
-		}
-		folderKey := value.(global.Document)["key"].(string)
-		folderName := value.(global.Document)["folderName"].(string)
-
-		var inFolder string
-		var exists bool
-		var backedUp bool = false
-		if value.(global.Document)["backedUp"] != nil {
-			backedUp = value.(global.Document)["backedUp"].(bool)
-		}
-		if inFolder, exists = value.(global.Document)["folder"].(string); !exists {
-			inFolder = ""
-		}
-		folders[folderKey] = types.Folder{
-			Folder:     inFolder,
-			Key:        folderKey,
-			FolderName: folderName,
-			DocCount:   0,
-			BackedUp:   backedUp,
-		}
-		return true
-	})
-	return folders
-}
-
-// We want to get all of the folder doc counts
-func GetFolderDocCount(node *global.Node, folders map[string]types.Folder) map[string]types.Folder {
-	node.Data.Range(func(k, value interface{}) bool {
-		if folder, exists := value.(global.Document)["folder"].(string); exists && folder != "" {
-			currDocCount := folders[folder].DocCount
-			folders[folder] = types.Folder{
-				Folder:     folders[folder].Folder,
-				Key:        folders[folder].Key,
-				FolderName: folders[folder].FolderName,
-				DocCount:   currDocCount + 1,
-				BackedUp:   folders[folder].BackedUp,
-			}
-		}
-		return true
-	})
-	return folders
-}
-
-// We want to store the doc counts in blazem
-func StoreDocCount(node *global.Node, folders map[string]types.Folder) map[string]types.Folder {
-	for _, folder := range folders {
-		if folder.Folder == "" {
-			continue
-		}
-		folderData, _ := node.Data.Load(folder.Key)
-		folderData.(global.Document)["docCount"] = folder.DocCount
-		node.Data.Store(folder.Key, folderData)
-		delete(folders, folder.Key)
+// Returns the name of the folder, given the folderId
+func GetFolderName(node *global.Node, folderId string) (string, error) {
+	folder, ok := node.Data.Load(folderId)
+	if !ok {
+		return "", errors.New("No document with that key")
 	}
-	return folders
+	var folderMap = folder.(global.Document)
+	if folderMap["type"] != "folder" {
+		return "", errors.New("No folder with that key")
+	}
+	return folderMap["folderName"].(string), nil
 }

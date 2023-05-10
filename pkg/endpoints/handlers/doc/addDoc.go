@@ -12,21 +12,8 @@ import (
 
 // We want to add a document to Blazem, we check if it's a POST, unmarshal the data
 // coming in, write to disk and add to the map
-func AddDocHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func AddDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"all"})
-
-		if req.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		if req.Method != "POST" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method " + req.Method + "!=POST",
-			})
-			return
-		}
 		if r.Node.Rank != global.MASTER {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,

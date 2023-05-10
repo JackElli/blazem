@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 // We need to connect a node to the cluster; we check for ip, if it is already
@@ -16,15 +18,7 @@ import (
 // connect request). If it's not in the nodemap, we add it.
 func Connect(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"ip"})
-		if req.Method != "POST" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
-		ip := req.URL.Query().Get("ip")
+		ip := mux.Vars(req)["ip"]
 		err := updateNodeMap(ip)
 		if err != nil {
 			r.Respond(w, types.EndpointResponse{

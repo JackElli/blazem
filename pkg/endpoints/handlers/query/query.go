@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 // We fetch the query entered by the user, we send that to JAQL, then
@@ -16,15 +18,7 @@ import (
 // previously entered.
 func Query(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"query"})
-		if req.Method != "GET" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
-		queryVal := req.URL.Query().Get("query")
+		queryVal := mux.Vars(req)["query"]
 		if queryVal == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,

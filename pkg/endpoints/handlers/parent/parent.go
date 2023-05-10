@@ -5,20 +5,13 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func Parent(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		r.WriteHeaders(w, []string{"all"})
-
-		if req.Method != "GET" {
-			r.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Wrong method",
-			})
-			return
-		}
-		folderId := req.URL.Query().Get("folder")
+		folderId := mux.Vars(req)["id"]
 		if folderId == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
