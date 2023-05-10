@@ -1,47 +1,38 @@
 package parent
 
 import (
+	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
 	"net/http"
 )
 
-func NewParentHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
-	return ParentHandler
-}
+func Parent(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		r.WriteHeaders(w, []string{"all"})
 
-func ParentHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
-	pe := &ParentEndpoint{
-		Endpoint: *e,
-	}
-	return pe.getParentFolders
-}
-
-// Return the results of the nodemap to the client
-func (e *ParentEndpoint) getParentFolders(w http.ResponseWriter, req *http.Request) {
-	e.Endpoint.WriteHeaders(w, []string{"all"})
-
-	if req.Method != "GET" {
-		e.Endpoint.Respond(w, types.EndpointResponse{
-			Code: 500,
-			Msg:  "Wrong method",
+		if req.Method != "GET" {
+			r.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  "Wrong method",
+			})
+			return
+		}
+		folderId := req.URL.Query().Get("folder")
+		if folderId == "" {
+			r.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  "No folder passed",
+			})
+			return
+		}
+		parents := GetParentFolders(r.Node, folderId)
+		r.Respond(w, types.EndpointResponse{
+			Code: 200,
+			Msg:  "Parent folders retrieved Successfully",
+			Data: parents,
 		})
-		return
 	}
-	folderId := req.URL.Query().Get("folder")
-	if folderId == "" {
-		e.Endpoint.Respond(w, types.EndpointResponse{
-			Code: 500,
-			Msg:  "No folder passed",
-		})
-		return
-	}
-	parents := GetParentFolders(e.Endpoint.Node, folderId)
-	e.Endpoint.Respond(w, types.EndpointResponse{
-		Code: 200,
-		Msg:  "Parent folders retrieved Successfully",
-		Data: parents,
-	})
 }
 
 // This function returns all of the folders that parent the folder we are

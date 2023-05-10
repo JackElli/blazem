@@ -1,45 +1,37 @@
 package recentquery
 
 import (
+	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"net/http"
 )
 
-func NewRecentQueryHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
-	return RecentQueryHandler
-}
-
-func RecentQueryHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
-	pe := &RecentQueryEndpoint{
-		Endpoint: *e,
-	}
-	return pe.getRecentQueriesHandler
-}
-
 // Returns a list of recently entered queries
-func (e *RecentQueryEndpoint) getRecentQueriesHandler(w http.ResponseWriter, req *http.Request) {
-	e.Endpoint.WriteHeaders(w, []string{})
+func RecentQuery(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		r.WriteHeaders(w, []string{})
 
-	if req.Method != "GET" {
-		e.Endpoint.Respond(w, types.EndpointResponse{
-			Code: 500,
-			Msg:  "Wrong method",
-		})
-		return
-	}
+		if req.Method != "GET" {
+			r.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  "Wrong method",
+			})
+			return
+		}
 
-	dataToSend := e.Endpoint.Node.RecentQueries
-	if len(dataToSend) == 0 {
-		e.Endpoint.Respond(w, types.EndpointResponse{
+		dataToSend := r.Node.RecentQueries
+		if len(dataToSend) == 0 {
+			r.Respond(w, types.EndpointResponse{
+				Code: 200,
+				Msg:  "Successfully retrieved recent queries",
+				Data: []uint8{},
+			})
+			return
+		}
+		r.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved recent queries",
-			Data: []uint8{},
+			Data: dataToSend,
 		})
-		return
 	}
-	e.Endpoint.Respond(w, types.EndpointResponse{
-		Code: 200,
-		Msg:  "Successfully retrieved recent queries",
-		Data: dataToSend,
-	})
 }

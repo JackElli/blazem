@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
 	"blazem/pkg/logging"
@@ -10,43 +11,34 @@ import (
 	"time"
 )
 
-func NewConnectHandler(e *types.Endpoint) func(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
-	return ConnectHandler
-}
-
-func ConnectHandler(e *types.Endpoint) func(w http.ResponseWriter, req *http.Request) {
-	ce := &ConnectEndpoint{
-		Endpoint: *e,
-	}
-	return ce.connectHandler
-}
-
 // We need to connect a node to the cluster; we check for ip, if it is already
 // in the node map, we set to active (because it must be active as it's sent a
 // connect request). If it's not in the nodemap, we add it.
-func (e *ConnectEndpoint) connectHandler(w http.ResponseWriter, req *http.Request) {
-	e.Endpoint.WriteHeaders(w, []string{"ip"})
-	if req.Method != "POST" {
-		e.Endpoint.Respond(w, types.EndpointResponse{
-			Code: 500,
-			Msg:  "Wrong method",
+func Connect(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		r.WriteHeaders(w, []string{"ip"})
+		if req.Method != "POST" {
+			r.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  "Wrong method",
+			})
+			return
+		}
+		ip := req.URL.Query().Get("ip")
+		err := updateNodeMap(ip)
+		if err != nil {
+			r.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  err.Error(),
+			})
+			return
+		}
+		r.Respond(w, types.EndpointResponse{
+			Code: 200,
+			Msg:  "Successfully connected",
+			Data: global.NODE_MAP,
 		})
-		return
 	}
-	ip := req.URL.Query().Get("ip")
-	err := updateNodeMap(ip)
-	if err != nil {
-		e.Endpoint.Respond(w, types.EndpointResponse{
-			Code: 500,
-			Msg:  err.Error(),
-		})
-		return
-	}
-	e.Endpoint.Respond(w, types.EndpointResponse{
-		Code: 200,
-		Msg:  "Successfully connected",
-		Data: global.NODE_MAP,
-	})
 }
 
 // We need to append a node to the nodemap or, if the node is already in
