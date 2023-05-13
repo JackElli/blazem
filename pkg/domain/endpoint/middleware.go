@@ -13,7 +13,7 @@ func Middleware(f func(w http.ResponseWriter, req *http.Request)) func(w http.Re
 	return func(w http.ResponseWriter, req *http.Request) {
 		c, err := req.Cookie("token")
 		if err != nil {
-			w.WriteHeader(401)
+			w.WriteHeader(403)
 			return
 		}
 
@@ -23,19 +23,19 @@ func Middleware(f func(w http.ResponseWriter, req *http.Request)) func(w http.Re
 		})
 
 		if tkn.Method != jwt.SigningMethodHS256 {
-			w.WriteHeader(401)
+			w.WriteHeader(403)
 			return
 		}
 
 		claims, ok := tkn.Claims.(jwt.MapClaims)
 		if !ok {
-			w.WriteHeader(401)
+			w.WriteHeader(403)
 			return
 		}
 
 		// check if token is in date
 		if int64(claims["exp"].(float64)) < time.Now().Local().Unix() {
-			w.WriteHeader(401)
+			w.WriteHeader(403)
 			return
 		}
 
