@@ -55,10 +55,11 @@ func SetupEndpoints(node *global.Node) error {
 
 	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "HEAD"}
 	allowedHeaders := []string{"Origin", "Content-Length", "Content-Type"}
-	allowedOrigins := []string{"*"}
+	allowedOrigins := []string{"http://localhost:5173"}
 	http.Handle("/", handlers.CORS(
 		handlers.AllowedMethods(allowedMethods),
 		handlers.AllowedOrigins(allowedOrigins),
+		handlers.AllowCredentials(),
 		handlers.AllowedHeaders(allowedHeaders))(r),
 	)
 	return nil
