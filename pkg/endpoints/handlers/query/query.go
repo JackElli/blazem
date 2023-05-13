@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 // We fetch the query entered by the user, we send that to JAQL, then
@@ -18,17 +16,22 @@ import (
 // previously entered.
 func Query(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		queryVal := mux.Vars(req)["query"]
-		if queryVal == "" {
+		var queryVal struct {
+			Query string `json:"query"`
+		}
+		json.NewDecoder(req.Body).Decode(&queryVal)
+
+		if queryVal.Query == "" {
 			r.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "No query param sent",
 			})
 			return
 		}
+
 		dataToSend := make([]types.SendData, 0)
 		query.LoadIntoMemory(*r.Node)
-		queryResult, timeTaken, _, errors := query.Execute(queryVal, "")
+		queryResult, timeTaken, _, errors := query.Execute(queryVal.Query, "")
 
 		if len(errors) != 0 {
 			r.Respond(w, types.EndpointResponse{
@@ -64,7 +67,7 @@ func Query(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 				Data: getJSON,
 			})
 		}
-		r.Node.RecentQueries[queryVal] = time.Now().Format("2006-01-02 15:04:05")
+		r.Node.RecentQueries[queryVal.Query] = time.Now().Format("2006-01-02 15:04:05")
 		r.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Completed query successfully",

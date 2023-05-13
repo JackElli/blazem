@@ -23,6 +23,7 @@ func NewResponder(node *global.Node) *Respond {
 
 // Send a JSON response back
 func (r *Respond) Respond(w http.ResponseWriter, response EndpointResponse) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.Code)
 	json.NewEncoder(w).Encode(response)
 }

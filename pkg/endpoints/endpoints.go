@@ -49,7 +49,7 @@ func SetupEndpoints(node *global.Node) error {
 	r.HandleFunc("/folders", folders.Folders(responder)).Methods("GET")
 	r.HandleFunc("/stats", stats.Stats(responder)).Methods("GET")
 	r.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", nodes.RemoveNode(responder)).Methods("DELETE")
-	r.HandleFunc("/query/{query:[a-zA-Z0-9-,.\" ]+}", query.Query(responder)).Methods("GET")
+	r.HandleFunc("/query", query.Query(responder)).Methods("POST")
 	r.HandleFunc("/recentQueries", recentquery.RecentQuery(responder)).Methods("GET")
 	r.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", folder.GetDataFolder(responder)).Methods("GET")
 	r.HandleFunc("/ping", ping.Ping(responder)).Methods("POST")

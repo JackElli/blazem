@@ -19,5 +19,6 @@ FROM scratch
 
 COPY --from=builder /blazem /blazem
 
+EXPOSE 3100
 
 ENTRYPOINT [ "/blazem" ]
