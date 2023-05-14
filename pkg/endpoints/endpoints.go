@@ -3,6 +3,7 @@ package endpoints
 import (
 	"blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/endpoints/handlers/auth"
 	"blazem/pkg/endpoints/handlers/connect"
 	"blazem/pkg/endpoints/handlers/doc"
 	"blazem/pkg/endpoints/handlers/folder"
@@ -35,29 +36,30 @@ func NewEndpointRouter(node *global.Node, router *mux.Router) *EndpointRouter {
 // Create all of the endpoints for Blazem
 func SetupEndpoints(node *global.Node) error {
 	responder := endpoint.NewResponder(node)
+
 	r := mux.NewRouter()
+	r.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", endpoint.Middleware(connect.Connect(responder))).Methods("POST")
+	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", endpoint.Middleware(doc.GetDoc(responder))).Methods("GET")
+	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", endpoint.Middleware(doc.DeleteDoc(responder))).Methods("DELETE")
+	r.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", endpoint.Middleware(nodes.RemoveNode(responder))).Methods("DELETE")
+	r.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", endpoint.Middleware(folder.GetDataFolder(responder))).Methods("GET")
+	r.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", endpoint.Middleware(parent.Parent(responder))).Methods("GET")
+	r.HandleFunc("/nodemap", endpoint.Middleware(nodemap.NodeMap(responder))).Methods("GET")
+	r.HandleFunc("/doc", endpoint.Middleware(doc.AddDoc(responder))).Methods("POST")
+	r.HandleFunc("/folders", endpoint.Middleware(folders.Folders(responder))).Methods("GET")
+	r.HandleFunc("/stats", endpoint.Middleware(stats.Stats(responder))).Methods("GET")
+	r.HandleFunc("/query", endpoint.Middleware(query.Query(responder))).Methods("POST")
+	r.HandleFunc("/recentQueries", endpoint.Middleware(recentquery.RecentQuery(responder))).Methods("GET")
+	r.HandleFunc("/ping", endpoint.Middleware(ping.Ping(responder))).Methods("POST")
+	r.HandleFunc("/auth", auth.Auth(responder)).Methods("GET")
 
 	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "HEAD"}
 	allowedHeaders := []string{"Origin", "Content-Length", "Content-Type"}
-	allowedOrigins := []string{"*"}
-
-	r.HandleFunc("/nodemap", nodemap.NodeMap(responder)).Methods("GET")
-	r.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", connect.Connect(responder)).Methods("POST")
-	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.GetDoc(responder)).Methods("GET")
-	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.DeleteDoc(responder)).Methods("DELETE")
-	r.HandleFunc("/doc", doc.AddDoc(responder)).Methods("POST")
-	r.HandleFunc("/folders", folders.Folders(responder)).Methods("GET")
-	r.HandleFunc("/stats", stats.Stats(responder)).Methods("GET")
-	r.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", nodes.RemoveNode(responder)).Methods("DELETE")
-	r.HandleFunc("/query", query.Query(responder)).Methods("POST")
-	r.HandleFunc("/recentQueries", recentquery.RecentQuery(responder)).Methods("GET")
-	r.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", folder.GetDataFolder(responder)).Methods("GET")
-	r.HandleFunc("/ping", ping.Ping(responder)).Methods("POST")
-	r.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", parent.Parent(responder)).Methods("GET")
-
+	allowedOrigins := []string{"http://localhost:5173"}
 	http.Handle("/", handlers.CORS(
 		handlers.AllowedMethods(allowedMethods),
 		handlers.AllowedOrigins(allowedOrigins),
+		handlers.AllowCredentials(),
 		handlers.AllowedHeaders(allowedHeaders))(r),
 	)
 	return nil
