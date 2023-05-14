@@ -24,12 +24,8 @@ func Auth(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 
 		secretkey := []byte("SecretYouShouldHide")
 		expirationDate := time.Now().Add(20 * time.Minute)
-		t := jwt.New(jwt.SigningMethodHS256)
+		jwt, err := createJWT(secretkey, expirationDate)
 
-		claims := t.Claims.(jwt.MapClaims)
-		claims["exp"] = expirationDate.Unix()
-
-		jwt, err := t.SignedString(secretkey)
 		if err != nil {
 			r.Respond(w, endpoint.EndpointResponse{
 				Code: 500,
@@ -50,4 +46,15 @@ func Auth(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 			Data: jwt,
 		})
 	}
+}
+
+// createJWT creates a JWT and returns the token and an error if there is one
+func createJWT(secretkey []byte, expirationDate time.Time) (string, error) {
+	t := jwt.New(jwt.SigningMethodHS256)
+
+	claims := t.Claims.(jwt.MapClaims)
+	claims["exp"] = expirationDate.Unix()
+
+	jwt, err := t.SignedString(secretkey)
+	return jwt, err
 }
