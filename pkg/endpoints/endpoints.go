@@ -21,23 +21,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type EndpointRouter struct {
-	node *global.Node
-	r    *mux.Router
-}
-
-func NewEndpointRouter(node *global.Node, router *mux.Router) *EndpointRouter {
-	return &EndpointRouter{
-		node: node,
-		r:    router,
-	}
-}
-
 // Create all of the endpoints for Blazem
 func SetupEndpoints(node *global.Node) error {
 	responder := endpoint.NewResponder(node)
-
 	r := mux.NewRouter()
+
 	r.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", endpoint.Middleware(connect.Connect(responder))).Methods("POST")
 	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", endpoint.Middleware(doc.GetDoc(responder))).Methods("GET")
 	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", endpoint.Middleware(doc.DeleteDoc(responder))).Methods("DELETE")
@@ -51,16 +39,24 @@ func SetupEndpoints(node *global.Node) error {
 	r.HandleFunc("/query", endpoint.Middleware(query.Query(responder))).Methods("POST")
 	r.HandleFunc("/recentQueries", endpoint.Middleware(recentquery.RecentQuery(responder))).Methods("GET")
 	r.HandleFunc("/ping", endpoint.Middleware(ping.Ping(responder))).Methods("POST")
-	r.HandleFunc("/auth", auth.Auth(responder)).Methods("GET")
+	r.HandleFunc("/auth", auth.Auth(responder)).Methods("POST")
 
-	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "HEAD"}
+	setCorsMethods(r)
+	return nil
+}
+
+// setCorsMethods allows us to choose which headers are allowed
+func setCorsMethods(r *mux.Router) {
+	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	allowedHeaders := []string{"Origin", "Content-Length", "Content-Type"}
 	allowedOrigins := []string{"http://localhost:5173"}
+	exposeHeader := []string{"Set-Cookie"}
+
 	http.Handle("/", handlers.CORS(
 		handlers.AllowedMethods(allowedMethods),
 		handlers.AllowedOrigins(allowedOrigins),
 		handlers.AllowCredentials(),
+		handlers.ExposedHeaders(exposeHeader),
 		handlers.AllowedHeaders(allowedHeaders))(r),
 	)
-	return nil
 }

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"blazem/pkg/domain/endpoint"
+	"encoding/json"
 	"time"
 
 	"net/http"
@@ -13,7 +14,13 @@ import (
 // it also sets a cookie for the client of this JWT
 func Auth(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		auth := true
+		var authVal struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}
+		json.NewDecoder(req.Body).Decode(&authVal)
+		auth := authUser(authVal.Username, authVal.Password)
+
 		if !auth {
 			r.Respond(w, endpoint.EndpointResponse{
 				Code: 401,
@@ -46,6 +53,14 @@ func Auth(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
 			Data: jwt,
 		})
 	}
+}
+
+// authUser returns true if user is authed, false if not
+func authUser(username string, password string) bool {
+	if username == "JackTest" && password == "helloaws1!" {
+		return true
+	}
+	return false
 }
 
 // createJWT creates a JWT and returns the token and an error if there is one
