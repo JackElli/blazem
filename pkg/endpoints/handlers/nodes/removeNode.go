@@ -1,9 +1,9 @@
 package nodes
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,7 +12,7 @@ import (
 // We want to remove a node from the node map (master only). We get the index in
 // the node map of the node, then we update the node map (removing the 'to remove' node)
 // then we save the changes.
-func RemoveNode(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func RemoveNode(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if r.Node.Rank == global.FOLLOWER {
 			r.Respond(w, types.EndpointResponse{

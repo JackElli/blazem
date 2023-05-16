@@ -1,9 +1,9 @@
 package folder
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"errors"
 	"log"
 	"math"
@@ -16,7 +16,7 @@ import (
 
 // We want to return all of the data currently stored within this folder, including
 // folders and data
-func GetDataFolder(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func GetDataFolder(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 		if folderId == "" {

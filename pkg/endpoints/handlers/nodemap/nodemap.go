@@ -1,13 +1,13 @@
 package nodemap
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"net/http"
 )
 
-func NodeMap(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func NodeMap(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		nodeMap := make([]types.WebNodeMap, 0)
 		for _, n := range global.NODE_MAP {

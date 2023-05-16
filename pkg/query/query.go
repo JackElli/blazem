@@ -2,8 +2,8 @@ package query
 
 import (
 	"blazem/pkg/domain/global"
-	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -42,18 +42,17 @@ func tokenise(querystr string) []string {
 // Execute public and executes the query
 func Execute(querystr string, tablename string) ([]global.Document,
 	int64, int, []error) {
-	var start = time.Now()
-	var decodedData, errs = decodeQuery(querystr)
-	var elapsed = time.Since(start)
 
-	fmt.Println("------------------")
-	fmt.Println(querystr, "executed in", elapsed.Milliseconds(), "ms")
-	fmt.Println("------------------")
-	return decodedData, elapsed.Milliseconds(), len(decodedData), errs
+	start := time.Now()
+	decodedData, errs := decodeQuery(querystr)
+	elapsed := time.Since(start).Milliseconds()
+	elapsedStr := strconv.Itoa(int(elapsed))
+
+	global.Logger.Info(querystr + "executed in " + elapsedStr + "ms")
+	return decodedData, elapsed, len(decodedData), errs
 }
 
 // LoadIntoMemory loads file or API into mem
-func LoadIntoMemory(node global.Node) string {
+func LoadIntoMemory(node global.Node) {
 	jsonLoad = node.Data
-	return ""
 }

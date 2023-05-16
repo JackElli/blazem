@@ -2,6 +2,7 @@ package auth
 
 import (
 	"blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/responder"
 	"encoding/json"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 
 // Auth endpoint returns a JWT set for an expiration if the user exists
 // it also sets a cookie for the client of this JWT
-func Auth(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var authVal struct {
 			Username string `json:"username"`

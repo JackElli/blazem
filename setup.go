@@ -3,15 +3,16 @@ package main
 import (
 	"blazem/pkg/domain/global"
 	"blazem/pkg/endpoints"
-	"blazem/pkg/logging"
 	"blazem/pkg/query"
-	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type SetupManager struct {
@@ -34,15 +35,15 @@ func (node *Node) CreateSetupMgr(steps []SetupStep) SetupManager {
 
 // Runs all the steps in order
 func (mgr *SetupManager) RunSteps() {
-	fmt.Println("Setting up Blazem")
+	global.Logger.Info("Setting up Blazem.")
 	for _, step := range mgr.Steps {
 		if err := step.Fn(); err != nil {
-			fmt.Println("Found error in", step.Description, err)
+			global.Logger.Error("Found error in " + step.Description + " " + err.Error())
 			return
 		}
-		fmt.Println("Completed step.")
+		global.Logger.Info("Completed step.")
 	}
-	fmt.Println("All steps completed successfully :)")
+	global.Logger.Info("All steps completed successfully :)")
 }
 
 // Run the setup process by creating a setup mgr and running each
@@ -52,16 +53,9 @@ func (node *Node) RunSetup() {
 	var localip = getLocalIp()
 	global.GlobalNode = (*global.Node)(node)
 
+	setupLogger()
+
 	mgr := node.CreateSetupMgr([]SetupStep{
-		{
-			"Sets up the logger for logging",
-			func() error {
-				if err := setupLogger(); err != nil {
-					return err
-				}
-				return nil
-			},
-		},
 		{
 			"Picks port for blazem to start on",
 			func() error {
@@ -164,13 +158,13 @@ func (node *Node) tryListen(ip string) {
 	if strings.Count(ip, ":") > 1 {
 		portstr = strings.Split(ip, ":")[0]
 	}
-	global.Logger.Log("trying on "+portstr, logging.INFO)
+	global.Logger.Info("trying on " + portstr)
 	l, err := net.Listen("tcp", portstr)
 	if err != nil {
 		return
 	}
 	node.Ip = ip
-	global.Logger.Log("Blazem started up on "+ip, logging.INFO)
+	global.Logger.Info("Blazem started up on " + ip)
 	http.Serve(l, nil)
 }
 
@@ -203,10 +197,11 @@ func getLocalIp() string {
 
 // setup file for logging
 func setupLogger() error {
-	logfile := "logging/"
-	global.Logger = *logging.LogFile(logfile)
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("can't initialize zap logger: %v", err)
+	}
+	global.Logger = logger
+	defer logger.Sync()
 	return nil
 }
-
-//TODO put all func defs inside of the setup
-//TODO remove struct keys
