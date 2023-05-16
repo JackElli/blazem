@@ -22,7 +22,6 @@ import (
 	"blazem/pkg/endpoints/handlers/stats"
 	"net/http"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -36,7 +35,7 @@ func SetupEndpoints(node *global.Node) error {
 	)
 
 	r := mux.NewRouter()
-	http.Handle("/", CORS(r))
+	http.Handle("/", cors.CORS(r))
 
 	public := r.PathPrefix("/").Subrouter()
 	public.HandleFunc("/auth", auth.Auth(endpointMgr)).Methods("POST")
@@ -62,20 +61,4 @@ func SetupEndpoints(node *global.Node) error {
 	admin.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", nodes.RemoveNode(endpointMgr)).Methods("DELETE")
 
 	return nil
-}
-
-// setCorsMethods allows us to choose which headers are allowed
-func CORS(r *mux.Router) http.Handler {
-	allowedMethods := cors.GetAllowedMethods()
-	allowedHeaders := cors.GetAllowedHeaders()
-	allowedOrigins := cors.GetAllowedOrigin()
-	exposeHeader := cors.GetExposedHeaders()
-
-	return handlers.CORS(
-		handlers.AllowedMethods(allowedMethods),
-		handlers.AllowedOrigins(allowedOrigins),
-		handlers.AllowCredentials(),
-		handlers.ExposedHeaders(exposeHeader),
-		handlers.AllowedHeaders(allowedHeaders),
-	)(r)
 }
