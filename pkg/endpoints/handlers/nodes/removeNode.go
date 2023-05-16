@@ -2,8 +2,8 @@ package nodes
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,10 +12,10 @@ import (
 // We want to remove a node from the node map (master only). We get the index in
 // the node map of the node, then we update the node map (removing the 'to remove' node)
 // then we save the changes.
-func RemoveNode(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func RemoveNode(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if r.Node.Rank == global.FOLLOWER {
-			r.Respond(w, types.EndpointResponse{
+		if e.Node.Rank == global.FOLLOWER {
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Must be a master node to complete this action",
 			})
@@ -23,7 +23,7 @@ func RemoveNode(r *responder.Respond) func(w http.ResponseWriter, req *http.Requ
 		}
 		nodeIpToRemove := mux.Vars(req)["ip"]
 		if nodeIpToRemove == "" {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "No IP passed",
 			})
@@ -31,14 +31,14 @@ func RemoveNode(r *responder.Respond) func(w http.ResponseWriter, req *http.Requ
 		}
 		indexOfNode := global.IndexOfNodeIpInNodeMap(nodeIpToRemove)
 		if indexOfNode == -1 {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Invalid node",
 			})
 			return
 		}
 		global.NODE_MAP = append(global.NODE_MAP[:indexOfNode], global.NODE_MAP[indexOfNode+1:]...)
-		r.Respond(w, types.EndpointResponse{
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully removed node from nodemap",
 		})

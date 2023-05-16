@@ -2,9 +2,12 @@ package endpoints
 
 import (
 	"blazem/pkg/domain/cors"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/middleware"
+	"blazem/pkg/domain/permissions"
 	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/users"
 	"blazem/pkg/endpoints/handlers/auth"
 	"blazem/pkg/endpoints/handlers/connect"
 	"blazem/pkg/endpoints/handlers/doc"
@@ -25,40 +28,54 @@ import (
 
 // Create all of the endpoints for Blazem
 func SetupEndpoints(node *global.Node) error {
-	responder := responder.NewResponder(node)
+
+	endpointMgr := endpoint_manager.NewEndpointManager(
+		node,
+		responder.NewResponder(),
+		users.NewUserStore(node),
+	)
+
 	r := mux.NewRouter()
+	http.Handle("/", CORS(r))
 
-	r.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", middleware.Middleware(connect.Connect(responder))).Methods("POST")
-	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", middleware.Middleware(doc.GetDoc(responder))).Methods("GET")
-	r.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", middleware.Middleware(doc.DeleteDoc(responder))).Methods("DELETE")
-	r.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", middleware.Middleware(nodes.RemoveNode(responder))).Methods("DELETE")
-	r.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", middleware.Middleware(folder.GetDataFolder(responder))).Methods("GET")
-	r.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", middleware.Middleware(parent.Parent(responder))).Methods("GET")
-	r.HandleFunc("/nodemap", middleware.Middleware(nodemap.NodeMap(responder))).Methods("GET")
-	r.HandleFunc("/doc", middleware.Middleware(doc.AddDoc(responder))).Methods("POST")
-	r.HandleFunc("/folders", middleware.Middleware(folders.Folders(responder))).Methods("GET")
-	r.HandleFunc("/stats", middleware.Middleware(stats.Stats(responder))).Methods("GET")
-	r.HandleFunc("/query", middleware.Middleware(query.Query(responder))).Methods("POST")
-	r.HandleFunc("/recentQueries", middleware.Middleware(recentquery.RecentQuery(responder))).Methods("GET")
-	r.HandleFunc("/ping", middleware.Middleware(ping.Ping(responder))).Methods("POST")
-	r.HandleFunc("/auth", auth.Auth(responder)).Methods("POST")
+	public := r.PathPrefix("/").Subrouter()
+	public.HandleFunc("/auth", auth.Auth(endpointMgr)).Methods("POST")
 
-	setCorsMethods(r)
+	protected := r.PathPrefix("/").Subrouter()
+	protected.Use(middleware.Middleware)
+	protected.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", connect.Connect(endpointMgr)).Methods("POST")
+	protected.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.GetDoc(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", folder.GetDataFolder(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", parent.Parent(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/nodemap", nodemap.NodeMap(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/doc", doc.AddDoc(endpointMgr)).Methods("POST")
+	protected.HandleFunc("/folders", folders.Folders(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/stats", stats.Stats(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/query", query.Query(endpointMgr)).Methods("POST")
+	protected.HandleFunc("/recentQueries", recentquery.RecentQuery(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/ping", ping.Ping(endpointMgr)).Methods("POST")
+
+	admin := r.PathPrefix("/").Subrouter()
+	admin.Use(middleware.Middleware)
+	admin.Use(permissions.Permissions)
+	admin.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.DeleteDoc(endpointMgr)).Methods("DELETE")
+	admin.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", nodes.RemoveNode(endpointMgr)).Methods("DELETE")
+
 	return nil
 }
 
 // setCorsMethods allows us to choose which headers are allowed
-func setCorsMethods(r *mux.Router) {
+func CORS(r *mux.Router) http.Handler {
 	allowedMethods := cors.GetAllowedMethods()
 	allowedHeaders := cors.GetAllowedHeaders()
 	allowedOrigins := cors.GetAllowedOrigin()
 	exposeHeader := cors.GetExposedHeaders()
 
-	http.Handle("/", handlers.CORS(
+	return handlers.CORS(
 		handlers.AllowedMethods(allowedMethods),
 		handlers.AllowedOrigins(allowedOrigins),
 		handlers.AllowCredentials(),
 		handlers.ExposedHeaders(exposeHeader),
 		handlers.AllowedHeaders(allowedHeaders),
-	)(r))
+	)(r)
 }

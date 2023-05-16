@@ -1,14 +1,8 @@
 package endpoint
 
 import (
-	"blazem/pkg/domain/global"
 	"sync"
 )
-
-type Endpoint struct {
-	Node        *global.Node
-	Description string
-}
 
 type EndpointResponse struct {
 	Code int         `json:"code"`

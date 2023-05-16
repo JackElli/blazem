@@ -2,20 +2,20 @@ package folders
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
 	"net/http"
 )
 
 // We want to return all of the root folders in the data i.e every folder
 // that doesnt have a folder parent. We fetch the folder names, add them to the
 // folder map and add the corresponding global.Document count
-func Folders(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Folders(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		folders := GetAllFolders(r.Node)
-		folders = GetFolderDocCount(r.Node, folders)
-		folders = StoreDocCount(r.Node, folders)
-		r.Respond(w, types.EndpointResponse{
+		folders := GetAllFolders(e.Node)
+		folders = GetFolderDocCount(e.Node, folders)
+		folders = StoreDocCount(e.Node, folders)
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved folders",
 			Data: folders,

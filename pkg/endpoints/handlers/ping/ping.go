@@ -2,8 +2,8 @@ package ping
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -17,12 +17,12 @@ import (
 // check. If we change from master to follower quickly, it's because we've
 // been added to the cluster by another node. We write all of the changed
 // data to disk
-func Ping(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		localTempNodes := make([]*global.TempNode, 0)
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Error reading request body {" + err.Error() + "}",
 			})
@@ -30,7 +30,7 @@ func Ping(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 		}
 		err = json.Unmarshal(body, &localTempNodes)
 		if err != nil {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Error unmarshalling request body {" + err.Error() + "}",
 			})
@@ -38,33 +38,33 @@ func Ping(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 		}
 		localnm := global.UnmarshalNodeMap(localTempNodes)
 		if len(localnm) == 0 {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "No nodes found to marshal",
 			})
 			return
 		}
-		r.Node.Pinged = time.Now()
+		e.Node.Pinged = time.Now()
 		global.Logger.Info("PING RECEIVED")
 		currentMasterData := global.NODE_MAP[0].Data
 		global.NODE_MAP = localnm
 
-		if r.Node.Rank == global.FOLLOWER {
-			go r.Node.CheckForNoPingFromMaster()
+		if e.Node.Rank == global.FOLLOWER {
+			go e.Node.CheckForNoPingFromMaster()
 		} else {
-			r.Node.Rank = global.FOLLOWER
+			e.Node.Rank = global.FOLLOWER
 		}
 
 		if types.LenOfSyncMap(localnm[0].Data) == 0 {
 			global.NODE_MAP[0].Data = currentMasterData
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 200,
 				Msg:  "Successful ping",
 			})
 			return
 		}
-		UpdateData(r.Node, localnm)
-		r.Respond(w, types.EndpointResponse{
+		UpdateData(e.Node, localnm)
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successful ping",
 		})

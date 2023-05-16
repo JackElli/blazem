@@ -2,25 +2,20 @@ package responder
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/global"
 	"encoding/json"
 	"net/http"
 )
-
-type Respond struct {
-	Node *global.Node
-}
 
 type Responder interface {
 	Respond(w http.ResponseWriter, response endpoint.EndpointResponse)
 }
 
+type Respond struct{}
+
 // NewResponder returns a respond struct implementing the
 // responder interface
-func NewResponder(node *global.Node) *Respond {
-	return &Respond{
-		Node: node,
-	}
+func NewResponder() *Respond {
+	return &Respond{}
 }
 
 // Send a JSON response back

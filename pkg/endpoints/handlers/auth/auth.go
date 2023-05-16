@@ -2,7 +2,7 @@ package auth
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/endpoint_manager"
 	"encoding/json"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 
 // Auth endpoint returns a JWT set for an expiration if the user exists
 // it also sets a cookie for the client of this JWT
-func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var authVal struct {
 			Username string `json:"username"`
@@ -23,7 +23,7 @@ func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 		auth := authUser(authVal.Username, authVal.Password)
 
 		if !auth {
-			r.Respond(w, endpoint.EndpointResponse{
+			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 401,
 				Msg:  "User not authorised to do that",
 			})
@@ -35,7 +35,7 @@ func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 		jwt, err := createJWT(secretkey, expirationDate)
 
 		if err != nil {
-			r.Respond(w, endpoint.EndpointResponse{
+			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 500,
 				Msg:  "Cannot auth user as jwt cannot be created as " + err.Error(),
 			})
@@ -48,7 +48,7 @@ func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 			Expires: expirationDate,
 		})
 
-		r.Respond(w, endpoint.EndpointResponse{
+		e.Responder.Respond(w, endpoint.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully authenticated user",
 			Data: jwt,
