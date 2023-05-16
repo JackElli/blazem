@@ -1,9 +1,10 @@
 package global
 
 import (
-	"blazem/pkg/logging"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type Rank string
@@ -18,7 +19,7 @@ const (
 
 var PORT_START = 3100
 var NODE_MAP []*Node
-var Logger logging.Logger
+var Logger *zap.Logger
 var DataChanged bool = false
 var GlobalNode *Node
 

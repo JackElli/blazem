@@ -1,18 +1,17 @@
 package rules
 
 import (
-	"blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
 	global_types "blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 )
 
 // We want to add a rule to blazem
-func AddRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func AddRuleHandler(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var rule global_types.Rule
 		var taskForRule = make([]global.Task, 0)
@@ -34,7 +33,7 @@ func AddRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.R
 		}
 		if rule.Time != "" {
 			if err != nil {
-				fmt.Println("Failed to add rule")
+				global.Logger.Error("Failed to add rule")
 				json.NewEncoder(w).Encode("fail")
 			}
 		}
@@ -45,7 +44,7 @@ func AddRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.R
 }
 
 // We want to remove a rule from Blazem
-func RemoveRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func RemoveRuleHandler(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		var ruleId = req.URL.Query().Get("ruleId")
@@ -60,7 +59,7 @@ func RemoveRuleHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *htt
 }
 
 // We want to fetch all of the rules currently available in Blazem
-func GetRulesHandler(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func GetRulesHandler(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		var jsonRules = make([]map[string]interface{}, 0)

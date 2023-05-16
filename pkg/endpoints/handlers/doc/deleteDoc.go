@@ -1,16 +1,16 @@
 package doc
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
 // We want to delete a document from Blazem
-func DeleteDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func DeleteDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		docId := mux.Vars(req)["id"]
 		if docId == "" {

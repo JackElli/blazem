@@ -1,7 +1,6 @@
 package global
 
 import (
-	"blazem/pkg/logging"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -9,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -26,7 +24,7 @@ func (n *Node) PingRetry(sendData *bytes.Buffer) bool {
 		if err == nil {
 			return true
 		}
-		Logger.Log("PINGING AGAIN", logging.INFO)
+		Logger.Info("Pinging again.")
 	}
 	return false
 }
@@ -45,26 +43,25 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 				}
 			}
 			sendData := bytes.NewBuffer(jsonNodeMap)
-			Logger.Log("PINGING "+loopn.Ip, logging.INFO)
+			Logger.Info("Pinging " + loopn.Ip)
 
 			_, err := http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
 			if err != nil {
 				if !loopn.PingRetry(sendData) {
-					Logger.Log("Cannot connect to "+loopn.Ip,
-						logging.WARNING)
+					Logger.Warn("Cannot connect to " + loopn.Ip)
 					loopn.Active = false
 					loopn.PingCount = 0
 					return
 				}
 			}
 			if loopn.PingCount == 0 {
-				Logger.Log("SENDING MAP TO FIRST JOINER", logging.INFO)
+				Logger.Info("Sending map to first joiner.")
 				jsonNodeMap, _ := json.Marshal(MarshalNodeMap(NODE_MAP))
 				sendData := bytes.NewBuffer(jsonNodeMap)
 				_, err = http.Post("http://"+loopn.Ip+"/ping", "application/json", sendData)
 			}
 			loopn.PingCount++
-			Logger.Log("PING RECEIVED FROM "+loopn.Ip, logging.INFO)
+			Logger.Info("Ping received from " + loopn.Ip)
 			if loopn.Active == false {
 				loopn.Active = true
 			}
@@ -83,8 +80,6 @@ func (node *Node) Ping() {
 		if len(NODE_MAP) == 1 {
 			continue
 		}
-		Logger.Log(string(node.Rank)+" at "+node.Ip+" nodemap: "+strings.Join(GetNodeIps(), " "),
-			logging.INFO)
 		jsonNodeMap := checkIfDataChanged()
 		node.PingEachConnection(jsonNodeMap)
 	}
@@ -100,14 +95,13 @@ func (node *Node) CheckForNoPingFromMaster() {
 	if timeSinceLastPingAbs < 1 {
 		return
 	}
-	Logger.Log("Slow response first check at "+fmt.Sprintf("%f", timeSinceLastPingAbs)+"s",
-		logging.WARNING)
+	Logger.Warn("Slow response first check at " + fmt.Sprintf("%f", timeSinceLastPingAbs) + "s")
 	time.Sleep(4100 * time.Millisecond)
 	timeSinceLastPingAbs = time.Now().Sub(node.Pinged).Seconds()
 	if timeSinceLastPingAbs < 8.2 {
 		return
 	}
-	Logger.Log("NO PING FROM MASTER!!!", logging.INFO)
+	Logger.Info("No ping from master.")
 	if node.isNextInLine() {
 		node.setToMaster()
 	}
@@ -121,7 +115,7 @@ func (node *Node) setToMaster() {
 	node.Rules = NODE_MAP[0].Rules
 
 	waitingTimeStr := strconv.Itoa(int(time.Now().Sub(node.Pinged).Seconds()))
-	Logger.Log("IM THE MASTER NOW, COPIED ALL DATA FROM PREVIOUS MASTER!!! after waiting for "+waitingTimeStr+"s", logging.GOOD)
+	Logger.Info("I'm the master now. I've copied all of the data from the previous master after waiting for " + waitingTimeStr + "s")
 	NODE_MAP = NODE_MAP[1:]
 	NODE_MAP[0] = node
 	go node.Ping()
@@ -140,7 +134,7 @@ func (node *Node) ReadFromLocal() {
 		json.Unmarshal(data, &dataJSON)
 		node.Data.Store(key, (Document)(dataJSON))
 	}
-	Logger.Log("Loaded files into memory.", logging.INFO)
+	Logger.Info("Loaded files into memory.")
 }
 
 // We want to send data across nodes

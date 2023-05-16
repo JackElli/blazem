@@ -1,9 +1,9 @@
 package doc
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +12,7 @@ import (
 )
 
 // We want to fetch a document and return it to the user
-func GetDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func GetDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if r.Node.Rank == global.FOLLOWER {
 			r.Respond(w, types.EndpointResponse{

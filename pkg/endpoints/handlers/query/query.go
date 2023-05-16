@@ -1,9 +1,9 @@
 package query
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"blazem/pkg/query"
 	"encoding/json"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 // we send back the results to the client. We also want to add these to
 // recent queries so the user can easily get back to queries they've
 // previously entered.
-func Query(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Query(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var queryVal struct {
 			Query string `json:"query"`

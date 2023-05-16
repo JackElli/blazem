@@ -1,9 +1,9 @@
 package doc
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/responder"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +12,7 @@ import (
 
 // We want to add a document to Blazem, we check if it's a POST, unmarshal the data
 // coming in, write to disk and add to the map
-func AddDoc(r *endpoint.Respond) func(w http.ResponseWriter, req *http.Request) {
+func AddDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if r.Node.Rank != global.MASTER {
 			r.Respond(w, types.EndpointResponse{
