@@ -17,12 +17,8 @@ type UserStorer interface {
 	Update(id string, user *user.User) error
 }
 
-type UserFile struct {
-	Users map[string]user.User `json:"users"`
-}
-
 type UserStore struct {
-	Users map[string]user.User
+	Users map[string]user.User `json:"users"`
 }
 
 func NewUserStore() *UserStore {
@@ -48,7 +44,7 @@ func (us *UserStore) LoadUsers() (int, error) {
 			return 0, nil
 		}
 	}
-	var users UserFile
+	var users UserStore
 	err = json.Unmarshal(data, &users)
 	if err != nil {
 		return 0, err
@@ -78,13 +74,13 @@ func (us *UserStore) Insert(id string, user *user.User) error {
 	if err != nil {
 		return err
 	}
-	var users UserFile
+	var users UserStore
 	err = json.Unmarshal(data, &users)
 	if err != nil {
 		return err
 	}
 	us.Users[id] = *user
-	dataToWrite, err := json.Marshal(UserFile{
+	dataToWrite, err := json.Marshal(UserStore{
 		Users: us.Users,
 	})
 	if err != nil {

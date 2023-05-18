@@ -17,11 +17,26 @@ import (
 )
 
 type INode interface {
-	CheckForNoPingFromMaster()
-	Ping()
-	PingEachConnection(jsonNodeMap []byte)
 	PingRetry(sendData *bytes.Buffer) bool
+	PingEachConnection(jsonNodeMap []byte)
+	Ping()
+	CheckForNoPingFromMaster()
 	ReadFromLocal()
+	IsNextInLine() bool
+	CheckIfDataChanged() []byte
+	WriteDocToDisk(value global.Document)
+	GetNodeIps() []string
+	AlreadyInNodeMap(ip string) bool
+	IndexOfNodeIpInNodeMap(ip string) int
+	GetNodeMapWithoutData() []*Node
+	MarshalNodeMap() []*TempNode
+	SetNodeMasterAttrs()
+	PickPort(ip string) error
+	tryListen(ip string)
+	IndexOfNodeInNodeMap() int
+	GetNodeDatas() []sync.Map
+	GetLocalIp() string
+	SetupLogger() error
 }
 
 type Node struct {
@@ -36,6 +51,7 @@ type Node struct {
 	NodeMap       []*Node
 	UserStore     *users.UserStore
 }
+
 type TempNode struct {
 	Ip            string
 	Pinged        time.Time
@@ -45,11 +61,6 @@ type TempNode struct {
 	Active        bool
 	RecentQueries map[string]string //time
 	Rules         map[string]global.Rule
-}
-
-type SetupStep struct {
-	Description string
-	Fn          func() error
 }
 
 var GlobalNode *Node

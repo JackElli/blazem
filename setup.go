@@ -2,7 +2,6 @@ package main
 
 import (
 	"blazem/pkg/domain/logger"
-	"blazem/pkg/domain/node"
 	blazem_node "blazem/pkg/domain/node"
 	"blazem/pkg/domain/user"
 	"blazem/pkg/domain/users"
@@ -11,13 +10,18 @@ import (
 	"fmt"
 )
 
+type SetupStep struct {
+	Description string
+	Fn          func() error
+}
+
 type SetupManager struct {
-	Steps []blazem_node.SetupStep
+	Steps []SetupStep
 	Node  *blazem_node.Node
 }
 
 // Returns a setupmgr with the steps to complete and the node
-func CreateSetupMgr(node *blazem_node.Node, steps []node.SetupStep) SetupManager {
+func CreateSetupMgr(node *blazem_node.Node, steps []SetupStep) SetupManager {
 	return SetupManager{
 		Steps: steps,
 		Node:  node,
@@ -46,7 +50,7 @@ func RunSetup(node *blazem_node.Node) {
 
 	node.SetupLogger()
 
-	mgr := CreateSetupMgr(node, []blazem_node.SetupStep{
+	mgr := CreateSetupMgr(node, []SetupStep{
 		{
 			Description: "Picks port for blazem to start on",
 			Fn: func() error {
