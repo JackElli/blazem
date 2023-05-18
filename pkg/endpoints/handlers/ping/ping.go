@@ -4,6 +4,9 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/logger"
+	"blazem/pkg/domain/node"
+	blazem_node "blazem/pkg/domain/node"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -19,7 +22,7 @@ import (
 // data to disk
 func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		localTempNodes := make([]*global.TempNode, 0)
+		localTempNodes := make([]*blazem_node.TempNode, 0)
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -36,7 +39,7 @@ func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			})
 			return
 		}
-		localnm := global.UnmarshalNodeMap(localTempNodes)
+		localnm := node.UnmarshalNodeMap(localTempNodes)
 		if len(localnm) == 0 {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
@@ -45,9 +48,9 @@ func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			return
 		}
 		e.Node.Pinged = time.Now()
-		global.Logger.Info("PING RECEIVED")
-		currentMasterData := global.NODE_MAP[0].Data
-		global.NODE_MAP = localnm
+		logger.Logger.Info("PING RECEIVED")
+		currentMasterData := e.Node.NodeMap[0].Data
+		e.Node.NodeMap = localnm
 
 		if e.Node.Rank == global.FOLLOWER {
 			go e.Node.CheckForNoPingFromMaster()
@@ -56,7 +59,7 @@ func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 		}
 
 		if types.LenOfSyncMap(localnm[0].Data) == 0 {
-			global.NODE_MAP[0].Data = currentMasterData
+			e.Node.NodeMap[0].Data = currentMasterData
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 200,
 				Msg:  "Successful ping",
@@ -73,15 +76,15 @@ func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 
 // We want to add any nodes not in the nodemap to the nodemap.
 // We also want to write doc to disk if it doesn't exist.
-func UpdateData(node *global.Node, localnm []*global.Node) {
-	global.NODE_MAP = make([]*global.Node, 0)
+func UpdateData(node *node.Node, localnm []*node.Node) {
+	node.NodeMap = make([]*blazem_node.Node, 0)
 	for _, j := range localnm {
-		global.NODE_MAP = append(global.NODE_MAP, j)
+		node.NodeMap = append(node.NodeMap, j)
 	}
-	global.NODE_MAP[0].Data.Range(func(key, value any) bool {
+	node.NodeMap[0].Data.Range(func(key, value any) bool {
 		_, err := os.Stat("data/" + key.(string))
 		if os.IsNotExist(err) {
-			global.WriteDocToDisk(value.(map[string]interface{}))
+			node.WriteDocToDisk(value.(map[string]interface{}))
 		}
 		return true
 	})

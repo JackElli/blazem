@@ -4,6 +4,7 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/node"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -30,7 +31,7 @@ func Parent(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 
 // This function returns all of the folders that parent the folder we are
 // searching for recursively
-func GetParentFolders(node *global.Node, searchFolderId string) []types.Folder {
+func GetParentFolders(node *node.Node, searchFolderId string) []types.Folder {
 	folderId := searchFolderId
 	folders := make([]types.Folder, 0)
 	for folderId != "" {

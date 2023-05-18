@@ -4,6 +4,7 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/node"
 	"errors"
 	"log"
 	"math"
@@ -82,7 +83,7 @@ func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 }
 
 // Returns the name of the folder, given the folderId
-func GetFolderName(node *global.Node, folderId string) (string, error) {
+func GetFolderName(node *node.Node, folderId string) (string, error) {
 	folder, ok := node.Data.Load(folderId)
 	if !ok {
 		return "", errors.New("No document with that key")

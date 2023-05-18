@@ -4,6 +4,8 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/logger"
+	blazem_node "blazem/pkg/domain/node"
 	"errors"
 	"net/http"
 	"sync"
@@ -18,7 +20,7 @@ import (
 func Connect(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ip := mux.Vars(req)["ip"]
-		err := updateNodeMap(ip)
+		err := updateNodeMap(e.Node, ip)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
@@ -29,26 +31,34 @@ func Connect(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully connected",
-			Data: global.NODE_MAP,
+			Data: e.Node.NodeMap,
 		})
 	}
 }
 
 // We need to append a node to the nodemap or, if the node is already in
 // the nodemap, we can activate it again
-func updateNodeMap(ip string) error {
+func updateNodeMap(node *blazem_node.Node, ip string) error {
 	if ip == "" {
 		return errors.New("IP nothing")
 	}
-	if !global.AlreadyInNodeMap(ip) {
-		global.NODE_MAP = append(global.NODE_MAP, &global.Node{Ip: ip, Pinged: time.Now(),
-			PingCount: 0, Rank: global.FOLLOWER, Data: sync.Map{}, Active: true,
-			RecentQueries: map[string]string{}, Rules: map[string]global.Rule{}})
-		global.Logger.Info(ip + " has connected")
+	if !node.AlreadyInNodeMap(ip) {
+		node.NodeMap = append(node.NodeMap, &blazem_node.Node{
+			Ip:            ip,
+			Pinged:        time.Now(),
+			PingCount:     0,
+			Rank:          global.FOLLOWER,
+			Data:          sync.Map{},
+			Active:        true,
+			RecentQueries: map[string]string{},
+			Rules:         map[string]global.Rule{},
+			NodeMap:       node.NodeMap,
+		})
+		logger.Logger.Info(ip + " has connected")
 		return nil
 	}
-	indexOfNode := global.IndexOfNodeIpInNodeMap(ip)
-	global.NODE_MAP[indexOfNode].Active = true
-	global.NODE_MAP[indexOfNode].PingCount = 0
+	indexOfNode := node.IndexOfNodeIpInNodeMap(ip)
+	node.NodeMap[indexOfNode].Active = true
+	node.NodeMap[indexOfNode].PingCount = 0
 	return nil
 }

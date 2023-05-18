@@ -29,7 +29,7 @@ func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 			})
 			return
 		}
-		var getData, ok = global.NODE_MAP[0].Data.Load(docId)
+		var getData, ok = e.Node.NodeMap[0].Data.Load(docId)
 		if !ok {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 404,

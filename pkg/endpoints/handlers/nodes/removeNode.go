@@ -29,7 +29,7 @@ func RemoveNode(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter,
 			})
 			return
 		}
-		indexOfNode := global.IndexOfNodeIpInNodeMap(nodeIpToRemove)
+		indexOfNode := e.Node.IndexOfNodeIpInNodeMap(nodeIpToRemove)
 		if indexOfNode == -1 {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
@@ -37,7 +37,7 @@ func RemoveNode(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter,
 			})
 			return
 		}
-		global.NODE_MAP = append(global.NODE_MAP[:indexOfNode], global.NODE_MAP[indexOfNode+1:]...)
+		e.Node.NodeMap = append(e.Node.NodeMap[:indexOfNode], e.Node.NodeMap[indexOfNode+1:]...)
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully removed node from nodemap",

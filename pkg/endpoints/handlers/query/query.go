@@ -30,7 +30,7 @@ func Query(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req 
 		}
 
 		dataToSend := make([]types.SendData, 0)
-		query.LoadIntoMemory(*e.Node)
+		query.LoadIntoMemory(e.Node)
 		queryResult, timeTaken, _, errors := query.Execute(queryVal.Query, "")
 
 		if len(errors) != 0 {

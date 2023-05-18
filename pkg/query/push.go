@@ -2,6 +2,8 @@ package query
 
 import (
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/node"
+
 	"fmt"
 	"reflect"
 	"regexp"
@@ -142,7 +144,7 @@ func executeQuery(queryType QueryType, whereParams []string,
 		if queryType == DELETE {
 			for _, doc := range pushed {
 				key := doc["key"].(string)
-				global.GlobalNode.Data.Delete(key)
+				node.GlobalNode.Data.Delete(key)
 			}
 			return []global.Document{}
 		}

@@ -4,6 +4,7 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/node"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -40,7 +41,7 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 		}
 
 		document := TransformNewDoc(e.Node, dataToAdd)
-		global.WriteDocToDisk(document)
+		e.Node.WriteDocToDisk(document)
 		e.Node.Data.Store(dataToAdd["key"], document)
 		global.DataChanged = true
 
@@ -53,7 +54,7 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 
 // We want to transform the document coming in, to something that is optimised and
 // info-full for retrieval
-func TransformNewDoc(node *global.Node, dataToAdd global.Document) global.Document {
+func TransformNewDoc(node *node.Node, dataToAdd global.Document) global.Document {
 	document := dataToAdd
 	if document["type"].(string) != "text" {
 		document["file_name"] = dataToAdd["file_name"]

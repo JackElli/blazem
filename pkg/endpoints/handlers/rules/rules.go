@@ -4,6 +4,7 @@ import (
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	global_types "blazem/pkg/domain/global"
+	"blazem/pkg/domain/logger"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -33,7 +34,7 @@ func AddRuleHandler(e *endpoint_manager.EndpointManager) func(w http.ResponseWri
 		}
 		if rule.Time != "" {
 			if err != nil {
-				global.Logger.Error("Failed to add rule")
+				logger.Logger.Error("Failed to add rule")
 				json.NewEncoder(w).Encode("fail")
 			}
 		}
