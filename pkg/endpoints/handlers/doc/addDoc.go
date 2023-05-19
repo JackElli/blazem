@@ -22,7 +22,7 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 			})
 			return
 		}
-		var dataToAdd global.Document
+		var dataToAdd map[string]interface{}
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -54,13 +54,13 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 
 // We want to transform the document coming in, to something that is optimised and
 // info-full for retrieval
-func TransformNewDoc(node *node.Node, dataToAdd global.Document) global.Document {
+func TransformNewDoc(node *node.Node, dataToAdd map[string]interface{}) map[string]interface{} {
 	document := dataToAdd
 	if document["type"].(string) != "text" {
 		document["file_name"] = dataToAdd["file_name"]
 	}
 	if loadDoc, ok := node.Data.Load(dataToAdd["key"]); ok {
-		return updateDocument(document, loadDoc.(global.Document))
+		return updateDocument(document, loadDoc.(map[string]interface{}))
 	}
 	document["date"] = time.Now().Format("2006-01-02T15:04:05")
 	return document
@@ -68,7 +68,7 @@ func TransformNewDoc(node *node.Node, dataToAdd global.Document) global.Document
 
 // If we're not adding a new document, we're updating an existing one, we want
 // to keep the date the same
-func updateDocument(document global.Document, loadDoc global.Document) global.Document {
+func updateDocument(document map[string]interface{}, loadDoc map[string]interface{}) map[string]interface{} {
 	document["date"] = loadDoc["date"].(string)
 	return document
 }

@@ -1,23 +1,18 @@
 package query
 
 import (
-	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
+	"fmt"
 	"regexp"
-	"strconv"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type QueryType int
 type MathOp int
-
 type FileType string
-
-const (
-	F FileType = "file"
-	U FileType = "url"
-)
 
 const (
 	SELECT QueryType = 0
@@ -32,29 +27,36 @@ const (
 	LIKE MathOp = 4
 )
 
-var jsonLoad interface{}
-var UploadFileName string
+type Query struct {
+	JsonLoad interface{}
+}
 
-// Uses regex to split the query string
-func tokenise(querystr string) []string {
+func NewQuery(jsonLoad interface{}) *Query {
+	return &Query{
+		JsonLoad: jsonLoad,
+	}
+}
+
+// tokenise uses regex to split the query string
+func (query *Query) tokenise(queryStr string) []string {
 	regex := "(?i)([a-zA-Z-_.]*[><=/ ]*[0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
-	return regexp.MustCompile(regex).FindAllString(querystr, 100)
+	return regexp.MustCompile(regex).FindAllString(queryStr, 100)
 }
 
-// Execute public and executes the query
-func Execute(querystr string, tablename string) ([]global.Document,
-	int64, int, []error) {
+// LoadIntoMemory loads docs into memory to query from
+func (query *Query) LoadIntoMemory(node *node.Node) {
+	query.JsonLoad = node.Data
+}
 
+// Execute executes the query
+func (query *Query) Execute(querystr string) ([]map[string]interface{}, int64, int, []error) {
 	start := time.Now()
-	decodedData, errs := decodeQuery(querystr)
+	decodedData, errs := query.decodeQuery(querystr)
+	if len(errs) > 0 {
+		logger.Logger.Warn("Found errors in query", zap.Errors("errs", errs))
+	}
 	elapsed := time.Since(start).Milliseconds()
-	elapsedStr := strconv.Itoa(int(elapsed))
+	logger.Logger.Info(fmt.Sprintf("%s executed in %vms", querystr, elapsed))
 
-	logger.Logger.Info(querystr + " executed in " + elapsedStr + "ms")
 	return decodedData, elapsed, len(decodedData), errs
-}
-
-// LoadIntoMemory loads file or API into mem
-func LoadIntoMemory(node *node.Node) {
-	jsonLoad = node.Data
 }

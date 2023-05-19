@@ -1,7 +1,6 @@
 package query
 
 import (
-	"blazem/pkg/domain/global"
 	"fmt"
 	"regexp"
 	"strings"
@@ -95,10 +94,10 @@ func decodeToken(i int, token string, queryType *QueryType,
 	all *bool, where *bool, fetchKeys *[]string, whereParams *[]string) error {
 	var decoderError error
 	if *where && i > 2 {
-		var noWhiteSpaceReg = regexp.MustCompile("[a-zA-Z-_.= ]*")
-		var findSection = noWhiteSpaceReg.FindString(token)
-		var findSectionNoWhiteSpace = strings.ReplaceAll(findSection, " ", "")
-		var trimmedToken = strings.ReplaceAll(token, findSection, findSectionNoWhiteSpace)
+		noWhiteSpaceReg := regexp.MustCompile("[a-zA-Z-_.= ]*")
+		findSection := noWhiteSpaceReg.FindString(token)
+		findSectionNoWhiteSpace := strings.ReplaceAll(findSection, " ", "")
+		trimmedToken := strings.ReplaceAll(token, findSection, findSectionNoWhiteSpace)
 		*whereParams = append(*whereParams, string(trimmedToken))
 		return nil
 	}
@@ -113,17 +112,19 @@ func decodeToken(i int, token string, queryType *QueryType,
 }
 
 // decodeQuery decodes the query so that we can manipulate it
-func decodeQuery(querystr string) ([]global.Document, []error) {
-	var tokens = tokenise(querystr)
+func (query *Query) decodeQuery(queryStr string) ([]map[string]interface{}, []error) {
+
 	var queryType QueryType
 	var fetchKeys []string
 	var whereParams []string
 	var where bool
 	var all bool
-	var errs []error = make([]error, 0)
+
+	errs := make([]error, 0)
+	tokens := query.tokenise(queryStr)
 
 	if len(tokens) < 2 {
-		errs = append(errs, fmt.Errorf("NOT ENOUGH ARGS"))
+		errs = append(errs, fmt.Errorf("Not enough query arguments passed"))
 		return nil, errs
 	}
 
@@ -134,18 +135,9 @@ func decodeQuery(querystr string) ([]global.Document, []error) {
 		}
 	}
 
-	var jsondata, loaderr = loadTable(jsonLoad)
-	if loaderr != nil {
-		errs = append(errs, loaderr)
-	}
 	if len(errs) > 0 {
 		return nil, errs
 	}
-	return executeQuery(queryType, whereParams, fetchKeys, jsondata, all), errs
-}
 
-// loadTable turns JSON input to one
-// we can understand
-func loadTable(i interface{}) (interface{}, error) {
-	return i, nil
+	return executeQuery(queryType, whereParams, fetchKeys, query.JsonLoad, all), nil
 }
