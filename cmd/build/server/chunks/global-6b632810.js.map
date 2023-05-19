@@ -1,0 +1,1 @@
+{"version":3,"file":"global-6b632810.js","sources":["../../../.svelte-kit/adapter-node/chunks/global.js"],"sourcesContent":["const hostName = \"localhost\";\nconst versionNum = \"0.1.6\";\nexport {\n  hostName as h,\n  versionNum as v\n};\n"],"names":[],"mappings":"AAAK,MAAC,QAAQ,GAAG,YAAY;AACxB,MAAC,UAAU,GAAG;;;;"}

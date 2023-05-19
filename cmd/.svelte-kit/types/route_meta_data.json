@@ -1,0 +1,44 @@
+{
+	"/(main)": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(login)": [],
+	"/": [],
+	"/(main)/backup": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/export": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/folders": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/folder": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/folder/[id]": [
+		"src/routes/(main)/folder/[id]/+page.ts",
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/help": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/import": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/nodes": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/recents": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/rules": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/search": [
+		"src/routes/(main)/+layout.ts"
+	],
+	"/(main)/stats": [
+		"src/routes/(main)/+layout.ts"
+	]
+}
