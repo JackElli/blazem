@@ -6,8 +6,6 @@ import (
 	"blazem/pkg/domain/user"
 	"blazem/pkg/domain/users"
 	"blazem/pkg/endpoints"
-	"blazem/pkg/query"
-	"fmt"
 )
 
 type SetupStep struct {
@@ -75,7 +73,6 @@ func RunSetup(node *blazem_node.Node) {
 				if err != nil {
 					return err
 				}
-				fmt.Println(numOfUsers)
 				if numOfUsers == 0 {
 					err = node.UserStore.Insert("user:1", &user.User{
 						Id:       "user:1",
@@ -119,13 +116,6 @@ func RunSetup(node *blazem_node.Node) {
 			Description: "First ping and ping either the master or followers",
 			Fn: func() error {
 				go node.Ping()
-				return nil
-			},
-		},
-		{
-			Description: "Load all query data into memory",
-			Fn: func() error {
-				query.LoadIntoMemory(node)
 				return nil
 			},
 		},

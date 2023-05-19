@@ -20,6 +20,7 @@ import (
 	"blazem/pkg/endpoints/handlers/recentquery"
 	"blazem/pkg/endpoints/handlers/stats"
 	"blazem/pkg/endpoints/handlers/users"
+	blazem_query "blazem/pkg/query"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -31,6 +32,7 @@ func SetupEndpoints(node *node.Node) error {
 	endpointMgr := endpoint_manager.NewEndpointManager(
 		node,
 		responder.NewResponder(),
+		blazem_query.NewQuery(node.Data),
 	)
 
 	r := mux.NewRouter()

@@ -3,14 +3,13 @@ package folders
 import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
-	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/node"
 	"net/http"
 )
 
 // We want to return all of the root folders in the data i.e every folder
 // that doesnt have a folder parent. We fetch the folder names, add them to the
-// folder map and add the corresponding global.Document count
+// folder map and add the corresponding document count
 func Folders(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folders := GetAllFolders(e.Node)
@@ -28,20 +27,20 @@ func Folders(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 func GetAllFolders(node *node.Node) map[string]types.Folder {
 	folders := make(map[string]types.Folder, 0)
 	node.Data.Range(func(k, value interface{}) bool {
-		dataType := value.(global.Document)["type"]
+		dataType := value.(map[string]interface{})["type"]
 		if dataType != "folder" {
 			return true
 		}
-		folderKey := value.(global.Document)["key"].(string)
-		folderName := value.(global.Document)["folderName"].(string)
+		folderKey := value.(map[string]interface{})["key"].(string)
+		folderName := value.(map[string]interface{})["folderName"].(string)
 
 		var inFolder string
 		var exists bool
 		var backedUp bool = false
-		if value.(global.Document)["backedUp"] != nil {
-			backedUp = value.(global.Document)["backedUp"].(bool)
+		if value.(map[string]interface{})["backedUp"] != nil {
+			backedUp = value.(map[string]interface{})["backedUp"].(bool)
 		}
-		if inFolder, exists = value.(global.Document)["folder"].(string); !exists {
+		if inFolder, exists = value.(map[string]interface{})["folder"].(string); !exists {
 			inFolder = ""
 		}
 		folders[folderKey] = types.Folder{
@@ -59,7 +58,7 @@ func GetAllFolders(node *node.Node) map[string]types.Folder {
 // We want to get all of the folder doc counts
 func GetFolderDocCount(node *node.Node, folders map[string]types.Folder) map[string]types.Folder {
 	node.Data.Range(func(k, value interface{}) bool {
-		if folder, exists := value.(global.Document)["folder"].(string); exists && folder != "" {
+		if folder, exists := value.(map[string]interface{})["folder"].(string); exists && folder != "" {
 			currDocCount := folders[folder].DocCount
 			folders[folder] = types.Folder{
 				Folder:     folders[folder].Folder,
@@ -81,7 +80,7 @@ func StoreDocCount(node *node.Node, folders map[string]types.Folder) map[string]
 			continue
 		}
 		folderData, _ := node.Data.Load(folder.Key)
-		folderData.(global.Document)["docCount"] = folder.DocCount
+		folderData.(map[string]interface{})["docCount"] = folder.DocCount
 		node.Data.Store(folder.Key, folderData)
 		delete(folders, folder.Key)
 	}

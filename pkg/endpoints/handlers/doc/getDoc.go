@@ -37,7 +37,7 @@ func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 			})
 			return
 		}
-		sendDataJson := formatData(getData.(global.Document), docId)
+		sendDataJson := formatData(getData.(map[string]interface{}), docId)
 		sendData := types.SendData{
 			Key:  docId,
 			Data: sendDataJson,
@@ -52,7 +52,7 @@ func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 
 // We want to do a bit of manipulation to the document for instance
 // we want to read from disk if it's not a text file or a folder
-func formatData(getData global.Document, dataKey string) global.Document {
+func formatData(getData map[string]interface{}, dataKey string) map[string]interface{} {
 	if getData["type"] == "text" {
 		return getData
 	}

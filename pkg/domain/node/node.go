@@ -24,7 +24,7 @@ type INode interface {
 	ReadFromLocal()
 	IsNextInLine() bool
 	CheckIfDataChanged() []byte
-	WriteDocToDisk(value global.Document)
+	WriteDocToDisk(value map[string]interface{})
 	GetNodeIps() []string
 	AlreadyInNodeMap(ip string) bool
 	IndexOfNodeIpInNodeMap(ip string) int
@@ -198,7 +198,7 @@ func (node *Node) ReadFromLocal() {
 		data, _ := ioutil.ReadFile("data/" + key)
 		var dataJSON global.JsonData
 		json.Unmarshal(data, &dataJSON)
-		node.Data.Store(key, (global.Document)(dataJSON))
+		node.Data.Store(key, (map[string]interface{})(dataJSON))
 	}
 	logger.Logger.Info("Loaded files into memory.")
 }
@@ -229,7 +229,7 @@ func (node *Node) CheckIfDataChanged() []byte {
 }
 
 // We want to write a document to disk
-func (node *Node) WriteDocToDisk(value global.Document) {
+func (node *Node) WriteDocToDisk(value map[string]interface{}) {
 	dataToWrite, _ := json.Marshal(value)
 	path := "data/"
 	_ = os.MkdirAll(path, os.ModePerm)

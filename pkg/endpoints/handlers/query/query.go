@@ -4,7 +4,6 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/query"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -30,8 +29,8 @@ func Query(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req 
 		}
 
 		dataToSend := make([]types.SendData, 0)
-		query.LoadIntoMemory(e.Node)
-		queryResult, timeTaken, _, errors := query.Execute(queryVal.Query, "")
+		e.Query.LoadIntoMemory(e.Node)
+		queryResult, timeTaken, _, errors := e.Query.Execute(queryVal.Query)
 
 		if len(errors) != 0 {
 			e.Responder.Respond(w, types.EndpointResponse{

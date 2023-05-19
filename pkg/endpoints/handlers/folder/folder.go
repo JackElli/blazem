@@ -3,7 +3,6 @@ package folder
 import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
-	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/node"
 	"errors"
 	"log"
@@ -44,7 +43,7 @@ func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 		// Could do the sorting on the fly?
 		// like a tree of some sort?
 		e.Node.Data.Range(func(key, value interface{}) bool {
-			doc := value.(global.Document)
+			doc := value.(map[string]interface{})
 			if _, ok := doc["folder"]; ok {
 				if doc["folder"].(string) == folderId {
 					docKey := doc["key"].(string)
@@ -88,7 +87,7 @@ func GetFolderName(node *node.Node, folderId string) (string, error) {
 	if !ok {
 		return "", errors.New("No document with that key")
 	}
-	var folderMap = folder.(global.Document)
+	var folderMap = folder.(map[string]interface{})
 	if folderMap["type"] != "folder" {
 		return "", errors.New("No folder with that key")
 	}

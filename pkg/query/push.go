@@ -1,7 +1,6 @@
 package query
 
 import (
-	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/node"
 
 	"fmt"
@@ -12,78 +11,76 @@ import (
 )
 
 // This is for non-where clause tokens
-func checkNest(nestparams []string, getobj global.Document,
-	docin *bool) global.Document {
-	for _, nestparam := range nestparams {
-		if v, exists := getobj[nestparam]; exists {
-			if reflect.TypeOf(v).String() ==
-				"map[string]interface {}" {
-				getobj = v.(global.Document)
-			}
-		} else {
-			*docin = false
+func checkNest(nestParams []string, getObj map[string]interface{}, docIn *bool) map[string]interface{} {
+	for _, nestParam := range nestParams {
+		v, exists := getObj[nestParam]
+		if !exists {
+			*docIn = false
+			return getObj
+		}
+		if reflect.TypeOf(v).String() ==
+			"map[string]interface {}" {
+			getObj = v.(map[string]interface{})
 		}
 	}
-	return getobj
+	return getObj
 }
 
 // We want to push the documents that fit the query params
-func pushDocs(all bool, wherejson []global.Document,
-	newmap *[]global.Document,
-	fetchKeys []string) []global.Document {
+func pushDocs(all bool, whereJson []map[string]interface{}, newMap *[]map[string]interface{},
+	fetchKeys []string) []map[string]interface{} {
 	if all {
-		return wherejson
+		return whereJson
 	}
 
-	for _, doc := range wherejson {
-		var docin = true
-		var newobj = make(global.Document)
-		var getobj = doc
+	for _, doc := range whereJson {
+		docIn := true
+		newObj := make(map[string]interface{})
+		getObj := doc
 
-		for _, fetchkey := range fetchKeys {
-			if strings.Contains(fetchkey, ".") {
-				var nestparams = strings.Split(fetchkey, ".")
-				getobj = checkNest(nestparams, getobj, &docin)
-				if v, exists :=
-					getobj[nestparams[len(nestparams)-1]]; exists {
-					newobj[fetchkey] = v
+		for _, fetchKey := range fetchKeys {
+			if strings.Contains(fetchKey, ".") {
+				nestParams := strings.Split(fetchKey, ".")
+				getObj = checkNest(nestParams, getObj, &docIn)
+				if v, exists := getObj[nestParams[len(nestParams)-1]]; exists {
+					newObj[fetchKey] = v
 				} else {
-					newobj[fetchkey] = getobj
+					newObj[fetchKey] = getObj
 				}
 				continue
 			}
-			if v, exists := doc[fetchkey]; exists {
-				newobj[fetchkey] = v
+			if v, exists := doc[fetchKey]; exists {
+				newObj[fetchKey] = v
 				continue
 			}
-			docin = false
+			docIn = false
 		}
-		if docin {
-			*newmap = append(*newmap, newobj)
+		if docIn {
+			*newMap = append(*newMap, newObj)
 		}
 	}
 	return nil
 }
 
 // We want to check whether a certain paramater holds for that specific document
-func checkParamHolds(ok bool, paramsplit []string,
-	getobj global.Document, mathOp MathOp, holds *int) {
+func checkParamHolds(ok bool, paramSplit []string,
+	getobj map[string]interface{}, mathOp MathOp, holds *int) {
 	if !ok {
 		*holds = *holds & 0
 		return
 	}
 
-	var wherekey = paramsplit[0]
-	wherekey = strings.Trim(wherekey, " ")
+	whereKey := paramSplit[0]
+	whereKey = strings.Trim(whereKey, " ")
 
-	if strings.Contains(wherekey, ".") {
-		var wherevalue = regexp.MustCompile("(?i)\"[a-zA-Z0-9-_ ]+\"|[0-9]*").FindString(paramsplit[1])
-		var nestparams = strings.Split(wherekey, ".")
+	if strings.Contains(whereKey, ".") {
+		wherevalue := regexp.MustCompile("(?i)\"[a-zA-Z0-9-_ ]+\"|[0-9]*").FindString(paramSplit[1])
+		nestparams := strings.Split(whereKey, ".")
 
 		for _, nestparam := range nestparams {
 			if v, exists := getobj[nestparam]; exists {
 				if reflect.TypeOf(v).String() == "map[string]interface {}" {
-					getobj = v.(global.Document)
+					getobj = v.(map[string]interface{})
 				}
 			}
 		}
@@ -96,8 +93,8 @@ func checkParamHolds(ok bool, paramsplit []string,
 			return
 		}
 	}
-	var wherevalue = strings.Trim(regexp.MustCompile("(?i)[a-zA-Z0-9-_ ]+").FindString(paramsplit[1]), " ")
-	if v, exists := getobj[wherekey]; exists {
+	wherevalue := strings.Trim(regexp.MustCompile("(?i)[a-zA-Z0-9-_ ]+").FindString(paramSplit[1]), " ")
+	if v, exists := getobj[whereKey]; exists {
 		checkIfDocHolds(mathOp, v, wherevalue, holds)
 		return
 	}
@@ -106,48 +103,51 @@ func checkParamHolds(ok bool, paramsplit []string,
 
 // executeQuery is the query chain
 func executeQuery(queryType QueryType, whereParams []string,
-	fetchKeys []string, jsondata interface{},
-	all bool) []global.Document {
+	fetchKeys []string, jsonData interface{},
+	all bool) []map[string]interface{} {
 
-	var newjsondata = jsondata.(sync.Map)
-	var newmap []global.Document
-	var wherejson []global.Document
+	var newMap []map[string]interface{}
+	var whereJson []map[string]interface{}
+	newJsonData := jsonData.(sync.Map)
 
-	if len(whereParams) > 0 {
-		newjsondata.Range(func(key, doc any) bool {
-			var holds = 1
-			var getobj = doc.(global.Document)
-
-			for _, param := range whereParams {
-				var paramsplit []string
-				var mathOp MathOp
-
-				var ok = decodeParam(param, &mathOp, &paramsplit)
-				checkParamHolds(ok, paramsplit, getobj, mathOp, &holds)
-			}
-			if holds == 1 {
-				wherejson = append(wherejson, getobj)
-			}
+	if len(whereParams) <= 0 {
+		newJsonData.Range(func(key, doc any) bool {
+			whereJson = append(whereJson, doc.(map[string]interface{}))
 			return true
 		})
 	} else {
-		newjsondata.Range(func(key, doc any) bool {
-			wherejson = append(wherejson, doc.(global.Document))
+		newJsonData.Range(func(key, doc any) bool {
+			holds := 1
+			getObj := doc.(map[string]interface{})
+
+			for _, param := range whereParams {
+				var paramSplit []string
+				var mathOp MathOp
+
+				ok := decodeParam(param, &mathOp, &paramSplit)
+				checkParamHolds(ok, paramSplit, getObj, mathOp, &holds)
+			}
+			if holds == 1 {
+				whereJson = append(whereJson, getObj)
+			}
 			return true
 		})
 	}
-	var pushed = pushDocs(all, wherejson, &newmap, fetchKeys)
-	if pushed != nil {
-		if queryType == SELECT {
-			return pushed
-		}
-		if queryType == DELETE {
-			for _, doc := range pushed {
-				key := doc["key"].(string)
-				node.GlobalNode.Data.Delete(key)
-			}
-			return []global.Document{}
-		}
+	pushed := pushDocs(all, whereJson, &newMap, fetchKeys)
+	if pushed == nil {
+		return newMap
 	}
-	return newmap
+
+	if queryType == SELECT {
+		return pushed
+	}
+
+	if queryType == DELETE {
+		for _, doc := range pushed {
+			key := doc["key"].(string)
+			node.GlobalNode.Data.Delete(key)
+		}
+		return []map[string]interface{}{}
+	}
+	return nil
 }

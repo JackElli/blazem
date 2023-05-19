@@ -3,7 +3,6 @@ package parent
 import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
-	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/node"
 	"net/http"
 
@@ -40,7 +39,7 @@ func GetParentFolders(node *node.Node, searchFolderId string) []types.Folder {
 			folderId = ""
 			continue
 		}
-		var folderMap = folderInfo.(global.Document)
+		var folderMap = folderInfo.(map[string]interface{})
 		if folderId != searchFolderId {
 			folders = append(folders, types.Folder{
 				Folder:     "N/A",
