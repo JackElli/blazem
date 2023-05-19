@@ -9,8 +9,8 @@ import (
 
 // Middleware allows a http handler function to be passed through if a
 // jwt is valid, if not, return a 401
-func Middleware(f func(w http.ResponseWriter, req *http.Request)) func(w http.ResponseWriter, req *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
+func Middleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		c, err := req.Cookie("token")
 		if err != nil {
 			w.WriteHeader(401)
@@ -26,8 +26,8 @@ func Middleware(f func(w http.ResponseWriter, req *http.Request)) func(w http.Re
 		}
 
 		// continue with the passing of the methods
-		f(w, req)
-	}
+		h.ServeHTTP(w, req)
+	})
 }
 
 // parseJWT checks if the JWT is valid and in date

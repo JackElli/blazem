@@ -2,8 +2,12 @@ package auth
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/endpoint_manager"
+	"blazem/pkg/domain/logger"
+	"blazem/pkg/domain/node"
+	"blazem/pkg/domain/permissions"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"net/http"
@@ -13,19 +17,19 @@ import (
 
 // Auth endpoint returns a JWT set for an expiration if the user exists
 // it also sets a cookie for the client of this JWT
-func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var authVal struct {
 			Username string `json:"username"`
 			Password string `json:"password"`
 		}
 		json.NewDecoder(req.Body).Decode(&authVal)
-		auth := authUser(authVal.Username, authVal.Password)
+		auth, err := authUser(e.Node, authVal.Username, authVal.Password)
 
 		if !auth {
-			r.Respond(w, endpoint.EndpointResponse{
+			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 401,
-				Msg:  "User not authorised to do that",
+				Msg:  "User not authorised to do that, error: " + err.Error(),
 			})
 			return
 		}
@@ -35,7 +39,7 @@ func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 		jwt, err := createJWT(secretkey, expirationDate)
 
 		if err != nil {
-			r.Respond(w, endpoint.EndpointResponse{
+			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 500,
 				Msg:  "Cannot auth user as jwt cannot be created as " + err.Error(),
 			})
@@ -48,7 +52,9 @@ func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 			Expires: expirationDate,
 		})
 
-		r.Respond(w, endpoint.EndpointResponse{
+		user, err := e.Node.UserStore.GetByUsername(authVal.Username)
+		permissions.CurrentUser = user
+		e.Responder.Respond(w, endpoint.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully authenticated user",
 			Data: jwt,
@@ -57,11 +63,18 @@ func Auth(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
 }
 
 // authUser returns true if user is authed, false if not
-func authUser(username string, password string) bool {
-	if username == "JackTest" && password == "helloaws1!" {
-		return true
+func authUser(node *node.Node, username string, password string) (bool, error) {
+	user, err := node.UserStore.GetByUsername(username)
+	if err != nil {
+		logger.Logger.Warn(err.Error())
+		return false, err
 	}
-	return false
+	if user.Password != password {
+		err := errors.New("Incorrect username or password")
+		logger.Logger.Warn(err.Error())
+		return false, err
+	}
+	return true, nil
 }
 
 // createJWT creates a JWT and returns the token and an error if there is one

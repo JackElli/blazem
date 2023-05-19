@@ -2,11 +2,10 @@ package main
 
 import (
 	"blazem/pkg/domain/global"
+	blazem_node "blazem/pkg/domain/node"
 	"sync"
 	"time"
 )
-
-type Node global.Node
 
 // We want to initialise this node. Create a new node with default settings
 // set up the logger and pick the correct IP and port. We want to set up the endpoints
@@ -15,7 +14,7 @@ type Node global.Node
 // want to load from disk to fetch any data saved locally. Then, for JAQL we need to load
 // our query JSON into memory.
 func main() {
-	var node Node = Node{
+	node := &blazem_node.Node{
 		Ip:            "",
 		Pinged:        time.Now(),
 		PingCount:     0,
@@ -25,7 +24,7 @@ func main() {
 		RecentQueries: map[string]string{},
 		Rules:         map[string]global.Rule{},
 	}
-	node.RunSetup()
+	RunSetup(node)
 	for true {
 		time.Sleep(150 * time.Millisecond)
 	}

@@ -2,8 +2,8 @@ package doc
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -12,10 +12,10 @@ import (
 )
 
 // We want to fetch a document and return it to the user
-func GetDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if r.Node.Rank == global.FOLLOWER {
-			r.Respond(w, types.EndpointResponse{
+		if e.Node.Rank == global.FOLLOWER {
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Cannot fetch doc from a follower node",
 			})
@@ -23,15 +23,15 @@ func GetDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request)
 		}
 		docId := mux.Vars(req)["id"]
 		if docId == "" {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Doc key not provided",
 			})
 			return
 		}
-		var getData, ok = global.NODE_MAP[0].Data.Load(docId)
+		var getData, ok = e.Node.NodeMap[0].Data.Load(docId)
 		if !ok {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 404,
 				Msg:  "Doc not found",
 			})
@@ -42,7 +42,7 @@ func GetDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request)
 			Key:  docId,
 			Data: sendDataJson,
 		}
-		r.Respond(w, types.EndpointResponse{
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved doc",
 			Data: sendData,

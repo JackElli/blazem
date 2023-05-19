@@ -2,8 +2,9 @@ package folder
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/node"
 	"errors"
 	"log"
 	"math"
@@ -16,19 +17,19 @@ import (
 
 // We want to return all of the data currently stored within this folder, including
 // folders and data
-func GetDataFolder(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 		if folderId == "" {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "No folder passed",
 			})
 			return
 		}
-		folderName, err := GetFolderName(r.Node, folderId)
+		folderName, err := GetFolderName(e.Node, folderId)
 		if err != nil {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  err.Error(),
 			})
@@ -42,7 +43,7 @@ func GetDataFolder(r *responder.Respond) func(w http.ResponseWriter, req *http.R
 
 		// Could do the sorting on the fly?
 		// like a tree of some sort?
-		r.Node.Data.Range(func(key, value interface{}) bool {
+		e.Node.Data.Range(func(key, value interface{}) bool {
 			doc := value.(global.Document)
 			if _, ok := doc["folder"]; ok {
 				if doc["folder"].(string) == folderId {
@@ -73,7 +74,7 @@ func GetDataFolder(r *responder.Respond) func(w http.ResponseWriter, req *http.R
 		returnData.Data = dataInFolder[0:int(DOCS_TO_RENDER)]
 		returnData.FolderName = folderName
 
-		r.Respond(w, types.EndpointResponse{
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved data in folder",
 			Data: returnData,
@@ -82,7 +83,7 @@ func GetDataFolder(r *responder.Respond) func(w http.ResponseWriter, req *http.R
 }
 
 // Returns the name of the folder, given the folderId
-func GetFolderName(node *global.Node, folderId string) (string, error) {
+func GetFolderName(node *node.Node, folderId string) (string, error) {
 	folder, ok := node.Data.Load(folderId)
 	if !ok {
 		return "", errors.New("No document with that key")

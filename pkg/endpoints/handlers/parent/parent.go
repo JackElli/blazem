@@ -2,25 +2,26 @@ package parent
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/node"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func Parent(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func Parent(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 		if folderId == "" {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "No folder passed",
 			})
 			return
 		}
-		parents := GetParentFolders(r.Node, folderId)
-		r.Respond(w, types.EndpointResponse{
+		parents := GetParentFolders(e.Node, folderId)
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Parent folders retrieved Successfully",
 			Data: parents,
@@ -30,7 +31,7 @@ func Parent(r *responder.Respond) func(w http.ResponseWriter, req *http.Request)
 
 // This function returns all of the folders that parent the folder we are
 // searching for recursively
-func GetParentFolders(node *global.Node, searchFolderId string) []types.Folder {
+func GetParentFolders(node *node.Node, searchFolderId string) []types.Folder {
 	folderId := searchFolderId
 	folders := make([]types.Folder, 0)
 	for folderId != "" {

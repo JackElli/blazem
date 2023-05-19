@@ -2,6 +2,8 @@ package query
 
 import (
 	"blazem/pkg/domain/global"
+	"blazem/pkg/domain/logger"
+	"blazem/pkg/domain/node"
 	"regexp"
 	"strconv"
 	"time"
@@ -48,11 +50,11 @@ func Execute(querystr string, tablename string) ([]global.Document,
 	elapsed := time.Since(start).Milliseconds()
 	elapsedStr := strconv.Itoa(int(elapsed))
 
-	global.Logger.Info(querystr + "executed in " + elapsedStr + "ms")
+	logger.Logger.Info(querystr + " executed in " + elapsedStr + "ms")
 	return decodedData, elapsed, len(decodedData), errs
 }
 
 // LoadIntoMemory loads file or API into mem
-func LoadIntoMemory(node global.Node) {
+func LoadIntoMemory(node *node.Node) {
 	jsonLoad = node.Data
 }

@@ -2,8 +2,9 @@ package doc
 
 import (
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
-	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/node"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -12,10 +13,10 @@ import (
 
 // We want to add a document to Blazem, we check if it's a POST, unmarshal the data
 // coming in, write to disk and add to the map
-func AddDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request) {
+func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		if r.Node.Rank != global.MASTER {
-			r.Respond(w, types.EndpointResponse{
+		if e.Node.Rank != global.MASTER {
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Should be master",
 			})
@@ -24,7 +25,7 @@ func AddDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request)
 		var dataToAdd global.Document
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Cannot read request body {" + err.Error() + "}",
 			})
@@ -32,19 +33,19 @@ func AddDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request)
 		}
 		err = json.Unmarshal(body, &dataToAdd)
 		if err != nil {
-			r.Respond(w, types.EndpointResponse{
+			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
 				Msg:  "Cannot unmarshal JSON request {" + err.Error() + "}",
 			})
 			return
 		}
 
-		document := TransformNewDoc(r.Node, dataToAdd)
-		global.WriteDocToDisk(document)
-		r.Node.Data.Store(dataToAdd["key"], document)
+		document := TransformNewDoc(e.Node, dataToAdd)
+		e.Node.WriteDocToDisk(document)
+		e.Node.Data.Store(dataToAdd["key"], document)
 		global.DataChanged = true
 
-		r.Respond(w, types.EndpointResponse{
+		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Added document successfully",
 		})
@@ -53,7 +54,7 @@ func AddDoc(r *responder.Respond) func(w http.ResponseWriter, req *http.Request)
 
 // We want to transform the document coming in, to something that is optimised and
 // info-full for retrieval
-func TransformNewDoc(node *global.Node, dataToAdd global.Document) global.Document {
+func TransformNewDoc(node *node.Node, dataToAdd global.Document) global.Document {
 	document := dataToAdd
 	if document["type"].(string) != "text" {
 		document["file_name"] = dataToAdd["file_name"]

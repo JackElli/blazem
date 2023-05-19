@@ -1,8 +1,11 @@
 package endpoint
 
+import "blazem/pkg/domain/global"
+
 type WebNodeMap struct {
-	Ip     string `json:"ip"`
-	Active bool   `json:"active"`
+	Ip     string      `json:"ip"`
+	Active bool        `json:"active"`
+	Rank   global.Rank `json:"rank"`
 }
 
 type Stats struct {
