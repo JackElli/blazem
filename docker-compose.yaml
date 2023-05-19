@@ -1,0 +1,44 @@
+version: "3.7"
+services:
+  blazem:
+    image: blazem
+    container_name: blazem
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "3100:3100"
+    networks:
+      - blazem-combined_default
+
+  dev:
+    image: blazem-web-dev
+    container_name: blazem-web-dev
+    build:
+      context: ./cmd/
+      dockerfile: Dockerfile.dev
+    ports:
+      - 5173:5173
+    links:
+      - blazem
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./cmd/:/app/
+      - /app/node_modules
+
+  prod:
+    image: blazem-web
+    container_name: blazem-web
+    build:
+      context: ./cmd/
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    links:
+      - blazem
+    command: node build/index.js
+
+networks:
+  blazem-combined_default:
+    name: blazem-combined_default
+    external: true
