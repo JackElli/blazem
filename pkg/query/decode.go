@@ -139,5 +139,5 @@ func (query *Query) decodeQuery(queryStr string) ([]map[string]interface{}, []er
 		return nil, errs
 	}
 
-	return executeQuery(queryType, whereParams, fetchKeys, query.JsonLoad, all), nil
+	return query.executeQuery(queryType, whereParams, fetchKeys, all), nil
 }

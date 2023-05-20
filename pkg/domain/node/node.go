@@ -63,8 +63,6 @@ type TempNode struct {
 	Rules         map[string]global.Rule
 }
 
-var GlobalNode *Node
-
 func NewNode() *Node {
 	return &Node{
 		Ip:            "",

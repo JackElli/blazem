@@ -6,6 +6,7 @@ import (
 	"blazem/pkg/domain/user"
 	"blazem/pkg/domain/users"
 	"blazem/pkg/endpoints"
+	"fmt"
 )
 
 type SetupStep struct {
@@ -44,11 +45,14 @@ func (mgr *SetupManager) RunSteps() {
 func RunSetup(node *blazem_node.Node) {
 	var masterip string = ""
 	var localip = node.GetLocalIp()
-	blazem_node.GlobalNode = node
 
-	node.SetupLogger()
+	_, err := node.SetupLogger()
+	if err != nil {
+		fmt.Println("Cannot set up logger")
+		return
+	}
 
-	mgr := CreateSetupMgr(node, []SetupStep{
+	setupSteps := []SetupStep{
 		{
 			Description: "Picks port for blazem to start on",
 			Fn: func() error {
@@ -119,6 +123,8 @@ func RunSetup(node *blazem_node.Node) {
 				return nil
 			},
 		},
-	})
+	}
+
+	mgr := CreateSetupMgr(node, setupSteps)
 	mgr.RunSteps()
 }

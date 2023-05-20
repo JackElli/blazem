@@ -28,12 +28,12 @@ const (
 )
 
 type Query struct {
-	JsonLoad interface{}
+	Node *node.Node
 }
 
-func NewQuery(jsonLoad interface{}) *Query {
+func NewQuery(node *node.Node) *Query {
 	return &Query{
-		JsonLoad: jsonLoad,
+		Node: node,
 	}
 }
 
@@ -41,11 +41,6 @@ func NewQuery(jsonLoad interface{}) *Query {
 func (query *Query) tokenise(queryStr string) []string {
 	regex := "(?i)([a-zA-Z-_.]*[><=/ ]*[0-9]+)|[a-z-_.,]*[a-z-_.,]*([ = /LIKE]*\"[a-z0-9-_.\\[\\]\\* ]+\")*"
 	return regexp.MustCompile(regex).FindAllString(queryStr, 100)
-}
-
-// LoadIntoMemory loads docs into memory to query from
-func (query *Query) LoadIntoMemory(node *node.Node) {
-	query.JsonLoad = node.Data
 }
 
 // Execute executes the query

@@ -96,12 +96,12 @@ func (node *Node) GetLocalIp() string {
 }
 
 // setup file for logging
-func (node *Node) SetupLogger() error {
+func (node *Node) SetupLogger() (*zap.Logger, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
 	blazem_logger.Logger = logger
 	defer logger.Sync()
-	return nil
+	return logger, nil
 }

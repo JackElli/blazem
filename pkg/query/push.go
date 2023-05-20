@@ -1,13 +1,10 @@
 package query
 
 import (
-	"blazem/pkg/domain/node"
-
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
-	"sync"
 )
 
 // This is for non-where clause tokens
@@ -102,13 +99,13 @@ func checkParamHolds(ok bool, paramSplit []string,
 }
 
 // executeQuery is the query chain
-func executeQuery(queryType QueryType, whereParams []string,
-	fetchKeys []string, jsonData interface{},
+func (query *Query) executeQuery(queryType QueryType, whereParams []string,
+	fetchKeys []string,
 	all bool) []map[string]interface{} {
 
 	var newMap []map[string]interface{}
 	var whereJson []map[string]interface{}
-	newJsonData := jsonData.(sync.Map)
+	newJsonData := query.Node.Data
 
 	if len(whereParams) <= 0 {
 		newJsonData.Range(func(key, doc any) bool {
@@ -145,7 +142,7 @@ func executeQuery(queryType QueryType, whereParams []string,
 	if queryType == DELETE {
 		for _, doc := range pushed {
 			key := doc["key"].(string)
-			node.GlobalNode.Data.Delete(key)
+			query.Node.Data.Delete(key)
 		}
 		return []map[string]interface{}{}
 	}

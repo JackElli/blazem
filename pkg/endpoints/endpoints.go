@@ -32,7 +32,7 @@ func SetupEndpoints(node *node.Node) error {
 	endpointMgr := endpoint_manager.NewEndpointManager(
 		node,
 		responder.NewResponder(),
-		blazem_query.NewQuery(node.Data),
+		blazem_query.NewQuery(node),
 	)
 
 	r := mux.NewRouter()
