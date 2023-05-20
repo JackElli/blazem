@@ -54,21 +54,30 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 
 // We want to transform the document coming in, to something that is optimised and
 // info-full for retrieval
-func TransformNewDoc(node *node.Node, dataToAdd map[string]interface{}) map[string]interface{} {
+func TransformNewDoc(node *node.Node,
+	dataToAdd map[string]interface{}) map[string]interface{} {
 	document := dataToAdd
-	if document["type"].(string) != "text" {
-		document["file_name"] = dataToAdd["file_name"]
+
+	document["date"] = time.Now().Format("2006-01-02T15:04:05")
+
+	_, typeExist := document["type"]
+	if !typeExist {
+		// should read file type
+		document["type"] = "text"
 	}
-	if loadDoc, ok := node.Data.Load(dataToAdd["key"]); ok {
+
+	loadDoc, ok := node.Data.Load(dataToAdd["key"])
+	if ok {
 		return updateDocument(document, loadDoc.(map[string]interface{}))
 	}
-	document["date"] = time.Now().Format("2006-01-02T15:04:05")
+
 	return document
 }
 
 // If we're not adding a new document, we're updating an existing one, we want
 // to keep the date the same
-func updateDocument(document map[string]interface{}, loadDoc map[string]interface{}) map[string]interface{} {
+func updateDocument(document map[string]interface{},
+	loadDoc map[string]interface{}) map[string]interface{} {
 	document["date"] = loadDoc["date"].(string)
 	return document
 }

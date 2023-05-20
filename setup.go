@@ -43,8 +43,8 @@ func (mgr *SetupManager) RunSteps() {
 // Run the setup process by creating a setup mgr and running each
 // step
 func RunSetup(node *blazem_node.Node) {
-	var masterip string = ""
-	var localip = node.GetLocalIp()
+	masterip := ""
+	localip := node.GetLocalIp()
 
 	_, err := node.SetupLogger()
 	if err != nil {
@@ -77,17 +77,18 @@ func RunSetup(node *blazem_node.Node) {
 				if err != nil {
 					return err
 				}
-				if numOfUsers == 0 {
-					err = node.UserStore.Insert("user:1", &user.User{
-						Id:       "user:1",
-						Name:     "Jack Ellis",
-						Username: "JackTest",
-						Password: "test123",
-						Role:     "admin",
-					})
-					if err != nil {
-						return err
-					}
+				if numOfUsers != 0 {
+					return nil
+				}
+				err = node.UserStore.Insert("user:1", &user.User{
+					Id:       "user:1",
+					Name:     "Jack Ellis",
+					Username: "JackTest",
+					Password: "test123",
+					Role:     "admin",
+				})
+				if err != nil {
+					return err
 				}
 				return nil
 			},

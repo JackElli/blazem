@@ -10,6 +10,7 @@ import (
 )
 
 type UserStorer interface {
+	SetupUsers()
 	LoadUsers() ([]user.User, error)
 	Get(id string) (*user.User, error)
 	GetByUsername(username string) (*user.User, error)
