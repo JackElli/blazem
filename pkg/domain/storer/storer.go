@@ -13,12 +13,16 @@ type Storer interface {
 }
 
 type Store struct {
-	Node *node.Node
+	Node          *node.Node
+	FolderManager *folder_manager.FolderManager
 }
 
 func NewStore(node *node.Node) *Store {
+	fm := folder_manager.NewFolderManager(node)
+
 	return &Store{
-		Node: node,
+		Node:          node,
+		FolderManager: fm,
 	}
 }
 
@@ -36,7 +40,7 @@ func (store *Store) Load(key string) (interface{}, error) {
 func (store *Store) Store(key string, folder interface{}, value interface{}) error {
 	store.Node.Data.Store(key, value)
 	if folder != "" {
-		err := folder_manager.IncrementCount(store.Node, folder.(string))
+		err := store.FolderManager.IncrementCount(folder.(string))
 		if err != nil {
 			return err
 		}
@@ -49,7 +53,7 @@ func (store *Store) Store(key string, folder interface{}, value interface{}) err
 func (store *Store) Delete(key string, folder interface{}) error {
 	store.Node.Data.Delete(key)
 	if folder != "" {
-		err := folder_manager.DecrementCount(store.Node, folder.(string))
+		err := store.FolderManager.DecrementCount(folder.(string))
 		if err != nil {
 			return err
 		}

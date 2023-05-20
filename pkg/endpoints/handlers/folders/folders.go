@@ -33,16 +33,7 @@ func GetAllFolders(node *node.Node) map[string]types.Folder {
 			return true
 		}
 
-		folders[folder.Key] = types.Folder{
-			Folder:      folder.Folder,
-			Key:         folder.Key,
-			Name:        folder.Name,
-			DocCount:    folder.DocCount,
-			BackedUp:    folder.BackedUp,
-			CreatedBy:   folder.CreatedBy,
-			Global:      folder.Global,
-			DateCreated: folder.DateCreated,
-		}
+		folders[folder.Key] = *folder
 
 		return true
 	})
