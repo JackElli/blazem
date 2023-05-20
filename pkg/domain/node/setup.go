@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -19,24 +18,6 @@ import (
 func (node *Node) SetNodeMasterAttrs() {
 	node.Rank = global.MASTER
 	node.Data = sync.Map{}
-
-	testData1 := map[string]interface{}{
-		"type":       "folder",
-		"key":        "testkey1",
-		"folderName": "TestFolder",
-		"value":      "hello this is a test",
-		"date":       time.Now().Format("2006-01-02T15:04:05"),
-	}
-	testData2 := map[string]interface{}{
-		"type":   "text",
-		"key":    "testkey2",
-		"folder": "testkey1",
-		"value":  "hello this is a test",
-		"date":   time.Now().Format("2006-01-02T15:04:05"),
-	}
-
-	node.Data.Store("testkey1", testData1)
-	node.Data.Store("testkey2", testData2)
 }
 
 // We want to pick a port (default 3100) but could try 3 more so max 3103

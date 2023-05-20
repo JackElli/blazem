@@ -35,7 +35,7 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 		}
 
 		secretkey := []byte("SecretYouShouldHide")
-		expirationDate := time.Now().Add(20 * time.Minute)
+		expirationDate := time.Now().Add(10 * 24 * 60 * time.Minute)
 		jwt, err := createJWT(secretkey, expirationDate)
 
 		if err != nil {

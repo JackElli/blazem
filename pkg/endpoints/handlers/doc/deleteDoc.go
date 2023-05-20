@@ -20,7 +20,7 @@ func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			})
 			return
 		}
-		_, docFound := e.Node.Data.Load(docId)
+		docData, docFound := e.Node.Data.Load(docId)
 		if !docFound {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 404,
@@ -28,7 +28,19 @@ func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			})
 			return
 		}
-		e.Node.Data.Delete(docId)
+		doc := docData.(map[string]interface{})
+		docKey := doc["key"].(string)
+		folder := doc["folder"]
+
+		err := e.Storer.Delete(docKey, folder)
+		if err != nil {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  err.Error(),
+			})
+			return
+		}
+
 		global.DataChanged = true
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,

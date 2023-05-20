@@ -3,8 +3,11 @@ package folder
 import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
+	"blazem/pkg/domain/folder"
+	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -16,7 +19,7 @@ import (
 
 // We want to return all of the data currently stored within this folder, including
 // folders and data
-func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 		if folderId == "" {
@@ -26,6 +29,7 @@ func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 			})
 			return
 		}
+
 		folderName, err := GetFolderName(e.Node, folderId)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -40,24 +44,28 @@ func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 		MAX_DOCS := 30
 		dataInFolder := make([]types.SendData, 0)
 
-		// Could do the sorting on the fly?
-		// like a tree of some sort?
 		e.Node.Data.Range(func(key, value interface{}) bool {
 			doc := value.(map[string]interface{})
-			if _, ok := doc["folder"]; ok {
-				if doc["folder"].(string) == folderId {
-					docKey := doc["key"].(string)
-					dataInFolder = append(dataInFolder, types.SendData{
-						Key:  docKey,
-						Data: doc,
-					})
-				}
+			docKey := doc["key"].(string)
+			docFolder, hasFolder := doc["folder"]
+			if !hasFolder {
+				return true
 			}
+
+			if docFolder != folderId {
+				return true
+			}
+
+			dataInFolder = append(dataInFolder, types.SendData{
+				Key:  docKey,
+				Data: doc,
+			})
 			return true
 		})
 
-		DOCS_TO_RENDER = math.Min(float64(MAX_DOCS), float64(len(dataInFolder)))
+		SetFolderCount(e.Node, folderId, len(dataInFolder))
 
+		DOCS_TO_RENDER = math.Min(float64(MAX_DOCS), float64(len(dataInFolder)))
 		sort.Slice(dataInFolder, func(i, j int) bool {
 			if _, convOk := dataInFolder[i].Data["date"].(time.Time); !convOk {
 				dateI, errI := time.Parse("2006-01-02T15:04:05", dataInFolder[i].Data["date"].(string))
@@ -81,15 +89,33 @@ func GetDataFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 	}
 }
 
+func SetFolderCount(node *node.Node, key string, docCount int) {
+	doc, ok := node.Data.Load(key)
+	if !ok {
+		return
+	}
+
+	folder := doc.(map[string]interface{})
+	folder["docCount"] = docCount
+	node.Data.Store(key, folder)
+
+	logger.Logger.Debug(fmt.Sprintf("Set folder: %s docCount to %d", key, docCount))
+}
+
 // Returns the name of the folder, given the folderId
 func GetFolderName(node *node.Node, folderId string) (string, error) {
-	folder, ok := node.Data.Load(folderId)
+	doc, ok := node.Data.Load(folderId)
+
 	if !ok {
 		return "", errors.New("No document with that key")
 	}
-	var folderMap = folder.(map[string]interface{})
-	if folderMap["type"] != "folder" {
+
+	folderData := doc.(map[string]interface{})
+	folder, isFolder := folder.IsFolder(folderData)
+	if !isFolder {
 		return "", errors.New("No folder with that key")
 	}
-	return folderMap["folderName"].(string), nil
+
+	folderName := folder.Name
+	return folderName, nil
 }

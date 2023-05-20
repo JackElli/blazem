@@ -24,11 +24,15 @@ type SendQueryData struct {
 }
 
 type Folder struct {
-	Folder     string  `json:"folder"`
-	Key        string  `json:"key"`
-	FolderName string  `json:"folderName"`
-	DocCount   float64 `json:"docCount"`
-	BackedUp   bool    `json:"backedUp"`
+	Folder      string `json:"folder,omitempty"`
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	DocCount    int    `json:"docCount"`
+	BackedUp    bool   `json:"backedUp"`
+	CreatedBy   string `json:"createdBy"`
+	Global      bool   `json:"global"`
+	DateCreated string `json:"date"`
+	Type        string `json:"type,omitempty"`
 }
 
 type DataInFolder struct {

@@ -21,6 +21,8 @@ func NewResponder() *Respond {
 // Send a JSON response back
 func (r *Respond) Respond(w http.ResponseWriter, response endpoint.EndpointResponse) {
 	w.Header().Set("Content-Type", "application/json")
+
 	w.WriteHeader(response.Code)
+
 	json.NewEncoder(w).Encode(response)
 }

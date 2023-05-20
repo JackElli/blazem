@@ -19,7 +19,7 @@
                 <a
                     class="text-lg text-[#3d3d75] underline"
                     href={`/folder/${previousFolder.key}`}
-                    >{previousFolder.folderName}</a
+                    >{previousFolder.name}</a
                 >
                 <p class=" text-gray-600 text-lg">/</p>
             {/each}

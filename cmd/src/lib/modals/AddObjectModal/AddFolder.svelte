@@ -15,7 +15,7 @@
         let folderValue = folderName.value;
 
         if (folderValue == "") return;
-        await networkRequest(`http://${hostName}:3100/doc`, {
+        await networkRequest(`http://${hostName}:3100/folder`, {
             method: "POST",
             credentials: "include",
             headers: {
@@ -23,7 +23,7 @@
             },
             body: JSON.stringify({
                 folder: folder,
-                folderName: folderValue,
+                name: folderValue,
                 docCount: 0,
                 value: "",
                 key: key,

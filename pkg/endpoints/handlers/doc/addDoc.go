@@ -41,10 +41,20 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 		}
 
 		document := TransformNewDoc(e.Node, dataToAdd)
-		e.Node.WriteDocToDisk(document)
-		e.Node.Data.Store(dataToAdd["key"], document)
-		global.DataChanged = true
+		docKey := dataToAdd["key"].(string)
+		folder := dataToAdd["folder"]
 
+		e.Node.WriteDocToDisk(document)
+		err = e.Storer.Store(docKey, folder, document)
+		if err != nil {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  err.Error(),
+			})
+			return
+		}
+
+		global.DataChanged = true
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Added document successfully",
@@ -66,8 +76,8 @@ func TransformNewDoc(node *node.Node,
 		document["type"] = "text"
 	}
 
-	loadDoc, ok := node.Data.Load(dataToAdd["key"])
-	if ok {
+	loadDoc, updateDoc := node.Data.Load(dataToAdd["key"])
+	if updateDoc {
 		return updateDocument(document, loadDoc.(map[string]interface{}))
 	}
 

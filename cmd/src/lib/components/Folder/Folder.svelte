@@ -1,7 +1,7 @@
 <script lang="ts">
     export let data: {
         key: string;
-        folderName: string;
+        name: string;
         docCount: number;
         backedUp?: string;
     };
@@ -22,7 +22,7 @@
         <div class="w-60">
             <h1 class="font-medium">Folder name</h1>
             <h1 class="folder_name font-normal text-lg group-hover:underline">
-                {data.folderName}
+                {data.name}
             </h1>
         </div>
 

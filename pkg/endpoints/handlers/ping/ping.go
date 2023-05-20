@@ -48,7 +48,7 @@ func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			return
 		}
 		e.Node.Pinged = time.Now()
-		logger.Logger.Info("PING RECEIVED")
+		logger.Logger.Info("Ping received.")
 		currentMasterData := e.Node.NodeMap[0].Data
 		e.Node.NodeMap = localnm
 

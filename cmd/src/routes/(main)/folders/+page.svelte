@@ -58,9 +58,13 @@
 </div>
 
 <Loading {loading}>
-    <Panel class="mt-4 bg-white">
-        {#each Object.entries(folderResponse) as [_, folder]}
-            <Folder data={folder} />
-        {/each}
-    </Panel>
+    {#if Object.keys(folderResponse).length != 0}
+        <Panel class="mt-4 bg-white">
+            {#each Object.entries(folderResponse) as [_, folder]}
+                <Folder data={folder} />
+            {/each}
+        </Panel>
+    {:else}
+        <p class="mt-4">No folders available</p>
+    {/if}
 </Loading>

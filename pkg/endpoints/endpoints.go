@@ -7,6 +7,7 @@ import (
 	"blazem/pkg/domain/node"
 	"blazem/pkg/domain/permissions"
 	"blazem/pkg/domain/responder"
+	"blazem/pkg/domain/storer"
 	"blazem/pkg/endpoints/handlers/auth"
 	"blazem/pkg/endpoints/handlers/connect"
 	"blazem/pkg/endpoints/handlers/doc"
@@ -28,11 +29,11 @@ import (
 
 // Create all of the endpoints for Blazem
 func SetupEndpoints(node *node.Node) error {
-
 	endpointMgr := endpoint_manager.NewEndpointManager(
 		node,
 		responder.NewResponder(),
 		blazem_query.NewQuery(node),
+		storer.NewStore(node),
 	)
 
 	r := mux.NewRouter()
@@ -44,7 +45,8 @@ func SetupEndpoints(node *node.Node) error {
 	protected := r.PathPrefix("/").Subrouter()
 	protected.Use(middleware.Middleware)
 	protected.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.GetDoc(endpointMgr)).Methods("GET")
-	protected.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", folder.GetDataFolder(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", folder.GetFolderData(endpointMgr)).Methods("GET")
+	protected.HandleFunc("/folder", folder.AddFolder(endpointMgr)).Methods("POST")
 	protected.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", parent.Parent(endpointMgr)).Methods("GET")
 	protected.HandleFunc("/nodemap", nodemap.NodeMap(endpointMgr)).Methods("GET")
 	protected.HandleFunc("/doc", doc.AddDoc(endpointMgr)).Methods("POST")

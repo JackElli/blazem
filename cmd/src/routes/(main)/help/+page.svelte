@@ -181,6 +181,21 @@
         </div>
     {:else if tabSelected == "changelog"}
         <div id="change_log">
+            <h1>0.1.7</h1>
+            <ul>
+                <li>Big backend changes</li>
+                <li>Changed a lot of the backend to fix issues with folders</li>
+                <li>Changed to a monorepo</li>
+                <li>These changes are to accommodate for private folders</li>
+                <li>Changed the way docCount is calculated</li>
+                <li>
+                    Changed JWT and cookie expiration to 10 days (may change
+                    back)
+                </li>
+                <li>
+                    Removed default docs / will add import of sample docs later
+                </li>
+            </ul>
             <h1>0.1.6</h1>
             <ul>
                 <li>Users!</li>
