@@ -35,7 +35,7 @@ func (mgr *SetupManager) RunSteps() {
 			logger.Logger.Error("Found error in " + step.Description + " " + err.Error())
 			return
 		}
-		logger.Logger.Info("Completed step.")
+		logger.Logger.Info(step.Description)
 	}
 	logger.Logger.Info("All steps completed successfully :)")
 }

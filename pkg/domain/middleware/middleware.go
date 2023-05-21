@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -51,6 +52,27 @@ func parseJWT(jwtStr string) bool {
 	}
 
 	return true
+}
+
+func GetCurrentUserId(jwtStr string) (string, error) {
+	tkn, err := jwt.Parse(jwtStr, func(t *jwt.Token) (interface{}, error) {
+		return []byte("SecretYouShouldHide"), nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if tkn.Method != jwt.SigningMethodHS256 {
+		return "", errors.New("not correct signing algorithm")
+	}
+
+	claims, ok := tkn.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("JWT not correct")
+	}
+
+	userId := claims["user"].(string)
+	return userId, nil
 }
 
 // jwtInDate checks whether the JWT (claims) section is in date
