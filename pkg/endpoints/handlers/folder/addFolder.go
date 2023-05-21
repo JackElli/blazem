@@ -5,6 +5,7 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	blazem_folder "blazem/pkg/domain/folder"
+	"blazem/pkg/domain/middleware"
 
 	"blazem/pkg/domain/global"
 	"encoding/json"
@@ -42,7 +43,21 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			return
 		}
 
+		c, err := req.Cookie("token")
+		if err != nil {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  "No user logged in",
+			})
+			return
+		}
+
+		jwtVal := c.Value
+		userId, err := middleware.GetCurrentUserId(jwtVal)
+
 		folder.DateCreated = time.Now().Format("2006-01-02T15:04:05")
+		folder.CreatedBy = userId
+
 		folderMap, err := blazem_folder.FolderToMap(folder)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -52,7 +67,7 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			return
 		}
 
-		err = e.Storer.Store(folder.Key, folder.Folder, folderMap)
+		err = e.Store.Store(folder.Key, folder.Folder, folderMap)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,

@@ -32,7 +32,7 @@ func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 		docKey := doc["key"].(string)
 		folder := doc["folder"]
 
-		err := e.Storer.Delete(docKey, folder)
+		err := e.Store.Delete(docKey, folder)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,

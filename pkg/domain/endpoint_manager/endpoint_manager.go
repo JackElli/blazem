@@ -11,14 +11,14 @@ type EndpointManager struct {
 	Node      *node.Node
 	Query     *query.Query
 	Responder responder.Responder
-	Storer    storer.Storer
+	Store     storer.Storer
 }
 
-func NewEndpointManager(node *node.Node, responder responder.Responder, query *query.Query, storer storer.Storer) *EndpointManager {
+func NewEndpointManager(node *node.Node, responder responder.Responder, query *query.Query, store storer.Storer) *EndpointManager {
 	return &EndpointManager{
 		Node:      node,
 		Responder: responder,
 		Query:     query,
-		Storer:    storer,
+		Store:     store,
 	}
 }

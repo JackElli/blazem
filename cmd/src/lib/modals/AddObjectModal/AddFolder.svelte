@@ -28,6 +28,7 @@
                 value: "",
                 key: key,
                 type: "folder",
+                global: true,
             }),
         });
         dispatch("hideModal");
