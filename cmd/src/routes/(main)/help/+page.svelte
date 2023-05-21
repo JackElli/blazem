@@ -181,6 +181,16 @@
         </div>
     {:else if tabSelected == "changelog"}
         <div id="change_log">
+            <h1>0.1.8</h1>
+            <ul>
+                <li>Multiple users can be logged in at once</li>
+                <li>Adding users is now <span>Admin</span> only</li>
+                <li>Backend for users almost finished, UI will come later</li>
+                <li>
+                    New page for adding data/folders when there is no data in
+                    the fetch result
+                </li>
+            </ul>
             <h1>0.1.7</h1>
             <ul>
                 <li>Big backend changes</li>
