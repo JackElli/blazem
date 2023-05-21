@@ -54,8 +54,13 @@ func (us *UserStore) LoadUsers() (int, error) {
 	return len(us.Users), err
 }
 
+// Get returns a user from the store with the Id passed
 func (us *UserStore) Get(id string) (*user.User, error) {
-	return nil, nil
+	user, userExists := us.Users[id]
+	if !userExists {
+		return nil, errors.New("User with that Id does not exist")
+	}
+	return &user, nil
 }
 
 // GetByUsername returns the user and error where the username is equal to
@@ -75,11 +80,18 @@ func (us *UserStore) Insert(id string, user *user.User) error {
 	if err != nil {
 		return err
 	}
+
 	var users UserStore
 	err = json.Unmarshal(data, &users)
 	if err != nil {
 		return err
 	}
+
+	_, userExists := us.Users[id]
+	if userExists {
+		return errors.New("User already exists with that Id")
+	}
+
 	us.Users[id] = *user
 	dataToWrite, err := json.Marshal(UserStore{
 		Users: us.Users,
@@ -87,6 +99,7 @@ func (us *UserStore) Insert(id string, user *user.User) error {
 	if err != nil {
 		return err
 	}
+
 	err = ioutil.WriteFile("/users/users.json", dataToWrite, 0x77)
 	if err != nil {
 		return err

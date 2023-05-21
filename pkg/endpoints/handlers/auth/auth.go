@@ -5,12 +5,11 @@ import (
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
-	"blazem/pkg/domain/permissions"
+	blazem_user "blazem/pkg/domain/user"
 	"encoding/json"
 	"errors"
-	"time"
-
 	"net/http"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -34,9 +33,18 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			return
 		}
 
+		user, err := e.Node.UserStore.GetByUsername(authVal.Username)
+		if err != nil {
+			e.Responder.Respond(w, endpoint.EndpointResponse{
+				Code: 401,
+				Msg:  "User not authorised to do that, error: " + err.Error(),
+			})
+			return
+		}
+
 		secretkey := []byte("SecretYouShouldHide")
 		expirationDate := time.Now().Add(10 * 24 * 60 * time.Minute)
-		jwt, err := createJWT(secretkey, expirationDate)
+		jwt, err := createJWT(secretkey, user, expirationDate)
 
 		if err != nil {
 			e.Responder.Respond(w, endpoint.EndpointResponse{
@@ -52,12 +60,18 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			Expires: expirationDate,
 		})
 
-		user, err := e.Node.UserStore.GetByUsername(authVal.Username)
-		permissions.CurrentUser = user
+		type response struct {
+			JWT  string            `json:"jwt"`
+			User *blazem_user.User `json:"user"`
+		}
+
 		e.Responder.Respond(w, endpoint.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully authenticated user",
-			Data: jwt,
+			Data: response{
+				JWT:  jwt,
+				User: user,
+			},
 		})
 	}
 }
@@ -78,11 +92,12 @@ func authUser(node *node.Node, username string, password string) (bool, error) {
 }
 
 // createJWT creates a JWT and returns the token and an error if there is one
-func createJWT(secretkey []byte, expirationDate time.Time) (string, error) {
+func createJWT(secretkey []byte, user *blazem_user.User, expirationDate time.Time) (string, error) {
 	t := jwt.New(jwt.SigningMethodHS256)
 
 	claims := t.Claims.(jwt.MapClaims)
 	claims["exp"] = expirationDate.Unix()
+	claims["user"] = user.Id
 
 	jwt, err := t.SignedString(secretkey)
 	return jwt, err
