@@ -13,9 +13,6 @@
 	"/(main)/folders": [
 		"src/routes/(main)/+layout.ts"
 	],
-	"/(main)/folder": [
-		"src/routes/(main)/+layout.ts"
-	],
 	"/(main)/folder/[id]": [
 		"src/routes/(main)/folder/[id]/+page.ts",
 		"src/routes/(main)/+layout.ts"

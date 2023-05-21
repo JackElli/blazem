@@ -57,7 +57,6 @@ func SetupEndpoints(node *node.Node) error {
 	protected.HandleFunc("/ping", ping.Ping(endpointMgr)).Methods("POST")
 	protected.HandleFunc("/users", users.GetUsers(endpointMgr)).Methods("GET")
 	protected.HandleFunc("/user/{id:[a-zA-Z0-9-:]+}", user.GetUser(endpointMgr)).Methods("GET")
-	protected.HandleFunc("/user", user.AddUser(endpointMgr)).Methods("POST")
 
 	admin := r.PathPrefix("/").Subrouter()
 	admin.Use(middleware.Middleware)
@@ -65,6 +64,7 @@ func SetupEndpoints(node *node.Node) error {
 	admin.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", connect.Connect(endpointMgr)).Methods("POST")
 	admin.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.DeleteDoc(endpointMgr)).Methods("DELETE")
 	admin.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", nodes.RemoveNode(endpointMgr)).Methods("DELETE")
+	admin.HandleFunc("/user", user.AddUser(endpointMgr)).Methods("POST")
 
 	return nil
 }

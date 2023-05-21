@@ -87,6 +87,11 @@ func (us *UserStore) Insert(id string, user *user.User) error {
 		return err
 	}
 
+	_, userExists := us.Users[id]
+	if userExists {
+		return errors.New("User already exists with that Id")
+	}
+
 	us.Users[id] = *user
 	dataToWrite, err := json.Marshal(UserStore{
 		Users: us.Users,

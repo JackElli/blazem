@@ -20,7 +20,7 @@
     };
 </script>
 
-{#if allData && allData.length != 0}
+{#if allData}
     <div class={`flex flex-col gap-4 w-full mb-3 ${$$props.class}`}>
         {#if folders.length > 0}
             <Panel class="bg-white">
@@ -37,6 +37,4 @@
             </Panel>
         {/if}
     </div>
-{:else}
-    <h1 class={`${$$props.class}`}>No data found.</h1>
 {/if}

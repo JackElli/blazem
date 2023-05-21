@@ -65,6 +65,11 @@
             {/each}
         </Panel>
     {:else}
-        <p class="mt-4">No folders available</p>
+        <p class="mt-4 text-3xl text-center">You currently have no folders</p>
+        <button
+            on:click={() => (addObjectVisible = true)}
+            class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline"
+            >Create one here</button
+        >
     {/if}
 </Loading>
