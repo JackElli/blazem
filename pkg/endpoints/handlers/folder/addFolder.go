@@ -34,6 +34,7 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			})
 			return
 		}
+
 		err = json.Unmarshal(body, &folder)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -67,7 +68,7 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			return
 		}
 
-		err = e.Store.Store(folder.Key, folder.Folder, folderMap)
+		err = e.DataStore.Store(folder.Key, folder.Folder, folderMap)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,

@@ -20,7 +20,7 @@ func AddUser(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 			return
 		}
 
-		err = e.Node.UserStore.Insert(userToAdd.Id, &userToAdd)
+		err = e.UserStore.Insert(userToAdd.Id, &userToAdd)
 		if err != nil {
 			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 500,

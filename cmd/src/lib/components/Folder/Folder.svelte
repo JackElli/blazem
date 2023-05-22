@@ -4,6 +4,7 @@
         name: string;
         docCount: number;
         backedUp?: string;
+        global: string;
     };
 </script>
 
@@ -33,7 +34,9 @@
 
         <div>
             <h1 class="font-medium">Permission</h1>
-            <h1 class="font-normal text-lg">Open</h1>
+            <h1 class="font-normal text-lg">
+                {data.global ? "Open" : "Private"}
+            </h1>
         </div>
     </div>
 </div>

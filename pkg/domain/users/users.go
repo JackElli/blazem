@@ -12,6 +12,7 @@ import (
 type UserStorer interface {
 	SetupUsers() error
 	LoadUsers() (int, error)
+	List() map[string]user.User
 	Get(id string) (*user.User, error)
 	GetByUsername(username string) (*user.User, error)
 	Insert(id string, user *user.User) error
@@ -24,6 +25,10 @@ type UserStore struct {
 
 func NewUserStore() *UserStore {
 	return &UserStore{}
+}
+
+func (us *UserStore) List() map[string]user.User {
+	return us.Users
 }
 
 func (us *UserStore) SetupUsers() error {

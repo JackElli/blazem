@@ -5,8 +5,8 @@ import (
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/folder"
 	"blazem/pkg/domain/logger"
+	"blazem/pkg/domain/middleware"
 	"blazem/pkg/domain/node"
-	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -30,7 +30,7 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 			return
 		}
 
-		folderName, err := GetFolderName(e.Node, folderId)
+		folderData, err := e.DataStore.Load(folderId)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,
@@ -39,6 +39,41 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 			return
 		}
 
+		folder, ok := folder.IsFolder(folderData.(map[string]interface{}))
+		if !ok {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  err.Error(),
+			})
+			return
+		}
+
+		c, err := req.Cookie("token")
+		if err != nil {
+			w.WriteHeader(401)
+			return
+		}
+
+		jwtStr := c.Value
+		userId, err := middleware.GetCurrentUserId(jwtStr)
+		if err != nil {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 404,
+				Msg:  "No current user available",
+			})
+			return
+		}
+		if !folder.Global && userId != folder.CreatedBy {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 403,
+				Msg:  "You are unauthorised to view this folder",
+			})
+			return
+		}
+
+		folderName := folder.Name
+
+		// redo this section
 		var DOCS_TO_RENDER float64
 		var returnData types.DataInFolder
 		MAX_DOCS := 30
@@ -63,8 +98,10 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 			return true
 		})
 
+		// move this out to folder_manager
 		SetFolderCount(e.Node, folderId, len(dataInFolder))
 
+		// redo this section
 		DOCS_TO_RENDER = math.Min(float64(MAX_DOCS), float64(len(dataInFolder)))
 		sort.Slice(dataInFolder, func(i, j int) bool {
 			if _, convOk := dataInFolder[i].Data["date"].(time.Time); !convOk {
@@ -100,22 +137,4 @@ func SetFolderCount(node *node.Node, key string, docCount int) {
 	node.Data.Store(key, folder)
 
 	logger.Logger.Debug(fmt.Sprintf("Set folder: %s docCount to %d", key, docCount))
-}
-
-// Returns the name of the folder, given the folderId
-func GetFolderName(node *node.Node, folderId string) (string, error) {
-	doc, ok := node.Data.Load(folderId)
-
-	if !ok {
-		return "", errors.New("No document with that key")
-	}
-
-	folderData := doc.(map[string]interface{})
-	folder, isFolder := folder.IsFolder(folderData)
-	if !isFolder {
-		return "", errors.New("No folder with that key")
-	}
-
-	folderName := folder.Name
-	return folderName, nil
 }

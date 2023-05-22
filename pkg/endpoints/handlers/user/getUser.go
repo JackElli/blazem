@@ -19,7 +19,7 @@ func GetUser(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 			return
 		}
 
-		user, err := e.Node.UserStore.Get(userId)
+		user, err := e.UserStore.Get(userId)
 		if err != nil {
 			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 500,

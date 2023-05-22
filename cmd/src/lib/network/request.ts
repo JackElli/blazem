@@ -7,6 +7,7 @@ export async function networkRequest(url: string, options: object): Promise<Netw
             if (res.status == 401) {
                 goto("/");
             }
+
             return {
                 code: 200,
                 msg: "lets go",

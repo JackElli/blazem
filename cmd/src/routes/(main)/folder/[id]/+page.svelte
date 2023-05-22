@@ -16,6 +16,7 @@
     let folderId = data?.folder.id;
     let loading = true;
     let addObjectVisible = false;
+    let unauthorised = false;
 
     const getData = () => {
         $needToFetchDataInFolder = true;
@@ -30,6 +31,10 @@
             }
         );
         let folderData = await folderResp.data;
+        if (folderData?.code == 403) {
+            unauthorised = true;
+            return;
+        }
         allData = folderData?.data;
     };
 
@@ -48,6 +53,7 @@
     const fetchData = async () => {
         await getFolderData();
         await getBreadcrumbData();
+
         loading = false;
     };
 
@@ -89,29 +95,37 @@
 </svelte:head>
 
 <div class="w-10/12 z-10">
-    <Breadcrumb />
-    <AddObjectModal on:getData={getData} bind:visible={addObjectVisible} />
-    <button
-        class="flex justify-center mt-2 items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400 relative"
-        on:click={() => (addObjectVisible = true)}
-    >
-        <p class="ml-2 mr-2">Add object</p>
-    </button>
+    {#if !unauthorised}
+        <Breadcrumb />
+        <AddObjectModal on:getData={getData} bind:visible={addObjectVisible} />
+        <button
+            class="flex justify-center mt-2 items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400 relative"
+            on:click={() => (addObjectVisible = true)}
+        >
+            <p class="ml-2 mr-2">Add object</p>
+        </button>
+    {/if}
 </div>
 
 <div class="mt-4">
-    <Loading {loading}>
-        {#if Object.keys(allData?.data ?? {}).length != 0}
-            <DataContainer on:getData={fetchData} allData={allData.data} />
-        {:else}
-            <p class="mt-4 text-3xl text-center">
-                You currently have no data in this folder
-            </p>
-            <button
-                on:click={() => (addObjectVisible = true)}
-                class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline"
-                >Create some here</button
-            >
-        {/if}
-    </Loading>
+    {#if !unauthorised}
+        <Loading {loading}>
+            {#if Object.keys(allData?.data ?? {}).length != 0}
+                <DataContainer on:getData={fetchData} allData={allData.data} />
+            {:else}
+                <p class="mt-4 text-3xl text-center">
+                    You currently have no data in this folder
+                </p>
+                <button
+                    on:click={() => (addObjectVisible = true)}
+                    class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline"
+                    >Create some here</button
+                >
+            {/if}
+        </Loading>
+    {:else}
+        <p class="mt-20 text-3xl text-center">
+            You do not have permission to view this folder.
+        </p>
+    {/if}
 </div>

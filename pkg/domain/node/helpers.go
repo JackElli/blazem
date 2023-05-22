@@ -52,7 +52,6 @@ func (node *Node) GetNodeMapWithoutData() []*Node {
 			n.RecentQueries,
 			n.Rules,
 			n.NodeMap,
-			n.UserStore,
 		})
 	}
 	return newmap

@@ -181,6 +181,14 @@
         </div>
     {:else if tabSelected == "changelog"}
         <div id="change_log">
+            <h1>0.1.9</h1>
+            <ul>
+                <li>Backend done for private folders (needs tidying)</li>
+                <li>
+                    If you visit a private folder that wasn't created by you, a
+                    message will be displayed
+                </li>
+            </ul>
             <h1>0.1.8</h1>
             <ul>
                 <li>Multiple users can be logged in at once</li>
