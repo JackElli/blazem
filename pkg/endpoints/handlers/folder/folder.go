@@ -5,7 +5,6 @@ import (
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/folder"
 	"blazem/pkg/domain/logger"
-	"blazem/pkg/domain/middleware"
 	"blazem/pkg/domain/node"
 	"fmt"
 	"log"
@@ -55,7 +54,7 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 		}
 
 		jwtStr := c.Value
-		userId, err := middleware.GetCurrentUserId(jwtStr)
+		userId, err := e.GetCurrentUserId(jwtStr)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 404,

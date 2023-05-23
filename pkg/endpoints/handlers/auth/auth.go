@@ -9,8 +9,6 @@ import (
 	"errors"
 	"net/http"
 	"time"
-
-	"github.com/golang-jwt/jwt"
 )
 
 // Auth endpoint returns a JWT set for an expiration if the user exists
@@ -23,7 +21,6 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 		}
 		json.NewDecoder(req.Body).Decode(&authVal)
 		auth, err := authUser(e, authVal.Username, authVal.Password)
-
 		if !auth {
 			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 401,
@@ -41,10 +38,8 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			return
 		}
 
-		secretkey := []byte("SecretYouShouldHide")
 		expirationDate := time.Now().Add(10 * 24 * 60 * time.Minute)
-		jwt, err := createJWT(secretkey, user, expirationDate)
-
+		jwt, err := e.JWTManager.CreateJWT(user, expirationDate)
 		if err != nil {
 			e.Responder.Respond(w, endpoint.EndpointResponse{
 				Code: 500,
@@ -88,16 +83,4 @@ func authUser(e *endpoint_manager.EndpointManager, username string, password str
 		return false, err
 	}
 	return true, nil
-}
-
-// createJWT creates a JWT and returns the token and an error if there is one
-func createJWT(secretkey []byte, user *blazem_user.User, expirationDate time.Time) (string, error) {
-	t := jwt.New(jwt.SigningMethodHS256)
-
-	claims := t.Claims.(jwt.MapClaims)
-	claims["exp"] = expirationDate.Unix()
-	claims["user"] = user.Id
-
-	jwt, err := t.SignedString(secretkey)
-	return jwt, err
 }

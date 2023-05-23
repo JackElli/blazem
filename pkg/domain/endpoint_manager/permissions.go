@@ -2,7 +2,7 @@ package endpoint_manager
 
 import (
 	"blazem/pkg/domain/logger"
-	"blazem/pkg/domain/middleware"
+
 	"net/http"
 )
 
@@ -15,7 +15,7 @@ func (em *EndpointManager) Permissions(h http.Handler) http.Handler {
 		}
 
 		jwtStr := c.Value
-		userId, err := middleware.GetCurrentUserId(jwtStr)
+		userId, err := em.GetCurrentUserId(jwtStr)
 		if err != nil {
 			w.WriteHeader(401)
 			return

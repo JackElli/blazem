@@ -5,7 +5,6 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	blazem_folder "blazem/pkg/domain/folder"
-	"blazem/pkg/domain/middleware"
 
 	"blazem/pkg/domain/global"
 	"encoding/json"
@@ -54,7 +53,7 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 		}
 
 		jwtVal := c.Value
-		userId, err := middleware.GetCurrentUserId(jwtVal)
+		userId, err := e.GetCurrentUserId(jwtVal)
 
 		folder.DateCreated = time.Now().Format("2006-01-02T15:04:05")
 		folder.CreatedBy = userId

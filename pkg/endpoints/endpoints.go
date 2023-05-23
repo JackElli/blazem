@@ -3,7 +3,7 @@ package endpoints
 import (
 	"blazem/pkg/domain/cors"
 	"blazem/pkg/domain/endpoint_manager"
-	"blazem/pkg/domain/middleware"
+	"blazem/pkg/domain/jwt_manager"
 	"blazem/pkg/domain/node"
 	"blazem/pkg/domain/responder"
 	blazem_store "blazem/pkg/domain/storer"
@@ -33,6 +33,7 @@ func SetupEndpoints(node *node.Node) error {
 	endpointMgr := endpoint_manager.NewEndpointManager(
 		node,
 		responder.NewResponder(),
+		jwt_manager.NewJWTManager([]byte("SecretYouShouldHide")),
 		blazem_query.NewQuery(node),
 		blazem_users.NewUserStore(),
 		blazem_store.NewStore(node),
@@ -50,7 +51,7 @@ func SetupEndpoints(node *node.Node) error {
 	public.HandleFunc("/auth", auth.Auth(endpointMgr)).Methods("POST")
 
 	protected := r.PathPrefix("/").Subrouter()
-	protected.Use(middleware.Middleware)
+	protected.Use(endpointMgr.Middleware)
 	protected.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.GetDoc(endpointMgr)).Methods("GET")
 	protected.HandleFunc("/doc", doc.AddDoc(endpointMgr)).Methods("POST")
 	protected.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", folder.GetFolderData(endpointMgr)).Methods("GET")
@@ -66,7 +67,7 @@ func SetupEndpoints(node *node.Node) error {
 	protected.HandleFunc("/user/{id:[a-zA-Z0-9-:]+}", user.GetUser(endpointMgr)).Methods("GET")
 
 	admin := r.PathPrefix("/").Subrouter()
-	admin.Use(middleware.Middleware)
+	admin.Use(endpointMgr.Middleware)
 	admin.Use(endpointMgr.Permissions)
 	admin.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", connect.Connect(endpointMgr)).Methods("POST")
 	admin.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", doc.DeleteDoc(endpointMgr)).Methods("DELETE")
