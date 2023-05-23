@@ -6,7 +6,8 @@ import (
 	"blazem/pkg/domain/middleware"
 	"blazem/pkg/domain/node"
 	"blazem/pkg/domain/responder"
-	"blazem/pkg/domain/storer"
+	blazem_store "blazem/pkg/domain/storer"
+	blazem_users "blazem/pkg/domain/users"
 	"blazem/pkg/endpoints/handlers/auth"
 	"blazem/pkg/endpoints/handlers/connect"
 	"blazem/pkg/endpoints/handlers/doc"
@@ -33,8 +34,14 @@ func SetupEndpoints(node *node.Node) error {
 		node,
 		responder.NewResponder(),
 		blazem_query.NewQuery(node),
-		storer.NewStore(node),
+		blazem_users.NewUserStore(),
+		blazem_store.NewStore(node),
 	)
+
+	err := endpointMgr.UserStore.SetupUsers()
+	if err != nil {
+		return err
+	}
 
 	r := mux.NewRouter()
 	http.Handle("/", cors.CORS(r))

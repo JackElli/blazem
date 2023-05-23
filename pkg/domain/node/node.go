@@ -3,7 +3,6 @@ package node
 import (
 	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/logger"
-	"blazem/pkg/domain/users"
 
 	"bytes"
 	"encoding/json"
@@ -49,7 +48,6 @@ type Node struct {
 	RecentQueries map[string]string //time
 	Rules         map[string]global.Rule
 	NodeMap       []*Node
-	UserStore     *users.UserStore
 }
 
 type TempNode struct {

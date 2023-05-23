@@ -3,8 +3,6 @@ package main
 import (
 	"blazem/pkg/domain/logger"
 	blazem_node "blazem/pkg/domain/node"
-	"blazem/pkg/domain/user"
-	"blazem/pkg/domain/users"
 	"blazem/pkg/endpoints"
 	"fmt"
 )
@@ -65,30 +63,6 @@ func RunSetup(node *blazem_node.Node) {
 			Fn: func() error {
 				if masterip == node.Ip {
 					node.SetNodeMasterAttrs()
-				}
-				return nil
-			},
-		},
-		{
-			Description: "Loads users or creates an admin user",
-			Fn: func() error {
-				node.UserStore = users.NewUserStore()
-				numOfUsers, err := node.UserStore.LoadUsers()
-				if err != nil {
-					return err
-				}
-				if numOfUsers != 0 {
-					return nil
-				}
-				err = node.UserStore.Insert("user:1", &user.User{
-					Id:       "user:1",
-					Name:     "Jack Ellis",
-					Username: "JackTest",
-					Password: "test123",
-					Role:     "admin",
-				})
-				if err != nil {
-					return err
 				}
 				return nil
 			},

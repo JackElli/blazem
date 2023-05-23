@@ -11,7 +11,7 @@ func GetUsers(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, r
 		e.Responder.Respond(w, endpoint.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved users",
-			Data: e.Node.UserStore.Users,
+			Data: e.UserStore.List(),
 		})
 	}
 }

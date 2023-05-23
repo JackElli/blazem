@@ -45,7 +45,7 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 		folder := dataToAdd["folder"]
 
 		e.Node.WriteDocToDisk(document)
-		err = e.Storer.Store(docKey, folder, document)
+		err = e.DataStore.Store(docKey, folder, document)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
 				Code: 500,

@@ -21,7 +21,7 @@ func (em *EndpointManager) Permissions(h http.Handler) http.Handler {
 			return
 		}
 
-		user, err := em.Node.UserStore.Get(userId)
+		user, err := em.UserStore.Get(userId)
 		if err != nil {
 			w.WriteHeader(401)
 			return
