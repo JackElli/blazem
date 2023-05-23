@@ -16,6 +16,7 @@ func NodeMap(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 				Rank:   n.Rank,
 			})
 		}
+
 		e.Responder.Respond(w, endpoint.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved nodemap",

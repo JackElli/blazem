@@ -8,7 +8,6 @@ import (
 
 	"blazem/pkg/domain/global"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -24,24 +23,6 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			})
 			return
 		}
-		var folder endpoint.Folder
-		body, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Cannot read request body {" + err.Error() + "}",
-			})
-			return
-		}
-
-		err = json.Unmarshal(body, &folder)
-		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Cannot unmarshal JSON request {" + err.Error() + "}",
-			})
-			return
-		}
 
 		c, err := req.Cookie("token")
 		if err != nil {
@@ -52,9 +33,18 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			return
 		}
 
+		var folder endpoint.Folder
+		err = json.NewDecoder(req.Body).Decode(&folder)
+		if err != nil {
+			e.Responder.Respond(w, types.EndpointResponse{
+				Code: 500,
+				Msg:  "Cannot unmarshal JSON request {" + err.Error() + "}",
+			})
+			return
+		}
+
 		jwtVal := c.Value
 		userId, err := e.GetCurrentUserId(jwtVal)
-
 		folder.DateCreated = time.Now().Format("2006-01-02T15:04:05")
 		folder.CreatedBy = userId
 

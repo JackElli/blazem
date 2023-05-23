@@ -21,18 +21,11 @@ import (
 func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
-		if folderId == "" {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "No folder passed",
-			})
-			return
-		}
 
 		folderData, err := e.DataStore.Load(folderId)
 		if err != nil {
 			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
+				Code: 404,
 				Msg:  err.Error(),
 			})
 			return

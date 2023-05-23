@@ -28,6 +28,7 @@ func Connect(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 			})
 			return
 		}
+
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully connected",

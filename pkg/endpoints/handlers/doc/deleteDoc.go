@@ -13,13 +13,6 @@ import (
 func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		docId := mux.Vars(req)["id"]
-		if docId == "" {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Doc key not provided",
-			})
-			return
-		}
 		docData, docFound := e.Node.Data.Load(docId)
 		if !docFound {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -28,6 +21,7 @@ func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			})
 			return
 		}
+
 		doc := docData.(map[string]interface{})
 		docKey := doc["key"].(string)
 		folder := doc["folder"]

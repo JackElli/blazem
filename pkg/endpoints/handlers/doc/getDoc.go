@@ -21,14 +21,8 @@ func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 			})
 			return
 		}
+
 		docId := mux.Vars(req)["id"]
-		if docId == "" {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 500,
-				Msg:  "Doc key not provided",
-			})
-			return
-		}
 		getData, ok := e.Node.Data.Load(docId)
 		if !ok {
 			e.Responder.Respond(w, endpoint.EndpointResponse{
@@ -37,11 +31,13 @@ func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 			})
 			return
 		}
+
 		sendDataJson := formatData(getData.(map[string]interface{}), docId)
 		sendData := endpoint.SendData{
 			Key:  docId,
 			Data: sendDataJson,
 		}
+
 		e.Responder.Respond(w, endpoint.EndpointResponse{
 			Code: 200,
 			Msg:  "Successfully retrieved doc",

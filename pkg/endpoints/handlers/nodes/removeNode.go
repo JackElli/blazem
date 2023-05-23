@@ -22,13 +22,6 @@ func RemoveNode(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter,
 			return
 		}
 		nodeIpToRemove := mux.Vars(req)["ip"]
-		if nodeIpToRemove == "" {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "No IP passed",
-			})
-			return
-		}
 		indexOfNode := e.Node.IndexOfNodeIpInNodeMap(nodeIpToRemove)
 		if indexOfNode == -1 {
 			e.Responder.Respond(w, types.EndpointResponse{
@@ -37,6 +30,7 @@ func RemoveNode(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter,
 			})
 			return
 		}
+
 		e.Node.NodeMap = append(e.Node.NodeMap[:indexOfNode], e.Node.NodeMap[indexOfNode+1:]...)
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,

@@ -13,13 +13,6 @@ import (
 func Parent(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
-		if folderId == "" {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "No folder passed",
-			})
-			return
-		}
 		parents := GetParentFolders(e.Node, folderId)
 		e.Responder.Respond(w, types.EndpointResponse{
 			Code: 200,
