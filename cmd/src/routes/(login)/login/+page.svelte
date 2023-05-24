@@ -1,7 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import { prevent_default } from "svelte/internal";
-    import { hostName, versionNum } from "../../global";
+    import { hostName, versionNum } from "../../../global";
 
     let username: string;
     let password: string;

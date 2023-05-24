@@ -13,25 +13,18 @@ func AddUser(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 		var userToAdd user.User
 		err := json.NewDecoder(req.Body).Decode(&userToAdd)
 		if err != nil {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 500,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
 		err = e.UserStore.Insert(userToAdd.Id, &userToAdd)
 		if err != nil {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 500,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
-		e.Responder.Respond(w, endpoint.EndpointResponse{
-			Code: 200,
-			Msg:  "Successfully added user",
+		e.Responder.Respond(w, 200, endpoint.EndpointResponse{
+			Msg: "Successfully added user",
 		})
 	}
 }

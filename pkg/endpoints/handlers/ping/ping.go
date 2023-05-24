@@ -8,7 +8,7 @@ import (
 	"blazem/pkg/domain/node"
 	blazem_node "blazem/pkg/domain/node"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"net/http"
 	"os"
 	"time"
@@ -23,28 +23,11 @@ import (
 func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		localTempNodes := make([]*blazem_node.TempNode, 0)
-		body, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Error reading request body {" + err.Error() + "}",
-			})
-			return
-		}
-		err = json.Unmarshal(body, &localTempNodes)
-		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Error unmarshalling request body {" + err.Error() + "}",
-			})
-			return
-		}
+		json.NewDecoder(req.Body).Decode(&localTempNodes)
+
 		localnm := node.UnmarshalNodeMap(localTempNodes)
 		if len(localnm) == 0 {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "No nodes found to marshal",
-			})
+			e.Responder.Error(w, 500, errors.New("No nodes found to marshal"))
 			return
 		}
 		e.Node.Pinged = time.Now()
@@ -60,16 +43,14 @@ func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 
 		if types.LenOfSyncMap(localnm[0].Data) == 0 {
 			e.Node.NodeMap[0].Data = currentMasterData
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 200,
-				Msg:  "Successful ping",
+			e.Responder.Respond(w, 200, types.EndpointResponse{
+				Msg: "Successful ping",
 			})
 			return
 		}
 		UpdateData(e.Node, localnm)
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
-			Msg:  "Successful ping",
+		e.Responder.Respond(w, 200, types.EndpointResponse{
+			Msg: "Successful ping",
 		})
 	}
 }

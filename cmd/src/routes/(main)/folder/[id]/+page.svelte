@@ -11,8 +11,8 @@
 
     export let data;
 
-    let allData: NetworkResponse;
-    let parentFolders: NetworkResponse;
+    let allData: any;
+    let parentFolders: any;
     let folderId = data?.folder.id;
     let loading = true;
     let addObjectVisible = false;
@@ -30,12 +30,11 @@
                 credentials: "include",
             }
         );
-        let folderData = await folderResp.data;
-        if (folderData?.code == 403) {
+        if (folderResp.code == 403) {
             unauthorised = true;
             return;
         }
-        allData = folderData?.data;
+        allData = folderResp?.data;
     };
 
     const getBreadcrumbData = async () => {
@@ -46,8 +45,7 @@
                 credentials: "include",
             }
         );
-        let parentData = await parentResp.data;
-        parentFolders = parentData?.data;
+        parentFolders = parentResp?.data;
     };
 
     const fetchData = async () => {
@@ -118,7 +116,7 @@
                 </p>
                 <button
                     on:click={() => (addObjectVisible = true)}
-                    class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline"
+                    class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline hover:text-blue-400"
                     >Create some here</button
                 >
             {/if}

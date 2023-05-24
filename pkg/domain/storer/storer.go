@@ -1,7 +1,7 @@
 package storer
 
 import (
-	"blazem/pkg/domain/folder_manager"
+	"blazem/pkg/domain/folder"
 	"blazem/pkg/domain/node"
 	"errors"
 )
@@ -14,12 +14,11 @@ type Storer interface {
 
 type Store struct {
 	Node          *node.Node
-	FolderManager *folder_manager.FolderManager
+	FolderManager *folder.FolderManager
 }
 
 func NewStore(node *node.Node) *Store {
-	fm := folder_manager.NewFolderManager(node)
-
+	fm := folder.NewFolderManager(node)
 	return &Store{
 		Node:          node,
 		FolderManager: fm,

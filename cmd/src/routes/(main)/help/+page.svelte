@@ -181,6 +181,15 @@
         </div>
     {:else if tabSelected == "changelog"}
         <div id="change_log">
+            <h1>0.1.10</h1>
+            <ul>
+                <li>Fixed private folders issue</li>
+                <li>Improved network responses to accept 403s</li>
+                <li>
+                    The new network response now has better structure (even
+                    better soon)
+                </li>
+            </ul>
             <h1>0.1.9</h1>
             <ul>
                 <li>Backend done for private folders (needs tidying)</li>

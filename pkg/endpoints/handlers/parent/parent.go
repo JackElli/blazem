@@ -14,8 +14,7 @@ func Parent(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 		parents := GetParentFolders(e.Node, folderId)
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
+		e.Responder.Respond(w, 200, types.EndpointResponse{
 			Msg:  "Parent folders retrieved Successfully",
 			Data: parents,
 		})

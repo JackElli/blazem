@@ -2,25 +2,34 @@ import { goto } from "$app/navigation";
 import type { NetworkResponse } from "$lib/types";
 
 export async function networkRequest(url: string, options: object): Promise<NetworkResponse> {
-    try {
-        let resp = await fetch(url, options).then((res) => {
-            if (res.status == 401) {
-                goto("/");
-            }
 
+    try {
+        const response = await fetch(url, options);
+        if (response.status == 403) {
             return {
-                code: 200,
-                msg: "lets go",
-                data: res.json(),
+                code: 403,
+                msg: "Not good"
             }
-        });
-        return resp;
-    } catch (e) {
-        console.log(e);
+        }
+        if (response.status == 401) {
+            goto("/login")
+            return {
+                code: 401,
+                msg: "unauthorised",
+                data: {}
+            }
+        }
+        return await response.json();
+    }
+    catch (error) {
         return {
             code: 500,
-            msg: "OOps",
-            data: undefined
+            msg: "Error occurred",
         }
     }
 }
+
+
+
+
+

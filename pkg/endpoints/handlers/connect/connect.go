@@ -22,15 +22,11 @@ func Connect(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 		ip := mux.Vars(req)["ip"]
 		err := updateNodeMap(e.Node, ip)
 		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
+		e.Responder.Respond(w, 200, types.EndpointResponse{
 			Msg:  "Successfully connected",
 			Data: e.Node.NodeMap,
 		})
@@ -41,7 +37,7 @@ func Connect(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, re
 // the nodemap, we can activate it again
 func updateNodeMap(node *blazem_node.Node, ip string) error {
 	if ip == "" {
-		return errors.New("IP nothing")
+		return errors.New("IP not entered")
 	}
 	if !node.AlreadyInNodeMap(ip) {
 		node.NodeMap = append(node.NodeMap, &blazem_node.Node{

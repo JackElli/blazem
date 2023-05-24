@@ -38,6 +38,5 @@ func (em *EndpointManager) GetCurrentUserId(jwtStr string) (string, error) {
 
 	claims := *parseClaims
 	userId := claims["user"].(string)
-
 	return userId, nil
 }

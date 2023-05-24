@@ -8,8 +8,7 @@ import (
 
 func GetUsers(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
-		e.Responder.Respond(w, endpoint.EndpointResponse{
-			Code: 200,
+		e.Responder.Respond(w, 200, endpoint.EndpointResponse{
 			Msg:  "Successfully retrieved users",
 			Data: e.UserStore.List(),
 		})

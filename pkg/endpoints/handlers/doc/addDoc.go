@@ -6,7 +6,7 @@ import (
 	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/node"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"net/http"
 	"time"
 )
@@ -16,55 +16,51 @@ import (
 func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if e.Node.Rank != global.MASTER {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Should be master",
-			})
+			e.Responder.Error(w, 500, errors.New("Should be master"))
 			return
 		}
-		var dataToAdd map[string]interface{}
-		body, err := ioutil.ReadAll(req.Body)
+		var doc map[string]interface{}
+		json.NewDecoder(req.Body).Decode(&doc)
+
+		err := validate(doc)
 		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Cannot read request body {" + err.Error() + "}",
-			})
-			return
-		}
-		err = json.Unmarshal(body, &dataToAdd)
-		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  "Cannot unmarshal JSON request {" + err.Error() + "}",
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
-		document := TransformNewDoc(e.Node, dataToAdd)
-		docKey := dataToAdd["key"].(string)
-		folder := dataToAdd["folder"]
+		document := transformNewDoc(e.Node, doc)
+		docKey := doc["key"].(string)
+		folder := doc["folder"]
 
 		e.Node.WriteDocToDisk(document)
 		err = e.DataStore.Store(docKey, folder, document)
 		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
 		global.DataChanged = true
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
-			Msg:  "Added document successfully",
+		e.Responder.Respond(w, 200, types.EndpointResponse{
+			Msg: "Added document successfully",
 		})
 	}
 }
 
-// We want to transform the document coming in, to something that is optimised and
+// validate checks whether the doc is valid and able to
+// be added to blazem
+func validate(doc map[string]interface{}) error {
+	_, hasKey := doc["key"]
+
+	if !hasKey {
+		return errors.New("This doc has no key")
+	}
+
+	return nil
+}
+
+// transformNewDoc transforms the document coming in, to something that is optimised and
 // info-full for retrieval
-func TransformNewDoc(node *node.Node,
+func transformNewDoc(node *node.Node,
 	dataToAdd map[string]interface{}) map[string]interface{} {
 	document := dataToAdd
 
@@ -78,16 +74,8 @@ func TransformNewDoc(node *node.Node,
 
 	loadDoc, updateDoc := node.Data.Load(dataToAdd["key"])
 	if updateDoc {
-		return updateDocument(document, loadDoc.(map[string]interface{}))
+		document["date"] = loadDoc.(map[string]interface{})["date"].(string)
 	}
 
-	return document
-}
-
-// If we're not adding a new document, we're updating an existing one, we want
-// to keep the date the same
-func updateDocument(document map[string]interface{},
-	loadDoc map[string]interface{}) map[string]interface{} {
-	document["date"] = loadDoc["date"].(string)
 	return document
 }

@@ -11,9 +11,6 @@
         ip: string;
         active: boolean;
     };
-    interface NodeResponse extends NetworkResponse {
-        data: Node[];
-    }
 
     let nodes: Node[] = [];
     let loading = true;
@@ -26,8 +23,7 @@
                 credentials: "include",
             }
         );
-        const nodeData = await nodeResp.data;
-        nodes = nodeData?.data;
+        nodes = nodeResp?.data;
         loading = false;
     });
 </script>

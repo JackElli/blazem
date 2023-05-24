@@ -6,6 +6,7 @@ import (
 	"blazem/pkg/domain/folder"
 	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -24,19 +25,13 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 
 		folderData, err := e.DataStore.Load(folderId)
 		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 404,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 404, err)
 			return
 		}
 
 		folder, ok := folder.IsFolder(folderData.(map[string]interface{}))
 		if !ok {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
@@ -49,17 +44,11 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 		jwtStr := c.Value
 		userId, err := e.GetCurrentUserId(jwtStr)
 		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 404,
-				Msg:  "No current user available",
-			})
+			e.Responder.Error(w, 404, errors.New("No current user available"))
 			return
 		}
 		if !folder.Global && userId != folder.CreatedBy {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 403,
-				Msg:  "You are unauthorised to view this folder",
-			})
+			e.Responder.Error(w, 403, errors.New("You are unauthorised to view this folder"))
 			return
 		}
 
@@ -110,8 +99,7 @@ func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWrit
 		returnData.Data = dataInFolder[0:int(DOCS_TO_RENDER)]
 		returnData.FolderName = folderName
 
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
+		e.Responder.Respond(w, 200, types.EndpointResponse{
 			Msg:  "Successfully retrieved data in folder",
 			Data: returnData,
 		})

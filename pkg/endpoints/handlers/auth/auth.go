@@ -22,29 +22,20 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 		json.NewDecoder(req.Body).Decode(&authVal)
 		auth, err := authUser(e, authVal.Username, authVal.Password)
 		if !auth {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 401,
-				Msg:  "User not authorised to do that, error: " + err.Error(),
-			})
+			e.Responder.Error(w, 401, err)
 			return
 		}
 
 		user, err := e.UserStore.GetByUsername(authVal.Username)
 		if err != nil {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 401,
-				Msg:  "User not authorised to do that, error: " + err.Error(),
-			})
+			e.Responder.Error(w, 401, err)
 			return
 		}
 
 		expirationDate := time.Now().Add(10 * 24 * 60 * time.Minute)
 		jwt, err := e.JWTManager.CreateJWT(user, expirationDate)
 		if err != nil {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 500,
-				Msg:  "Cannot auth user as jwt cannot be created as " + err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
@@ -59,9 +50,8 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 			User *blazem_user.User `json:"user"`
 		}
 
-		e.Responder.Respond(w, endpoint.EndpointResponse{
-			Code: 200,
-			Msg:  "Successfully authenticated user",
+		e.Responder.Respond(w, 200, endpoint.EndpointResponse{
+			Msg: "Successfully authenticated user",
 			Data: response{
 				JWT:  jwt,
 				User: user,

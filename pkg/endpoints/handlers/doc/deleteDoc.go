@@ -4,6 +4,7 @@ import (
 	types "blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -15,10 +16,7 @@ func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 		docId := mux.Vars(req)["id"]
 		docData, docFound := e.Node.Data.Load(docId)
 		if !docFound {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 404,
-				Msg:  "Cannot delete document, as it's not found",
-			})
+			e.Responder.Error(w, 404, errors.New("Cannot delete document, as it's not found"))
 			return
 		}
 
@@ -28,17 +26,13 @@ func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 
 		err := e.DataStore.Delete(docKey, folder)
 		if err != nil {
-			e.Responder.Respond(w, types.EndpointResponse{
-				Code: 500,
-				Msg:  err.Error(),
-			})
+			e.Responder.Error(w, 500, err)
 			return
 		}
 
 		global.DataChanged = true
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
-			Msg:  "Successfully deleted doc",
+		e.Responder.Respond(w, 200, types.EndpointResponse{
+			Msg: "Successfully deleted doc",
 		})
 	}
 }

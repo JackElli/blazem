@@ -13,7 +13,7 @@
     export let data;
     $: service = data.service;
 
-    let folderResponse: NetworkResponse;
+    let folders: any;
     let addObjectVisible = false;
     let loading = true;
 
@@ -22,8 +22,8 @@
             method: "GET",
             credentials: "include",
         });
-        let data = await resp.data;
-        folderResponse = data?.data;
+        console.log(resp);
+        folders = resp.data;
         loading = false;
     };
 
@@ -58,9 +58,9 @@
 </div>
 
 <Loading {loading}>
-    {#if Object.keys(folderResponse).length != 0}
+    {#if Object.keys(folders).length != 0}
         <Panel class="mt-4 bg-white">
-            {#each Object.entries(folderResponse) as [_, folder]}
+            {#each Object.entries(folders) as [_, folder]}
                 <Folder data={folder} />
             {/each}
         </Panel>
@@ -68,7 +68,7 @@
         <p class="mt-4 text-3xl text-center">You currently have no folders</p>
         <button
             on:click={() => (addObjectVisible = true)}
-            class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline"
+            class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline hover:text-blue-400"
             >Create one here</button
         >
     {/if}

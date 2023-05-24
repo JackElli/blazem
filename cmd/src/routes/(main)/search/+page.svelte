@@ -11,12 +11,9 @@
     type QueryResult = {
         docs: object[];
     };
-    interface SearchResponse extends NetworkResponse {
-        data: QueryResult;
-    }
 
     let searchTxt: HTMLTextAreaElement;
-    let allData: SearchResponse;
+    let allData: any;
     let loading = false;
 
     const search = async () => {
@@ -31,8 +28,7 @@
                 body: JSON.stringify({ query: searchValue }),
             }
         );
-        const queryData = await queryResp.data;
-        allData = queryData?.data;
+        allData = queryResp?.data;
         loading = false;
     };
 

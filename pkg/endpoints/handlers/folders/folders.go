@@ -14,8 +14,7 @@ import (
 func Folders(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folders := GetAllFolders(e.Node)
-		e.Responder.Respond(w, types.EndpointResponse{
-			Code: 200,
+		e.Responder.Respond(w, 200, types.EndpointResponse{
 			Msg:  "Successfully retrieved folders",
 			Data: folders,
 		})

@@ -5,6 +5,7 @@ import (
 	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -15,20 +16,14 @@ import (
 func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if e.Node.Rank == global.FOLLOWER {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 500,
-				Msg:  "Cannot fetch doc from a follower node",
-			})
+			e.Responder.Error(w, 500, errors.New("Cannot fetch doc from a follower node"))
 			return
 		}
 
 		docId := mux.Vars(req)["id"]
 		getData, ok := e.Node.Data.Load(docId)
 		if !ok {
-			e.Responder.Respond(w, endpoint.EndpointResponse{
-				Code: 404,
-				Msg:  "Doc not found",
-			})
+			e.Responder.Error(w, 404, errors.New("Doc not found"))
 			return
 		}
 
@@ -38,8 +33,7 @@ func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 			Data: sendDataJson,
 		}
 
-		e.Responder.Respond(w, endpoint.EndpointResponse{
-			Code: 200,
+		e.Responder.Respond(w, 200, endpoint.EndpointResponse{
 			Msg:  "Successfully retrieved doc",
 			Data: sendData,
 		})

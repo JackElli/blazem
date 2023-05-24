@@ -23,6 +23,7 @@
 	"/(main)/import": [
 		"src/routes/(main)/+layout.ts"
 	],
+	"/(login)/login": [],
 	"/(main)/nodes": [
 		"src/routes/(main)/+layout.ts"
 	],

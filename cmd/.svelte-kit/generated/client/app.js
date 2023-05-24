@@ -16,24 +16,26 @@ export const nodes = [
 	() => import('./nodes/12'),
 	() => import('./nodes/13'),
 	() => import('./nodes/14'),
-	() => import('./nodes/15')
+	() => import('./nodes/15'),
+	() => import('./nodes/16')
 ];
 
 export const server_loads = [];
 
 export const dictionary = {
-		"/(login)": [4,[2]],
-		"/(main)/backup": [5,[3]],
-		"/(main)/export": [6,[3]],
-		"/(main)/folders": [8,[3]],
-		"/(main)/folder/[id]": [7,[3]],
-		"/(main)/help": [9,[3]],
-		"/(main)/import": [10,[3]],
-		"/(main)/nodes": [11,[3]],
-		"/(main)/recents": [12,[3]],
-		"/(main)/rules": [13,[3]],
-		"/(main)/search": [14,[3]],
-		"/(main)/stats": [15,[3]]
+		"/": [4],
+		"/(main)/backup": [6,[3]],
+		"/(main)/export": [7,[3]],
+		"/(main)/folders": [9,[3]],
+		"/(main)/folder/[id]": [8,[3]],
+		"/(main)/help": [10,[3]],
+		"/(main)/import": [11,[3]],
+		"/(login)/login": [5,[2]],
+		"/(main)/nodes": [12,[3]],
+		"/(main)/recents": [13,[3]],
+		"/(main)/rules": [14,[3]],
+		"/(main)/search": [15,[3]],
+		"/(main)/stats": [16,[3]]
 	};
 
 export const hooks = {
