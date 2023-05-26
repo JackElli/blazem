@@ -1,8 +1,7 @@
-package doc
+package endpoint_manager
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"encoding/json"
 	"errors"
@@ -13,7 +12,7 @@ import (
 )
 
 // We want to fetch a document and return it to the user
-func GetDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) GetDoc() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if e.Node.Rank == global.FOLLOWER {
 			e.Responder.Error(w, 500, errors.New("Cannot fetch doc from a follower node"))

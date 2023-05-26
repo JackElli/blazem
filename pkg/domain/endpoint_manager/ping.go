@@ -1,8 +1,7 @@
-package ping
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
@@ -20,7 +19,7 @@ import (
 // check. If we change from master to follower quickly, it's because we've
 // been added to the cluster by another node. We write all of the changed
 // data to disk
-func Ping(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) Ping() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		localTempNodes := make([]*blazem_node.TempNode, 0)
 		json.NewDecoder(req.Body).Decode(&localTempNodes)

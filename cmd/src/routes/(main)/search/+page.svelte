@@ -5,6 +5,8 @@
     import { hostName } from "../../../global";
     import DataContainer from "$lib/components/DataContainer/DataContainer.svelte";
     import Loading from "$lib/components/Loading.svelte";
+    import ActionButton from "$lib/components/ActionButton.svelte";
+    import PageTitle from "$lib/components/PageTitle.svelte";
 
     const specialWords: string[] = ["select", "delete", "where"];
 
@@ -60,18 +62,18 @@
 <svelte:head>
     <title>Blazem | Search</title>
 </svelte:head>
-<div class="search_container">
+<div>
+    <PageTitle>Advanced Search</PageTitle>
     <textarea
-        class="block mx-auto mt-5 border border-gray-300 font-medium h-20 p-2 resize-none w-full text-xl rounded-md shadow-md outline-none"
+        class="block mx-auto mt-5 border border-gray-300 font-medium h-20 p-2 resize-none w-full text-xl rounded-sm shadow-md outline-none"
+        placeholder="SELECT all WHERE..."
         bind:this={searchTxt}
         on:keydown={checkForSpecial}
     />
-    <button
-        class="flex justify-center items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400 relative mt-2"
-        on:click={() => search()}
-    >
+    <ActionButton class="mt-2" on:click={() => search()}>
         <p class="ml-2 mr-2">Search</p>
-    </button>
+    </ActionButton>
+
     <Loading {loading}>
         <DataContainer class="mt-6" allData={allData?.docs} />
     </Loading>

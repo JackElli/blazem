@@ -1,12 +1,11 @@
-package nodemap
+package endpoint_manager
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"net/http"
 )
 
-func NodeMap(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) NodeMap() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		nodeMap := make([]endpoint.WebNodeMap, 0)
 		for _, n := range e.Node.NodeMap {

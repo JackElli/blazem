@@ -1,14 +1,13 @@
-package user
+package endpoint_manager
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/user"
 	"encoding/json"
 	"net/http"
 )
 
-func AddUser(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) AddUser() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var userToAdd user.User
 		err := json.NewDecoder(req.Body).Decode(&userToAdd)

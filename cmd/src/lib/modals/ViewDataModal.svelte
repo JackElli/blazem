@@ -2,6 +2,7 @@
     import { createEventDispatcher } from "svelte";
     import { hostName } from "../../global";
     import { networkRequest } from "$lib/network/request";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     export let visible = false;
     export let data: any;
@@ -43,12 +44,12 @@
                         {/if}
                     {/each}
                 </div>
-                <button
-                    class="flex absolute right-5 bottom-1 justify-center items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400"
+                <ActionButton
+                    class="absolute right-5 bottom-1"
                     on:click={() => deleteDoc()}
                 >
                     <p class="ml-2 mr-2">Delete</p>
-                </button>
+                </ActionButton>
             </div>
         </div>
     </div>

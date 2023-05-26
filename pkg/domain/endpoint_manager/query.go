@@ -1,8 +1,7 @@
-package query
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"encoding/json"
 	"errors"
@@ -14,7 +13,7 @@ import (
 // we send back the results to the client. We also want to add these to
 // recent queries so the user can easily get back to queries they've
 // previously entered.
-func Query(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) CompleteQuery() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var queryVal struct {
 			Query string `json:"query"`

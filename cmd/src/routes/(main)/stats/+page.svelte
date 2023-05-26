@@ -6,6 +6,11 @@
 <svelte:head>
     <title>Blazem | Stats</title>
 </svelte:head>
+<div class="flex gap-2 items-center">
+    <h1 class="font-medium text-gray-600 text-lg">Stats</h1>
+    <p class="text-xs">(Not real for now)</p>
+</div>
+
 <div class="grid grid-cols-4 mt-5 gap-2">
     <div class="flex flex-col gap-2">
         <ColourPanel>

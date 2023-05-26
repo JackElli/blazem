@@ -1,8 +1,7 @@
-package folder
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/folder"
 	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
@@ -19,7 +18,7 @@ import (
 
 // We want to return all of the data currently stored within this folder, including
 // folders and data
-func GetFolderData(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) GetFolderData() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 

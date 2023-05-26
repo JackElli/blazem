@@ -1,7 +1,6 @@
-package rules
+package endpoint_manager
 
 import (
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	global_types "blazem/pkg/domain/global"
 	"blazem/pkg/domain/logger"
@@ -11,7 +10,7 @@ import (
 )
 
 // We want to add a rule to blazem
-func AddRuleHandler(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) AddRuleHandler() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var taskForRule = make([]global.Task, 0)
 		var rule global_types.Rule

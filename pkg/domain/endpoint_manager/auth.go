@@ -1,8 +1,7 @@
-package auth
+package endpoint_manager
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/logger"
 	blazem_user "blazem/pkg/domain/user"
 	"encoding/json"
@@ -13,7 +12,7 @@ import (
 
 // Auth endpoint returns a JWT set for an expiration if the user exists
 // it also sets a cookie for the client of this JWT
-func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) Auth() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var authVal struct {
 			Username string `json:"username"`
@@ -61,7 +60,7 @@ func Auth(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *
 }
 
 // authUser returns true if user is authed, false if not
-func authUser(e *endpoint_manager.EndpointManager, username string, password string) (bool, error) {
+func authUser(e *EndpointManager, username string, password string) (bool, error) {
 	user, err := e.UserStore.GetByUsername(username)
 	if err != nil {
 		logger.Logger.Warn(err.Error())

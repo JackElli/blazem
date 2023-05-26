@@ -1,10 +1,13 @@
 <script>
+    import PageTitle from "$lib/components/PageTitle.svelte";
+
     let tabSelected = "help";
 </script>
 
 <svelte:head>
     <title>Blazem | Help</title>
 </svelte:head>
+<PageTitle>Help</PageTitle>
 <div class="flex gap-2 mt-4">
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <h1

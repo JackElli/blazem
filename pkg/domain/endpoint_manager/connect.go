@@ -1,8 +1,7 @@
-package connect
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/logger"
 	blazem_node "blazem/pkg/domain/node"
@@ -17,7 +16,7 @@ import (
 // We need to connect a node to the cluster; we check for ip, if it is already
 // in the node map, we set to active (because it must be active as it's sent a
 // connect request). If it's not in the nodemap, we add it.
-func Connect(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) Connect() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ip := mux.Vars(req)["ip"]
 		err := updateNodeMap(e.Node, ip)

@@ -3,16 +3,18 @@
     import { generateKey } from "$lib/funcs";
     import { hostName } from "../../../global";
     import { networkRequest } from "$lib/network/request";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     export let active: string;
-    let folderName: any;
+    let folderValue: string;
+    let folderNameTxt: HTMLInputElement;
+    let privateFolder = true;
 
     const dispatch = createEventDispatcher();
 
     const addFolder = async () => {
         let folder = window.location.href.split("folder/")[1];
         let key = generateKey();
-        let folderValue = folderName.value;
 
         if (folderValue == "") return;
         await networkRequest(`http://${hostName}:3100/folder`, {
@@ -28,7 +30,7 @@
                 value: "",
                 key: key,
                 type: "folder",
-                global: true,
+                global: !privateFolder,
             }),
         });
         dispatch("hideModal");
@@ -39,7 +41,7 @@
     const activeChanged = async () => {
         await tick();
         if (active == "folder") {
-            folderName.focus();
+            folderNameTxt.focus();
             return;
         }
     };
@@ -49,12 +51,15 @@
 <input
     class="border border-gray-300 rounded-sm w-80 h-7 pl-2"
     type="text"
-    bind:this={folderName}
+    bind:value={folderValue}
+    bind:this={folderNameTxt}
 />
 <br />
-<button
-    class="flex justify-center items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400 relative mt-2"
-    on:click={() => addFolder()}
->
+<div class="flex items-center gap-2 mt-5">
+    Private
+    <input type="checkbox" bind:checked={privateFolder} />
+</div>
+
+<ActionButton class="mt-2" on:click={() => addFolder()}>
     <p class="ml-2 mr-2">Add</p>
-</button>
+</ActionButton>

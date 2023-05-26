@@ -6,6 +6,7 @@
     import type { NetworkResponse } from "$lib/types";
     import { onMount } from "svelte";
     import { hostName } from "../../../global";
+    import PageTitle from "$lib/components/PageTitle.svelte";
 
     type Node = {
         ip: string;
@@ -31,7 +32,7 @@
 <svelte:head>
     <title>Blazem | Nodes</title>
 </svelte:head>
-
+<PageTitle>Nodes</PageTitle>
 <Loading {loading}>
     <div class="mt-5">
         <Panel class="bg-white">

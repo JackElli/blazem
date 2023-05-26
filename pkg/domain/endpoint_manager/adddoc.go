@@ -1,8 +1,7 @@
-package doc
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"blazem/pkg/domain/node"
 	"encoding/json"
@@ -13,7 +12,7 @@ import (
 
 // We want to add a document to Blazem, we check if it's a POST, unmarshal the data
 // coming in, write to disk and add to the map
-func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) AddDoc() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if e.Node.Rank != global.MASTER {
 			e.Responder.Error(w, 500, errors.New("Should be master"))
@@ -22,7 +21,7 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 		var doc map[string]interface{}
 		json.NewDecoder(req.Body).Decode(&doc)
 
-		err := validate(doc)
+		err := validateDoc(doc)
 		if err != nil {
 			e.Responder.Error(w, 500, err)
 			return
@@ -48,7 +47,7 @@ func AddDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req
 
 // validate checks whether the doc is valid and able to
 // be added to blazem
-func validate(doc map[string]interface{}) error {
+func validateDoc(doc map[string]interface{}) error {
 	_, hasKey := doc["key"]
 
 	if !hasKey {

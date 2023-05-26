@@ -1,9 +1,8 @@
-package folder
+package endpoint_manager
 
 import (
 	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	blazem_folder "blazem/pkg/domain/folder"
 	"errors"
 
@@ -15,7 +14,7 @@ import (
 
 // We want to add a document to Blazem, we check if it's a POST, unmarshal the data
 // coming in, write to disk and add to the map
-func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) AddFolder() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if e.Node.Rank != global.MASTER {
 			e.Responder.Error(w, 500, errors.New("Should be master"))
@@ -35,7 +34,7 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 			return
 		}
 
-		err = validate(folder)
+		err = validateFolder(folder)
 		if err != nil {
 			e.Responder.Error(w, 500, err)
 			return
@@ -67,7 +66,7 @@ func AddFolder(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, 
 
 // validate checks whether the incoming folder is a valid
 // folder structure
-func validate(folder endpoint.Folder) error {
+func validateFolder(folder endpoint.Folder) error {
 	if folder.Name == "" ||
 		folder.Key == "" {
 		return errors.New("Folder is invalid")

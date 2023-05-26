@@ -1,8 +1,7 @@
-package doc
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/global"
 	"errors"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 )
 
 // We want to delete a document from Blazem
-func DeleteDoc(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) DeleteDoc() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		docId := mux.Vars(req)["id"]
 		docData, docFound := e.Node.Data.Load(docId)

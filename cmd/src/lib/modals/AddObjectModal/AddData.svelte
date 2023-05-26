@@ -3,6 +3,7 @@
     import { generateKey } from "$lib/funcs";
     import { hostName } from "../../../global";
     import { networkRequest } from "$lib/network/request";
+    import ActionButton from "$lib/components/ActionButton.svelte";
 
     export let active: string;
     let dataKey: any;
@@ -60,9 +61,6 @@
 />
 <p class="text-[#3d3d75] hover:underline cursor-pointer">Upload a file?</p>
 <br />
-<button
-    class="flex justify-center items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400 relative"
-    on:click={() => addData()}
->
+<ActionButton on:click={() => addData()}>
     <p class="ml-2 mr-2">Add</p>
-</button>
+</ActionButton>

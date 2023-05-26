@@ -1,15 +1,14 @@
-package user
+package endpoint_manager
 
 import (
 	"blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func GetUser(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) GetUser() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		userId := mux.Vars(req)["id"]
 		if userId == "" {

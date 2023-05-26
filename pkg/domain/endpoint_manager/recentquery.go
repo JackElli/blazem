@@ -1,13 +1,12 @@
-package recentquery
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"net/http"
 )
 
 // Returns a list of recently entered queries
-func RecentQuery(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) RecentQuery() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		dataToSend := e.Node.RecentQueries
 		// if len(dataToSend) == 0 {

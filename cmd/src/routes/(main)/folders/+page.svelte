@@ -9,6 +9,8 @@
     import Loading from "$lib/components/Loading.svelte";
     import { goto } from "$app/navigation";
     import { networkRequest } from "$lib/network/request";
+    import ActionButton from "$lib/components/ActionButton.svelte";
+    import PageTitle from "$lib/components/PageTitle.svelte";
 
     export let data;
     $: service = data.service;
@@ -46,15 +48,14 @@
     <title>Blazem | Folders</title>
 </svelte:head>
 
-<div class="w-10/12">
+<div>
     <AddObjectModal on:getData={fetchData} bind:visible={addObjectVisible} />
-    <p class="font-medium text-gray-600 text-lg">/ Folders</p>
-    <button
-        class="flex justify-center mt-2 items-center bg-white border-l-4 border-l-[#3d3d75] h-8 border-gray-300 border hover:border-gray-400 relative"
-        on:click={() => (addObjectVisible = true)}
-    >
-        <p class="ml-2 mr-2">Add object</p>
-    </button>
+    <div class="flex justify-between">
+        <PageTitle>/ Folders</PageTitle>
+        <ActionButton on:click={() => (addObjectVisible = true)}>
+            <p class="ml-2 mr-2">Add object</p>
+        </ActionButton>
+    </div>
 </div>
 
 <Loading {loading}>

@@ -27,9 +27,6 @@
 	"/(main)/nodes": [
 		"src/routes/(main)/+layout.ts"
 	],
-	"/(main)/recents": [
-		"src/routes/(main)/+layout.ts"
-	],
 	"/(main)/rules": [
 		"src/routes/(main)/+layout.ts"
 	],

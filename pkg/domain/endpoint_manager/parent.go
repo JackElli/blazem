@@ -1,8 +1,7 @@
-package parent
+package endpoint_manager
 
 import (
 	types "blazem/pkg/domain/endpoint"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/folder"
 	"blazem/pkg/domain/node"
 	"net/http"
@@ -10,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Parent(e *endpoint_manager.EndpointManager) func(w http.ResponseWriter, req *http.Request) {
+func (e *EndpointManager) Parent() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
 		parents := GetParentFolders(e.Node, folderId)
