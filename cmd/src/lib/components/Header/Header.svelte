@@ -13,7 +13,7 @@
             </a>
 
             <input
-                class="ml-4 rounded-lg w-52 text-sm px-1 pl-4 py-1 focus:py-2 shadow-md bg-gray-100 focus:bg-white outline-none focus:w-64"
+                class="ml-4 rounded-md w-52 text-sm px-1 pl-4 py-1 mt-[2px] focus:py-2 shadow-md bg-gray-100 focus:bg-white outline-none focus:w-64"
                 placeholder="Search..."
             />
         </div>

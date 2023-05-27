@@ -77,7 +77,7 @@
     }
 
     onMount(async () => {
-        $slugData.defaultVal = "Your folders";
+        $slugData.defaultVal = "Folders";
         $slugData.current = folderName;
     });
 
@@ -98,7 +98,7 @@
         <div class="flex justify-between items-center w-full">
             <Breadcrumb />
             <ActionButton on:click={() => (addObjectVisible = true)}>
-                <p class="ml-2 mr-2">Add object</p>
+                <p>Add object</p>
             </ActionButton>
         </div>
         <AddObjectModal on:getData={getData} bind:visible={addObjectVisible} />

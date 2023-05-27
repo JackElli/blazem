@@ -1,6 +1,5 @@
 <script lang="ts">
     import { networkRequest } from "$lib/network/request";
-    import type { NetworkResponse } from "$lib/types";
     import { onMount } from "svelte";
     import { hostName } from "../../../global";
     import DataContainer from "$lib/components/DataContainer/DataContainer.svelte";
@@ -9,10 +8,6 @@
     import PageTitle from "$lib/components/PageTitle.svelte";
 
     const specialWords: string[] = ["select", "delete", "where"];
-
-    type QueryResult = {
-        docs: object[];
-    };
 
     let searchTxt: HTMLTextAreaElement;
     let allData: any;
@@ -63,15 +58,18 @@
     <title>Blazem | Search</title>
 </svelte:head>
 <div>
-    <PageTitle>Advanced Search</PageTitle>
+    <div class="h-8 flex items-center">
+        <PageTitle>Advanced Search</PageTitle>
+    </div>
+
     <textarea
-        class="block mx-auto mt-5 border border-gray-300 font-medium h-20 p-2 resize-none w-full text-xl rounded-sm shadow-md outline-none"
+        class="block mx-auto mt-4 border border-gray-300 font-medium h-20 p-2 resize-none w-full text-xl rounded-sm shadow-md outline-none"
         placeholder="SELECT all WHERE..."
         bind:this={searchTxt}
         on:keydown={checkForSpecial}
     />
-    <ActionButton class="mt-2" on:click={() => search()}>
-        <p class="ml-2 mr-2">Search</p>
+    <ActionButton {loading} class="mt-5" on:click={() => search()}>
+        <p>Search</p>
     </ActionButton>
 
     <Loading {loading}>

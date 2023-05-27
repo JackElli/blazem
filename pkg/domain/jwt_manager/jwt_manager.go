@@ -2,6 +2,7 @@ package jwt_manager
 
 import (
 	"blazem/pkg/domain/user"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -11,6 +12,7 @@ type JWTManager interface {
 	CreateJWT(user *user.User, expirationDate time.Time) (string, error)
 	ParseJWT(jwtStr string) (*jwt.MapClaims, bool)
 	JwtInDate(claims jwt.MapClaims) bool
+	GetCurrentUserId(jwtStr string) (string, error)
 }
 
 type JWTManage struct {
@@ -55,6 +57,19 @@ func (jwtMgr *JWTManage) ParseJWT(jwtStr string) (*jwt.MapClaims, bool) {
 	}
 
 	return &claims, true
+}
+
+// GetCurrentUserId returns the Id of the user who is logged in to
+// this session
+func (jwtMgr *JWTManage) GetCurrentUserId(jwtStr string) (string, error) {
+	parseClaims, valid := jwtMgr.ParseJWT(jwtStr)
+	if !valid {
+		return "", errors.New("JWT not valid")
+	}
+
+	claims := *parseClaims
+	userId := claims["user"].(string)
+	return userId, nil
 }
 
 // jwtInDate checks whether the JWT (claims) section is in date

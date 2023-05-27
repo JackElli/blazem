@@ -3,6 +3,7 @@
     import { hostName } from "../../global";
     import { networkRequest } from "$lib/network/request";
     import ActionButton from "$lib/components/ActionButton.svelte";
+    import Modal from "$lib/components/Modal/Modal.svelte";
 
     export let visible = false;
     export let data: any;
@@ -26,67 +27,29 @@
     $: dataAttrs = data.data;
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-{#if visible}
-    <div class="modal_position" on:mousedown={setVisible}>
-        <div class="view_data_modal">
-            <div class="modal_container">
-                <h1 class="title">{data.key}</h1>
-                <div class="data_main">
-                    {#each Object.entries(dataAttrs) as [key, dataAttr]}
-                        {#if key != "key"}
-                            <div class="data_attr w-4/5">
-                                <div class="data_attr_key">
-                                    <p>{key}</p>
-                                </div>
-                                <p>{dataAttr}</p>
-                            </div>
-                        {/if}
-                    {/each}
+<Modal bind:visible title={data.key} class="w-[400px]">
+    <div class="data_main">
+        {#each Object.entries(dataAttrs) as [key, dataAttr]}
+            {#if key != "key"}
+                <div class="data_attr w-4/5">
+                    <div class="data_attr_key">
+                        <p>{key}</p>
+                    </div>
+                    <p>{dataAttr}</p>
                 </div>
-                <ActionButton
-                    class="absolute right-5 bottom-1"
-                    on:click={() => deleteDoc()}
-                >
-                    <p class="ml-2 mr-2">Delete</p>
-                </ActionButton>
-            </div>
-        </div>
+            {/if}
+        {/each}
     </div>
-{/if}
+    <ActionButton
+        positive={false}
+        class="absolute right-5 bottom-1"
+        on:click={() => deleteDoc()}
+    >
+        <p>Delete</p>
+    </ActionButton>
+</Modal>
 
 <style>
-    h1 {
-        margin: 0;
-    }
-    .modal_position {
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.6);
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 10;
-    }
-
-    .modal_container {
-        position: relative;
-        padding: 20px;
-    }
-
-    .title {
-        font-weight: 500;
-    }
-
-    .view_data_modal {
-        width: 500px;
-        background: white;
-        display: block;
-        margin: 0 auto;
-        margin-top: 30px;
-        border-radius: 3px;
-    }
-
     .data_main {
         margin-top: 20px;
     }

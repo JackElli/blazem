@@ -1,13 +1,11 @@
 <script>
-    import spinner from "../svg/spinner.svg";
+    import LoadingSpinner from "./LoadingSpinner.svelte";
     export let loading = false;
 </script>
 
 {#if loading}
-    <img
-        src={spinner}
-        alt="spinner"
-        class={`animate-spin w-10 ${$$props.class} fixed top-0 bottom-0 left-0 right-0 my-auto mx-auto`}
+    <LoadingSpinner
+        class="fixed top-0 bottom-0 left-0 right-0 my-auto mx-auto w-10"
     />
 {:else}
     <slot />

@@ -60,6 +60,6 @@
     <input type="checkbox" bind:checked={privateFolder} />
 </div>
 
-<ActionButton class="mt-2" on:click={() => addFolder()}>
-    <p class="ml-2 mr-2">Add</p>
+<ActionButton class="mt-4" on:click={() => addFolder()}>
+    <p>Add</p>
 </ActionButton>

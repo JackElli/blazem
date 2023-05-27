@@ -32,9 +32,12 @@
 <svelte:head>
     <title>Blazem | Nodes</title>
 </svelte:head>
-<PageTitle>Nodes</PageTitle>
+<div class="h-8 flex items-center">
+    <PageTitle>Nodes</PageTitle>
+</div>
+
 <Loading {loading}>
-    <div class="mt-5">
+    <div class="mt-4">
         <Panel class="bg-white">
             {#each nodes as node}
                 <Node {node} />

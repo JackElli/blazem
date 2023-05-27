@@ -5,5 +5,8 @@
 <svelte:head>
     <title>Blazem | Export</title>
 </svelte:head>
-<PageTitle>Export</PageTitle>
+<div class="h-8 flex items-center">
+    <PageTitle>Export</PageTitle>
+</div>
+
 <p class="mt-4">Export not implemented.</p>

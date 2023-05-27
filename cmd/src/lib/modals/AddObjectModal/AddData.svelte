@@ -62,5 +62,5 @@
 <p class="text-[#3d3d75] hover:underline cursor-pointer">Upload a file?</p>
 <br />
 <ActionButton on:click={() => addData()}>
-    <p class="ml-2 mr-2">Add</p>
+    <p>Add</p>
 </ActionButton>

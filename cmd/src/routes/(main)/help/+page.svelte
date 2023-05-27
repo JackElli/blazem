@@ -7,7 +7,9 @@
 <svelte:head>
     <title>Blazem | Help</title>
 </svelte:head>
-<PageTitle>Help</PageTitle>
+<div class="h-8 flex items-center">
+    <PageTitle>Help</PageTitle>
+</div>
 <div class="flex gap-2 mt-4">
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <h1
@@ -184,6 +186,19 @@
         </div>
     {:else if tabSelected == "changelog"}
         <div id="change_log">
+            <h1>0.1.11</h1>
+            <ul>
+                <li>
+                    Backend changes again, now make use of a Register function
+                    to register all of the endpoints
+                </li>
+                <li>This will make room for testing!</li>
+                <li>Design change (sidebar inspired by Arc)</li>
+                <li>
+                    Fixed padding issues and changed the button style (added
+                    loading where necessary)
+                </li>
+            </ul>
             <h1>0.1.10</h1>
             <ul>
                 <li>Fixed private folders issue</li>

@@ -5,6 +5,8 @@
 <svelte:head>
     <title>Blazem | Import</title>
 </svelte:head>
+<div class="h-8 flex items-center">
+    <PageTitle>Import</PageTitle>
+</div>
 
-<PageTitle>Import</PageTitle>
 <p class="mt-4">Import not implemented.</p>

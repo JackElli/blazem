@@ -17,6 +17,7 @@
 
     let folders: any;
     let addObjectVisible = false;
+
     let loading = true;
 
     const fetchData = async () => {
@@ -24,7 +25,6 @@
             method: "GET",
             credentials: "include",
         });
-        console.log(resp);
         folders = resp.data;
         loading = false;
     };
@@ -50,10 +50,10 @@
 
 <div>
     <AddObjectModal on:getData={fetchData} bind:visible={addObjectVisible} />
-    <div class="flex justify-between">
+    <div class="flex justify-between items-center">
         <PageTitle>/ Folders</PageTitle>
         <ActionButton on:click={() => (addObjectVisible = true)}>
-            <p class="ml-2 mr-2">Add object</p>
+            <p>Add object</p>
         </ActionButton>
     </div>
 </div>

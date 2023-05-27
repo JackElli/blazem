@@ -2,12 +2,31 @@ package endpoints
 
 import (
 	"blazem/pkg/domain/cors"
-	"blazem/pkg/domain/endpoint_manager"
 	"blazem/pkg/domain/jwt_manager"
 	"blazem/pkg/domain/node"
 	"blazem/pkg/domain/responder"
 	blazem_store "blazem/pkg/domain/storer"
 	blazem_users "blazem/pkg/domain/users"
+	"blazem/pkg/endpoints/adddoc"
+	"blazem/pkg/endpoints/addfolder"
+	"blazem/pkg/endpoints/adduser"
+	"blazem/pkg/endpoints/auth"
+	"blazem/pkg/endpoints/connect"
+	"blazem/pkg/endpoints/deletedoc"
+	"blazem/pkg/endpoints/folder"
+	"blazem/pkg/endpoints/folders"
+	"blazem/pkg/endpoints/getdoc"
+	"blazem/pkg/endpoints/getuser"
+	"blazem/pkg/endpoints/middleware"
+	"blazem/pkg/endpoints/nodemap"
+	"blazem/pkg/endpoints/parent"
+	"blazem/pkg/endpoints/permissions"
+	"blazem/pkg/endpoints/ping"
+	"blazem/pkg/endpoints/query"
+	"blazem/pkg/endpoints/recentquery"
+	"blazem/pkg/endpoints/removenode"
+	"blazem/pkg/endpoints/stats"
+	"blazem/pkg/endpoints/users"
 	blazem_query "blazem/pkg/query"
 	"net/http"
 
@@ -16,16 +35,13 @@ import (
 
 // Create all of the endpoints for Blazem
 func SetupEndpoints(node *node.Node) error {
-	endpointMgr := endpoint_manager.NewEndpointManager(
-		node,
-		responder.NewResponder(),
-		jwt_manager.NewJWTManager([]byte("SecretYouShouldHide")),
-		blazem_query.NewQuery(node),
-		blazem_users.NewUserStore(),
-		blazem_store.NewStore(node),
-	)
 
-	err := endpointMgr.UserStore.SetupUsers()
+	responder := responder.NewResponder()
+	dataStore := blazem_store.NewStore(node)
+	jwtMgr := jwt_manager.NewJWTManager([]byte("SecretYouShouldHide"))
+	queryer := blazem_query.NewQuery(node)
+	userStore := blazem_users.NewUserStore()
+	err := userStore.SetupUsers()
 	if err != nil {
 		return err
 	}
@@ -33,32 +49,53 @@ func SetupEndpoints(node *node.Node) error {
 	r := mux.NewRouter()
 	http.Handle("/", cors.CORS(r))
 
+	middlewareMgr := middleware.NewMiddlewareMgr(jwtMgr)
+	permissionsMgr := permissions.NewPermissionsMgr(userStore, jwtMgr)
+
 	public := r.PathPrefix("/").Subrouter()
-	public.HandleFunc("/auth", endpointMgr.Auth()).Methods("POST")
+	authMgr := auth.NewAuthMgr(public, responder, userStore, jwtMgr)
+	authMgr.Register()
 
 	protected := r.PathPrefix("/").Subrouter()
-	protected.Use(endpointMgr.Middleware)
-	protected.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", endpointMgr.GetDoc()).Methods("GET")
-	protected.HandleFunc("/doc", endpointMgr.AddDoc()).Methods("POST")
-	protected.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", endpointMgr.GetFolderData()).Methods("GET")
-	protected.HandleFunc("/folder", endpointMgr.AddFolder()).Methods("POST")
-	protected.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", endpointMgr.Parent()).Methods("GET")
-	protected.HandleFunc("/nodemap", endpointMgr.NodeMap()).Methods("GET")
-	protected.HandleFunc("/folders", endpointMgr.Folders()).Methods("GET")
-	protected.HandleFunc("/stats", endpointMgr.Stats()).Methods("GET")
-	protected.HandleFunc("/query", endpointMgr.CompleteQuery()).Methods("POST")
-	protected.HandleFunc("/recentQueries", endpointMgr.RecentQuery()).Methods("GET")
-	protected.HandleFunc("/ping", endpointMgr.Ping()).Methods("POST")
-	protected.HandleFunc("/users", endpointMgr.GetUsers()).Methods("GET")
-	protected.HandleFunc("/user/{id:[a-zA-Z0-9-:]+}", endpointMgr.GetUser()).Methods("GET")
+	protected.Use(middlewareMgr.Middleware)
+	folderMgr := folder.NewFolderMgr(protected, node, responder, dataStore, jwtMgr)
+	folderMgr.Register()
+	addFolderMgr := addfolder.NewAddFolderMgr(protected, node, responder, dataStore, jwtMgr)
+	addFolderMgr.Register()
+	getDocMgr := getdoc.NewGetDocMgr(protected, node, responder)
+	getDocMgr.Register()
+	addDocMgr := adddoc.NewAddDocMgr(protected, node, responder, dataStore)
+	addDocMgr.Register()
+	parentMgr := parent.NewParentMgr(protected, node, responder)
+	parentMgr.Register()
+	nodemapMgr := nodemap.NewNodemapMgr(protected, node, responder)
+	nodemapMgr.Register()
+	foldersMgr := folders.NewFoldersMgr(protected, node, responder)
+	foldersMgr.Register()
+	statsMgr := stats.NewStatsMgr(protected, node, responder)
+	statsMgr.Register()
+	queryMgr := query.NewQueryMgr(protected, node, responder, *queryer)
+	queryMgr.Register()
+	recentQueryMgr := recentquery.NewRecentQueryMgr(protected, node, responder)
+	recentQueryMgr.Register()
+	pingMgr := ping.NewPingMgr(protected, node, responder)
+	pingMgr.Register()
+	getUsersMgr := users.NewUsersMgr(protected, responder, userStore)
+	getUsersMgr.Register()
+	getUserMgr := getuser.NewGetUserMgr(protected, responder, userStore)
+	getUserMgr.Register()
 
 	admin := r.PathPrefix("/").Subrouter()
-	admin.Use(endpointMgr.Middleware)
-	admin.Use(endpointMgr.Permissions)
-	admin.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", endpointMgr.Connect()).Methods("POST")
-	admin.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", endpointMgr.DeleteDoc()).Methods("DELETE")
-	admin.HandleFunc("/node/{ip:[a-zA-Z0-9-]+}", endpointMgr.RemoveNode()).Methods("DELETE")
-	admin.HandleFunc("/user", endpointMgr.AddUser()).Methods("POST")
+	admin.Use(middlewareMgr.Middleware)
+	admin.Use(permissionsMgr.Permissions)
+	connectMgr := connect.NewConnectMgr(admin, node, responder)
+	connectMgr.Register()
+	deleteDocMgr := deletedoc.NewDeleteDocMgr(admin, responder, dataStore)
+	deleteDocMgr.Register()
+	removeNodeMgr := removenode.NewRemoveNodeMgr(admin, node, responder)
+	removeNodeMgr.Register()
+	addUserMgr := adduser.NewAddUserMgr(admin, responder, userStore)
+	addUserMgr.Register()
 
 	return nil
 }
