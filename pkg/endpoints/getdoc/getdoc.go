@@ -13,6 +13,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/doc/{id:[a-zA-Z0-9-]+}"
+
 type GetDocMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -74,5 +76,5 @@ func formatData(getData map[string]interface{}, dataKey string) map[string]inter
 }
 
 func (e *GetDocMgr) Register() {
-	e.Router.HandleFunc("/doc/{id:[a-zA-Z0-9-]+}", e.GetDoc()).Methods("GET")
+	e.Router.HandleFunc(route, e.GetDoc()).Methods("GET")
 }
