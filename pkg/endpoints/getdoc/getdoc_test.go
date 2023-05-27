@@ -79,9 +79,7 @@ func TestGetDoc(t *testing.T) {
 			json.NewDecoder(w.Body).Decode(&response)
 
 			assert.Equal(t, w.Result().StatusCode, testCase.expectedStatus)
-
 			assert.DeepEqual(t, response.Data, testCase.expectedResult)
-
 		})
 	}
 }

@@ -1,8 +1,8 @@
 package addfolder
 
 import (
-	"blazem/pkg/domain/endpoint"
 	types "blazem/pkg/domain/endpoint"
+	"blazem/pkg/domain/folder"
 	blazem_folder "blazem/pkg/domain/folder"
 	"blazem/pkg/domain/jwt_manager"
 	"blazem/pkg/domain/node"
@@ -51,7 +51,7 @@ func (e *AddFolderMgr) AddFolder() func(w http.ResponseWriter, req *http.Request
 			return
 		}
 
-		var folder endpoint.Folder
+		var folder folder.Folder
 		err = json.NewDecoder(req.Body).Decode(&folder)
 		if err != nil {
 			e.Responder.Error(w, 500, err)
@@ -90,7 +90,7 @@ func (e *AddFolderMgr) AddFolder() func(w http.ResponseWriter, req *http.Request
 
 // validate checks whether the incoming folder is a valid
 // folder structure
-func validate(folder endpoint.Folder) error {
+func validate(folder folder.Folder) error {
 	if folder.Name == "" ||
 		folder.Key == "" {
 		return errors.New("Folder is invalid")

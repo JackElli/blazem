@@ -19,6 +19,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/folder/{id:[a-zA-Z0-9-]+}"
+
 type FolderMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -42,6 +44,11 @@ func NewFolderMgr(router *mux.Router, node *node.Node, responder responder.Respo
 func (e *FolderMgr) GetFolderData() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		folderId := mux.Vars(req)["id"]
+		c, err := req.Cookie("token")
+		if err != nil {
+			w.WriteHeader(401)
+			return
+		}
 
 		folderData, err := e.DataStore.Load(folderId)
 		if err != nil {
@@ -55,18 +62,13 @@ func (e *FolderMgr) GetFolderData() func(w http.ResponseWriter, req *http.Reques
 			return
 		}
 
-		c, err := req.Cookie("token")
-		if err != nil {
-			w.WriteHeader(401)
-			return
-		}
-
 		jwtStr := c.Value
 		userId, err := e.JWTMgr.GetCurrentUserId(jwtStr)
 		if err != nil {
 			e.Responder.Error(w, 404, errors.New("No current user available"))
 			return
 		}
+
 		if !folder.Global && userId != folder.CreatedBy {
 			e.Responder.Error(w, 403, errors.New("You are unauthorised to view this folder"))
 			return
@@ -131,14 +133,13 @@ func (e *FolderMgr) SetFolderCount(key string, docCount int) {
 	if err != nil {
 		return
 	}
-
 	folder := doc.(map[string]interface{})
 	folder["docCount"] = docCount
-	e.Node.Data.Store(key, folder)
 
+	e.Node.Data.Store(key, folder)
 	logger.Logger.Debug(fmt.Sprintf("Set folder: %s docCount to %d", key, docCount))
 }
 
 func (e *FolderMgr) Register() {
-	e.Router.HandleFunc("/folder/{id:[a-zA-Z0-9-]+}", e.GetFolderData()).Methods("GET")
+	e.Router.HandleFunc(route, e.GetFolderData()).Methods("GET")
 }

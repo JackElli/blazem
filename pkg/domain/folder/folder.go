@@ -1,11 +1,11 @@
 package folder
 
 import (
-	"blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/logger"
 	"blazem/pkg/domain/node"
 	"errors"
 	"fmt"
+	"time"
 
 	"encoding/json"
 )
@@ -18,6 +18,30 @@ type IFolderManager interface {
 
 type FolderManager struct {
 	Node *node.Node
+}
+
+type Folder struct {
+	Folder      string `json:"folder,omitempty"`
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	DocCount    int    `json:"docCount"`
+	BackedUp    bool   `json:"backedUp"`
+	CreatedBy   string `json:"createdBy"`
+	Global      bool   `json:"global"`
+	DateCreated string `json:"date"`
+	Type        string `json:"type,omitempty"`
+}
+
+func NewFolder(key string, name string, global bool, createdBy string) *Folder {
+	return &Folder{
+		Name:        name,
+		Key:         key,
+		Global:      global,
+		DateCreated: time.Now().Format("2006-01-02T15:04:05"),
+		Type:        "folder",
+		CreatedBy:   createdBy,
+		DocCount:    0,
+	}
 }
 
 func NewFolderManager(node *node.Node) *FolderManager {
@@ -71,7 +95,7 @@ func getDocCount(i interface{}) int {
 }
 
 // FolderToMap converts a folder type to map so we can store it
-func FolderToMap(folder endpoint.Folder) (map[string]interface{}, error) {
+func FolderToMap(folder Folder) (map[string]interface{}, error) {
 	bytes, err := json.Marshal(folder)
 	if err != nil {
 		return nil, err
@@ -87,12 +111,12 @@ func FolderToMap(folder endpoint.Folder) (map[string]interface{}, error) {
 
 // IsFolder returns a folder and a bool true if it is a folder and false
 // if not
-func IsFolder(_map map[string]interface{}) (*endpoint.Folder, bool) {
+func IsFolder(_map map[string]interface{}) (*Folder, bool) {
 	mapData, err := json.Marshal(_map)
 	if err != nil {
 		return nil, false
 	}
-	var folder endpoint.Folder
+	var folder Folder
 	err = json.Unmarshal(mapData, &folder)
 	if folder.Type != "folder" {
 		return nil, false

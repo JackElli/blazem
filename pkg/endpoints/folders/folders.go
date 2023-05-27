@@ -38,8 +38,8 @@ func (e *FoldersMgr) Folders() func(w http.ResponseWriter, req *http.Request) {
 }
 
 // We want to get all of the folders currently in Blazem
-func (e *FoldersMgr) GetAllFolders() map[string]types.Folder {
-	folders := make(map[string]types.Folder, 0)
+func (e *FoldersMgr) GetAllFolders() map[string]folder.Folder {
+	folders := make(map[string]folder.Folder, 0)
 	e.Node.Data.Range(func(k, value interface{}) bool {
 		doc := value.(map[string]interface{})
 		folder, isFolder := folder.IsFolder(doc)
