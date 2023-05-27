@@ -41,17 +41,16 @@ func (e *AddDocMgr) AddDoc() func(w http.ResponseWriter, req *http.Request) {
 		var doc map[string]interface{}
 		json.NewDecoder(req.Body).Decode(&doc)
 
-		err := validateDoc(doc)
+		err := validate(doc)
 		if err != nil {
 			e.Responder.Error(w, 500, err)
 			return
 		}
 
-		document := transformNewDoc(e.Node, doc)
+		document := transform(e.Node, doc)
 		docKey := doc["key"].(string)
 		folder := doc["folder"]
 
-		e.Node.WriteDocToDisk(document)
 		err = e.DataStore.Store(docKey, folder, document)
 		if err != nil {
 			e.Responder.Error(w, 500, err)
@@ -67,7 +66,7 @@ func (e *AddDocMgr) AddDoc() func(w http.ResponseWriter, req *http.Request) {
 
 // validate checks whether the doc is valid and able to
 // be added to blazem
-func validateDoc(doc map[string]interface{}) error {
+func validate(doc map[string]interface{}) error {
 	_, hasKey := doc["key"]
 
 	if !hasKey {
@@ -79,7 +78,7 @@ func validateDoc(doc map[string]interface{}) error {
 
 // transformNewDoc transforms the document coming in, to something that is optimised and
 // info-full for retrieval
-func transformNewDoc(node *node.Node,
+func transform(node *node.Node,
 	dataToAdd map[string]interface{}) map[string]interface{} {
 	document := dataToAdd
 

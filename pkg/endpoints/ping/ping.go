@@ -81,7 +81,7 @@ func (e *PingMgr) UpdateData(localnm []*node.Node) {
 	e.Node.NodeMap[0].Data.Range(func(key, value any) bool {
 		_, err := os.Stat("data/" + key.(string))
 		if os.IsNotExist(err) {
-			e.Node.WriteDocToDisk(value.(map[string]interface{}))
+			e.Node.WriteDocToDisk(key.(string), value)
 		}
 		return true
 	})

@@ -200,9 +200,15 @@ func (node *Node) ReadFromLocal() {
 }
 
 // We want to write a document to disk
-func (node *Node) WriteDocToDisk(value map[string]interface{}) {
+func (node *Node) WriteDocToDisk(key string, value interface{}) error {
 	dataToWrite, _ := json.Marshal(value)
 	path := "data/"
+
 	_ = os.MkdirAll(path, os.ModePerm)
-	os.WriteFile("data/"+value["key"].(string), []byte(dataToWrite), os.ModePerm)
+
+	err := os.WriteFile("data/"+key, []byte(dataToWrite), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return nil
 }

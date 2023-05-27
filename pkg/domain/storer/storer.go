@@ -38,6 +38,7 @@ func (store *Store) Load(key string) (interface{}, error) {
 // if there is a folder
 func (store *Store) Store(key string, folder interface{}, value interface{}) error {
 	store.Node.Data.Store(key, value)
+	store.Node.WriteDocToDisk(key, value)
 	if folder != "" {
 		err := store.FolderManager.IncrementCount(folder.(string))
 		if err != nil {
