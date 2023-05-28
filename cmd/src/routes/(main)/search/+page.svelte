@@ -58,7 +58,7 @@
     <title>Blazem | Search</title>
 </svelte:head>
 <div>
-    <div class="h-8 flex items-center">
+    <div class="flex items-center">
         <PageTitle>Advanced Search</PageTitle>
     </div>
 

@@ -32,7 +32,7 @@
 <svelte:head>
     <title>Blazem | Nodes</title>
 </svelte:head>
-<div class="h-8 flex items-center">
+<div class="flex items-center">
     <PageTitle>Nodes</PageTitle>
 </div>
 

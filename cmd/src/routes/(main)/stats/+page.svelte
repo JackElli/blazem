@@ -1,4 +1,5 @@
 <script>
+    import PageTitle from "$lib/components/PageTitle.svelte";
     import ColourPanel from "$lib/components/Panel/ColourPanel.svelte";
     import PanelItem from "$lib/components/Panel/PanelItem.svelte";
 </script>
@@ -6,9 +7,8 @@
 <svelte:head>
     <title>Blazem | Stats</title>
 </svelte:head>
-<div class="flex gap-2 items-center h-8">
-    <h1 class="font-medium text-gray-600 text-lg">Stats</h1>
-    <p class="text-xs">(Not real for now)</p>
+<div class="flex items-center">
+    <PageTitle>Stats</PageTitle>
 </div>
 
 <div class="grid grid-cols-4 mt-4 gap-2">

@@ -7,7 +7,7 @@
 <svelte:head>
     <title>Blazem | Help</title>
 </svelte:head>
-<div class="h-8 flex items-center">
+<div class="flex items-center">
     <PageTitle>Help</PageTitle>
 </div>
 <div class="flex gap-2 mt-4">
@@ -186,6 +186,19 @@
         </div>
     {:else if tabSelected == "changelog"}
         <div id="change_log">
+            <h1>0.1.12</h1>
+            <ul>
+                <li>Added more backend tests</li>
+                <li>
+                    Updated button design and updated breadcrumb design to fit
+                    new theme
+                </li>
+                <li>Changed design of modals</li>
+                <li>
+                    Thinking about adding a 'Check for updates' section so we
+                    can update more easily
+                </li>
+            </ul>
             <h1>0.1.11</h1>
             <ul>
                 <li>
