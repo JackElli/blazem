@@ -11,7 +11,7 @@
     <Sidebar service={data.service} />
     <div class="w-10/12">
         <Header />
-        <div class="mt-2">
+        <div class="mt-4">
             <slot />
         </div>
     </div>

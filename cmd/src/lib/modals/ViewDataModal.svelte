@@ -42,6 +42,7 @@
     </div>
     <ActionButton
         positive={false}
+        colour="bg-red-500 hover:bg-red-400"
         class="absolute right-5 bottom-1"
         on:click={() => deleteDoc()}
     >

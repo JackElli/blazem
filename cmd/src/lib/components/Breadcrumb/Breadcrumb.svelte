@@ -6,7 +6,7 @@
 </script>
 
 {#if $slugData.current && $slugData.defaultVal && $slugData.current != "" && $slugData.defaultVal != ""}
-    <div class={`flex gap-1 ${$$props.class}`}>
+    <div class="flex gap-1 {$$props.class} bg-gray-200 p-1 px-2 rounded-md">
         {#if data.defaultVal != data.current}
             <a class="text-lg underline text-[#3d3d75]" href="/folders"
                 >{data.defaultVal}</a

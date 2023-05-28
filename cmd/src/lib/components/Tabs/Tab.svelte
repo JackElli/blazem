@@ -6,7 +6,7 @@
 
 <a
     {href}
-    class={`font-medium px-2 py-1 rounded-sm text-md cursor-pointer hover:bg-gray-100 ${
+    class={`font-medium px-2 py-1 rounded-md text-md cursor-pointer hover:bg-gray-100 ${
         href == $page.url.pathname ? "bg-gray-100" : ""
     }`}
 >

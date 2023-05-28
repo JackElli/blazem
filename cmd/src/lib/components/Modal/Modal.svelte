@@ -11,11 +11,11 @@
 
 {#if visible}
     <div
-        class="modal-position w-full h-full fixed top-0 left-0 z-20 bg-black bg-opacity-40"
+        class="modal-position w-full h-full fixed top-0 left-0 z-20 bg-gray-300 bg-opacity-80"
         on:mousedown={setVisible}
     >
         <div
-            class="bg-white relative block mx-auto mt-8 rounded-md shadow-xl {$$props.class}"
+            class="shadow bg-white relative block mx-auto mt-8 rounded-md {$$props.class}"
         >
             <div class="p-5">
                 <h1 class="font-medium text-lg">{title}</h1>
@@ -24,3 +24,9 @@
         </div>
     </div>
 {/if}
+
+<style>
+    .shadow {
+        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+    }
+</style>

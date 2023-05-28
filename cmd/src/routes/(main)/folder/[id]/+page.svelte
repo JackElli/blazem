@@ -1,14 +1,14 @@
 <script lang="ts">
     import { onDestroy, onMount } from "svelte";
-    import type { NetworkResponse } from "$lib/types";
     import Loading from "$lib/components/Loading.svelte";
     import { networkRequest } from "$lib/network/request";
     import { hostName } from "../../../../global.js";
     import { needToFetchDataInFolder, slugData } from "$lib/stores.js";
     import DataContainer from "$lib/components/DataContainer/DataContainer.svelte";
     import Breadcrumb from "$lib/components/Breadcrumb/Breadcrumb.svelte";
-    import AddObjectModal from "$lib/modals/AddObjectModal/AddObjectModal.svelte";
     import ActionButton from "$lib/components/ActionButton.svelte";
+    import AddFolderModal from "$lib/modals/AddFolderModal.svelte";
+    import AddDataModal from "$lib/modals/AddDataModal.svelte";
 
     export let data;
 
@@ -16,7 +16,8 @@
     let parentFolders: any;
     let folderId = data?.folder.id;
     let loading = true;
-    let addObjectVisible = false;
+    let addFolderVisible = false;
+    let addDataVisible = false;
     let unauthorised = false;
 
     const getData = () => {
@@ -97,11 +98,25 @@
     {#if !unauthorised}
         <div class="flex justify-between items-center w-full">
             <Breadcrumb />
-            <ActionButton on:click={() => (addObjectVisible = true)}>
-                <p>Add object</p>
-            </ActionButton>
+            <div class="flex gap-2">
+                <ActionButton on:click={() => (addFolderVisible = true)}>
+                    <p>New folder</p>
+                </ActionButton>
+                <ActionButton on:click={() => (addDataVisible = true)}>
+                    <p>Add data</p>
+                </ActionButton>
+            </div>
         </div>
-        <AddObjectModal on:getData={getData} bind:visible={addObjectVisible} />
+        <AddFolderModal
+            on:getData={getData}
+            bind:visible={addFolderVisible}
+            on:hideModal={() => (addFolderVisible = false)}
+        />
+        <AddDataModal
+            on:getData={getData}
+            bind:visible={addDataVisible}
+            on:hideModal={() => (addDataVisible = false)}
+        />
     {/if}
 </div>
 
@@ -115,7 +130,7 @@
                     You currently have no data in this folder
                 </p>
                 <button
-                    on:click={() => (addObjectVisible = true)}
+                    on:click={() => (addDataVisible = true)}
                     class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline hover:text-blue-400"
                     >Create some here</button
                 >

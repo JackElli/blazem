@@ -1,11 +1,13 @@
 <script lang="ts">
+    import ActionButton from "$lib/components/ActionButton.svelte";
+    import Modal from "$lib/components/Modal/Modal.svelte";
     import { createEventDispatcher, tick } from "svelte";
     import { generateKey } from "$lib/funcs";
-    import { hostName } from "../../../global";
+    import { hostName } from "../../global";
     import { networkRequest } from "$lib/network/request";
-    import ActionButton from "$lib/components/ActionButton.svelte";
 
-    export let active: string;
+    export let visible = false;
+
     let folderValue: string;
     let folderNameTxt: HTMLInputElement;
     let privateFolder = true;
@@ -37,29 +39,30 @@
         dispatch("getData");
     };
 
-    $: active && activeChanged();
-    const activeChanged = async () => {
-        await tick();
-        if (active == "folder") {
+    $: visible && nowVisible();
+    const nowVisible = async () => {
+        if (visible) {
+            await tick();
             folderNameTxt.focus();
-            return;
         }
     };
 </script>
 
-<p class="text-gray-300 text-xs mt-2">Folder name</p>
-<input
-    class="border border-gray-300 rounded-sm w-80 h-7 pl-2"
-    type="text"
-    bind:value={folderValue}
-    bind:this={folderNameTxt}
-/>
-<br />
-<div class="flex items-center gap-2 mt-5">
-    Private
-    <input type="checkbox" bind:checked={privateFolder} />
-</div>
+<Modal title="Add Folder" bind:visible class="w-96">
+    <p class="text-gray-300 text-xs mt-4">Folder name</p>
+    <input
+        class="border border-gray-300 rounded-sm w-80 h-7 pl-2"
+        type="text"
+        bind:value={folderValue}
+        bind:this={folderNameTxt}
+    />
 
-<ActionButton class="mt-4" on:click={() => addFolder()}>
-    <p>Add</p>
-</ActionButton>
+    <div class="flex items-center gap-2 mt-2">
+        Private
+        <input type="checkbox" bind:checked={privateFolder} />
+    </div>
+
+    <ActionButton class="mt-4" on:click={() => addFolder()}>
+        <p>Add</p>
+    </ActionButton>
+</Modal>

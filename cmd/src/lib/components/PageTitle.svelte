@@ -1,1 +1,1 @@
-<h1 class="font-medium text-gray-600 text-lg"><slot /></h1>
+<h1 class="font-medium text-gray-600 text-lg {$$props.class}"><slot /></h1>

@@ -2,22 +2,20 @@
     import { needToFetchDataInFolder } from "../../../lib/stores";
     import { hostName } from "../../../global";
     import { onMount } from "svelte";
-    import type { NetworkResponse } from "$lib/types";
     import Folder from "../../../lib/components/Folder/Folder.svelte";
     import Panel from "$lib/components/Panel/Panel.svelte";
-    import AddObjectModal from "$lib/modals/AddObjectModal/AddObjectModal.svelte";
     import Loading from "$lib/components/Loading.svelte";
     import { goto } from "$app/navigation";
     import { networkRequest } from "$lib/network/request";
     import ActionButton from "$lib/components/ActionButton.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
+    import AddFolderModal from "$lib/modals/AddFolderModal.svelte";
 
     export let data;
     $: service = data.service;
 
     let folders: any;
-    let addObjectVisible = false;
-
+    let addFolderVisible = false;
     let loading = true;
 
     const fetchData = async () => {
@@ -49,12 +47,19 @@
 </svelte:head>
 
 <div>
-    <AddObjectModal on:getData={fetchData} bind:visible={addObjectVisible} />
+    <AddFolderModal
+        on:getData={fetchData}
+        bind:visible={addFolderVisible}
+        on:hideModal={() => (addFolderVisible = false)}
+    />
+
     <div class="flex justify-between items-center">
-        <PageTitle>/ Folders</PageTitle>
-        <ActionButton on:click={() => (addObjectVisible = true)}>
-            <p>Add object</p>
-        </ActionButton>
+        <PageTitle class="bg-gray-200 p-1 px-2 rounded-md">/ Folders</PageTitle>
+        <div class="flex gap-2">
+            <ActionButton on:click={() => (addFolderVisible = true)}>
+                <p>New folder</p>
+            </ActionButton>
+        </div>
     </div>
 </div>
 
@@ -68,7 +73,7 @@
     {:else}
         <p class="mt-4 text-3xl text-center">You currently have no folders</p>
         <button
-            on:click={() => (addObjectVisible = true)}
+            on:click={() => (addFolderVisible = true)}
             class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline hover:text-blue-400"
             >Create one here</button
         >

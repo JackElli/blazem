@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/nodemap"
+
 type NodemapMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -44,5 +46,5 @@ func (e *NodemapMgr) NodeMap() func(w http.ResponseWriter, req *http.Request) {
 }
 
 func (e *NodemapMgr) Register() {
-	e.Router.HandleFunc("/nodemap", e.NodeMap()).Methods("GET")
+	e.Router.HandleFunc(route, e.NodeMap()).Methods("GET")
 }

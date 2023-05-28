@@ -7,7 +7,7 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
-    class={` w-full pb-1 [&:nth-child(n+2)]:pt-1 border-l-4 ${
+    class={`w-full pb-1 [&:nth-child(n+2)]:pt-1 border-l-4 ${
         node.active ? "border-l-green-600" : "border-l-red-500"
     }`}
 >

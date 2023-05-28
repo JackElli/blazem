@@ -21,20 +21,24 @@
 </script>
 
 {#if allData}
-    <div class={`flex flex-col gap-4 w-full mb-3 ${$$props.class}`}>
-        {#if folders.length > 0}
-            <Panel class="bg-white">
-                {#each folders as folder}
-                    <Folder data={folder.data} />
-                {/each}
-            </Panel>
-        {/if}
-        {#if datas.length > 0}
-            <Panel class="bg-white">
-                {#each datas as data}
-                    <Data on:getData {data} />
-                {/each}
-            </Panel>
-        {/if}
-    </div>
+    {#if allData.length > 0}
+        <div class={`flex flex-col gap-4 w-full mb-3 ${$$props.class}`}>
+            {#if folders.length > 0}
+                <Panel class="bg-white">
+                    {#each folders as folder}
+                        <Folder data={folder.data} />
+                    {/each}
+                </Panel>
+            {/if}
+            {#if datas.length > 0}
+                <Panel class="bg-white">
+                    {#each datas as data}
+                        <Data on:getData {data} />
+                    {/each}
+                </Panel>
+            {/if}
+        </div>
+    {:else}
+        <p class="mt-2">No data found</p>
+    {/if}
 {/if}

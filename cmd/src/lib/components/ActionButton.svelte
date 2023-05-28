@@ -1,17 +1,11 @@
 <script lang="ts">
     import LoadingSpinner from "./LoadingSpinner.svelte";
-
-    export let positive = true;
     export let loading = false;
+    export let colour = "bg-blue-500 hover:bg-blue-400";
 </script>
 
 <button
-    class={`flex justify-center gap-2 py-1 px-2 text-white font-medium rounded-md  items-center ${
-        positive
-            ? "bg-[#3b82f6] hover:bg-blue-400"
-            : "bg-red-500 hover:bg-red-400"
-    } 
-    ${$$props.class}`}
+    class="flex justify-center gap-2 py-1 px-2 text-white font-medium rounded-md items-center {$$props.class} {colour}"
     on:click
 >
     {#if loading}

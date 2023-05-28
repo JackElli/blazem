@@ -48,10 +48,9 @@ func TestFolder(t *testing.T) {
 		true,
 		"testuser",
 	)
-
 	folderMap, _ := folder.FolderToMap(*folderMock)
-	nodeMock.Data.Store("testdoc", folderMap)
 
+	nodeMock.Data.Store("testdoc", folderMap)
 	nodeMock.Data.Store("testdoc2", map[string]interface{}{
 		"type":   "text",
 		"key":    "testdoc2",
@@ -66,7 +65,7 @@ func TestFolder(t *testing.T) {
 
 	testcases := []testcase{
 		{
-			desc:     "HAPPY provided correct doc id",
+			desc:     "HAPPY provided correct folder id",
 			folderId: "testdoc",
 			expectedResult: types.DataInFolder{
 				Data: []types.SendData{
@@ -113,7 +112,6 @@ func TestFolder(t *testing.T) {
 
 			r, _ := http.NewRequest("GET", testRoute+testCase.folderId, nil)
 			r.AddCookie(&cookie)
-
 			folderMgrMock.Router.ServeHTTP(w, r)
 
 			type folderResponse struct {

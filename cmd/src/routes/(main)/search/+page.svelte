@@ -63,7 +63,7 @@
     </div>
 
     <textarea
-        class="block mx-auto mt-4 border border-gray-300 font-medium h-20 p-2 resize-none w-full text-xl rounded-sm shadow-md outline-none"
+        class="block mx-auto rounded-sm mt-4 font-medium h-20 px-5 py-3 resize-none w-full text-xl shadow-md shadow-gray-400 outline-none"
         placeholder="SELECT all WHERE..."
         bind:this={searchTxt}
         on:keydown={checkForSpecial}

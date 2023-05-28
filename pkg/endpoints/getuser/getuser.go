@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/user/{id:[a-zA-Z0-9-:]+}"
+
 type GetUserMgr struct {
 	Router    *mux.Router
 	Responder responder.Responder
@@ -46,5 +48,5 @@ func (e *GetUserMgr) GetUser() func(w http.ResponseWriter, req *http.Request) {
 }
 
 func (e *GetUserMgr) Register() {
-	e.Router.HandleFunc("/user/{id:[a-zA-Z0-9-:]+}", e.GetUser()).Methods("GET")
+	e.Router.HandleFunc(route, e.GetUser()).Methods("GET")
 }

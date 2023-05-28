@@ -14,34 +14,31 @@
 <div class="grid grid-cols-4 mt-4 gap-2">
     <div class="flex flex-col gap-2">
         <ColourPanel>
-            <h1 class="font-medium">Number of files backed up</h1>
+            <h1 class="font-medium">Number of folders</h1>
             <div class="mt-1">
-                <PanelItem>831</PanelItem>
+                <PanelItem>2</PanelItem>
             </div>
         </ColourPanel>
 
         <ColourPanel>
-            <h1 class="font-medium">Number of folders being watched</h1>
+            <h1 class="font-medium">Number of files</h1>
             <div class="mt-1">
-                <PanelItem>412</PanelItem>
+                <PanelItem>12</PanelItem>
             </div>
         </ColourPanel>
         <ColourPanel>
-            <h1 class="font-medium">Your billing</h1>
+            <h1 class="font-medium">Number of JSON documents</h1>
             <div class="mt-1">
-                <PanelItem>$12</PanelItem>
+                <PanelItem>15</PanelItem>
             </div>
         </ColourPanel>
     </div>
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2 col-span-2">
         <ColourPanel>
-            <h1 class="font-medium">Most viewed files</h1>
+            <h1 class="font-medium">CPU usage</h1>
             <div class="mt-2">
-                <PanelItem>testing.txt</PanelItem>
-                <PanelItem>testing.txt</PanelItem>
-                <PanelItem>testing.txt</PanelItem>
-                <PanelItem>testing.txt</PanelItem>
-                <PanelItem>testing.txt</PanelItem>
+                <PanelItem>Imagine a graph of CPU usage</PanelItem>
+                <div class="h-40" />
             </div>
         </ColourPanel>
     </div>

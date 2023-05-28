@@ -18,10 +18,10 @@ type QueryMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
 	Responder responder.Responder
-	_Query    query.Query
+	_Query    *query.Query
 }
 
-func NewQueryMgr(router *mux.Router, node *node.Node, responder responder.Responder, query query.Query) *QueryMgr {
+func NewQueryMgr(router *mux.Router, node *node.Node, responder responder.Responder, query *query.Query) *QueryMgr {
 	return &QueryMgr{
 		Router:    router,
 		Node:      node,
@@ -53,6 +53,7 @@ func (e *QueryMgr) Query() func(w http.ResponseWriter, req *http.Request) {
 			e.Responder.Error(w, 500, errors.New("Errors found in query response"))
 			return
 		}
+
 		for _, res := range queryResult {
 			if res["type"] != "text" {
 				res["value"] = "file"

@@ -1,4 +1,4 @@
-package getdoc
+package nodemap
 
 import (
 	"blazem/pkg/domain/endpoint"
@@ -8,65 +8,51 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 
 	"github.com/gorilla/mux"
 	"gotest.tools/v3/assert"
 )
 
-var testRoute = "/doc/"
+var testRoute = "/nodemap"
 
 func TestGetDoc(t *testing.T) {
 
 	type testcase struct {
 		desc           string
-		docId          string
 		expectedResult interface{}
 		expectedStatus int
 	}
 
 	nodeMock := node.NewNode()
+	nodeMock.Ip = "testip"
 	nodeMock.Rank = global.MASTER
-	nodeMock.Data = sync.Map{}
-	nodeMock.Data.Store("testdoc", map[string]interface{}{
-		"type":  "text",
-		"id":    "testdoc",
-		"value": "Hello",
-	})
+	nodeMock.NodeMap = []*node.Node{
+		nodeMock,
+	}
 
 	responderMock := responder.NewResponder()
 
 	rMock := mux.NewRouter()
 
-	getDocMgrMock := NewGetDocMgr(
+	getNodemapMock := NewNodemapMgr(
 		rMock,
 		nodeMock,
 		responderMock,
 	)
-	getDocMgrMock.Register()
+	getNodemapMock.Register()
 
 	testcases := []testcase{
 		{
-			desc:  "HAPPY provided correct doc id",
-			docId: "testdoc",
-			expectedResult: endpoint.SendData{
-				Data: map[string]interface{}{
-					"type":  "text",
-					"id":    "testdoc",
-					"value": "Hello",
+			desc: "HAPPY provided correct doc id",
+			expectedResult: []endpoint.WebNodeMap{
+				{
+					Ip:     "testip",
+					Active: true,
+					Rank:   global.MASTER,
 				},
-				Key: "testdoc",
 			},
 			expectedStatus: 200,
-		},
-		{
-			desc:  "NEGATIVE provided incorrect doc id",
-			docId: "testdoc2",
-			expectedResult: endpoint.SendData{
-				Data: nil,
-			},
-			expectedStatus: 404,
 		},
 	}
 
@@ -74,16 +60,16 @@ func TestGetDoc(t *testing.T) {
 		t.Run(testCase.desc, func(t *testing.T) {
 
 			w := httptest.NewRecorder()
-			r, _ := http.NewRequest("GET", testRoute+testCase.docId, nil)
+			r, _ := http.NewRequest("GET", testRoute, nil)
 
-			getDocMgrMock.Router.ServeHTTP(w, r)
+			getNodemapMock.Router.ServeHTTP(w, r)
 
-			type docResponse struct {
-				Msg  string            `json:"msg"`
-				Data endpoint.SendData `json:"data"`
+			type nodemapResponse struct {
+				Msg  string                `json:"msg"`
+				Data []endpoint.WebNodeMap `json:"data"`
 			}
 
-			var response docResponse
+			var response nodemapResponse
 			json.NewDecoder(w.Body).Decode(&response)
 
 			assert.Equal(t, w.Result().StatusCode, testCase.expectedStatus)

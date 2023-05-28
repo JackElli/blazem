@@ -1,11 +1,12 @@
 <script lang="ts">
     import { createEventDispatcher, tick } from "svelte";
     import { generateKey } from "$lib/funcs";
-    import { hostName } from "../../../global";
+    import { hostName } from "../../global";
     import { networkRequest } from "$lib/network/request";
     import ActionButton from "$lib/components/ActionButton.svelte";
+    import Modal from "$lib/components/Modal/Modal.svelte";
 
-    export let active: string;
+    export let visible = false;
     let dataKey: any;
     let dataValue: any;
 
@@ -36,31 +37,33 @@
         dispatch("getData");
     };
 
-    $: active && activeChanged();
+    $: visible && activeChanged();
     const activeChanged = async () => {
-        await tick();
-        if (active == "data") {
+        if (visible) {
+            await tick();
             dataKey.placeholder = generateKey();
             dataValue.focus();
         }
     };
 </script>
 
-<p class="text-gray-300 text-xs mt-2">Document Key</p>
-<input
-    class="border border-gray-300 rounded-sm w-80 h-7 pl-2"
-    type="text"
-    placeholder="testkey"
-    bind:this={dataKey}
-/>
-<br />
-<p class="text-gray-300 text-xs mt-2">Document value</p>
-<textarea
-    class="border border-gray-300 h-24 pl-2 pt-2 resize-none w-80"
-    bind:this={dataValue}
-/>
-<p class="text-[#3d3d75] hover:underline cursor-pointer">Upload a file?</p>
-<br />
-<ActionButton on:click={() => addData()}>
-    <p>Add</p>
-</ActionButton>
+<Modal title="Add Data" bind:visible class="w-96">
+    <p class="text-gray-300 text-xs mt-2">Document Key</p>
+    <input
+        class="border border-gray-300 rounded-sm w-80 h-7 pl-2"
+        type="text"
+        placeholder="testkey"
+        bind:this={dataKey}
+    />
+    <br />
+    <p class="text-gray-300 text-xs mt-2">Document value</p>
+    <textarea
+        class="border border-gray-300 h-24 pl-2 pt-2 resize-none w-80"
+        bind:this={dataValue}
+    />
+    <p class="text-[#3d3d75] hover:underline cursor-pointer">Upload a file?</p>
+    <br />
+    <ActionButton on:click={() => addData()}>
+        <p>Add</p>
+    </ActionButton>
+</Modal>

@@ -74,7 +74,7 @@ func SetupEndpoints(node *node.Node) error {
 	foldersMgr.Register()
 	statsMgr := stats.NewStatsMgr(protected, node, responder)
 	statsMgr.Register()
-	queryMgr := query.NewQueryMgr(protected, node, responder, *queryer)
+	queryMgr := query.NewQueryMgr(protected, node, responder, queryer)
 	queryMgr.Register()
 	recentQueryMgr := recentquery.NewRecentQueryMgr(protected, node, responder)
 	recentQueryMgr.Register()
