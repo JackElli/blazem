@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/folders"
+
 type FoldersMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -56,5 +58,5 @@ func (e *FoldersMgr) GetAllFolders() map[string]folder.Folder {
 }
 
 func (e *FoldersMgr) Register() {
-	e.Router.HandleFunc("/folders", e.Folders()).Methods("GET")
+	e.Router.HandleFunc(route, e.Folders()).Methods("GET")
 }

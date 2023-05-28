@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/doc"
+
 type AddDocMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -99,5 +101,5 @@ func transform(node *node.Node,
 }
 
 func (e *AddDocMgr) Register() {
-	e.Router.HandleFunc("/doc", e.AddDoc()).Methods("POST")
+	e.Router.HandleFunc(route, e.AddDoc()).Methods("POST")
 }

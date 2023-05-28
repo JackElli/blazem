@@ -15,6 +15,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/auth"
+
 type AuthMgr struct {
 	Router    *mux.Router
 	Responder responder.Responder
@@ -96,5 +98,5 @@ func authUser(e *AuthMgr, username string, password string) (bool, error) {
 }
 
 func (e *AuthMgr) Register() {
-	e.Router.HandleFunc("/auth", e.Auth()).Methods("POST")
+	e.Router.HandleFunc(route, e.Auth()).Methods("POST")
 }

@@ -31,7 +31,7 @@ func TestGetDoc(t *testing.T) {
 	nodeMock.Data = sync.Map{}
 	nodeMock.Data.Store("testdoc", map[string]interface{}{
 		"type":  "text",
-		"id":    "testdoc",
+		"key":   "testdoc",
 		"value": "Hello",
 	})
 
@@ -53,7 +53,7 @@ func TestGetDoc(t *testing.T) {
 			expectedResult: endpoint.SendData{
 				Data: map[string]interface{}{
 					"type":  "text",
-					"id":    "testdoc",
+					"key":   "testdoc",
 					"value": "Hello",
 				},
 				Key: "testdoc",
