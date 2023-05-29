@@ -126,12 +126,12 @@
             {#if Object.keys(allData?.data ?? {}).length != 0}
                 <DataContainer on:getData={fetchData} allData={allData.data} />
             {:else}
-                <p class="mt-4 text-3xl text-center">
+                <p class="mt-7 text-3xl">
                     You currently have no data in this folder
                 </p>
                 <button
                     on:click={() => (addDataVisible = true)}
-                    class="mt-2 text-xl block mx-auto text-center text-[#3b82f6] underline hover:text-blue-400"
+                    class="mt-2 text-xl text-[#3b82f6] underline hover:text-blue-400"
                     >Create some here</button
                 >
             {/if}

@@ -11,6 +11,7 @@
 
     let searchTxt: HTMLTextAreaElement;
     let allData: any;
+    let error = "";
     let loading = false;
 
     const search = async () => {
@@ -25,7 +26,13 @@
                 body: JSON.stringify({ query: searchValue }),
             }
         );
-        allData = queryResp?.data;
+
+        if (queryResp?.Error) {
+            error = queryResp.Error;
+        } else {
+            allData = queryResp?.data;
+            error = "";
+        }
         loading = false;
     };
 
@@ -68,9 +75,14 @@
         bind:this={searchTxt}
         on:keydown={checkForSpecial}
     />
-    <ActionButton {loading} class="mt-5" on:click={() => search()}>
-        <p>Search</p>
-    </ActionButton>
+    <div class="flex gap-2 items-center mt-5">
+        <ActionButton {loading} on:click={() => search()}>
+            <p>Search</p>
+        </ActionButton>
+        {#if error != ""}
+            <p class="text-red-500">{error}</p>
+        {/if}
+    </div>
 
     <Loading {loading}>
         <DataContainer class="mt-6" allData={allData?.docs} />

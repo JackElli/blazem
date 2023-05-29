@@ -8,4 +8,5 @@ export interface NetworkResponse {
     code: number;
     msg: string;
     data?: object;
+    Error?: string;
 }

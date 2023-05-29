@@ -18,6 +18,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/folder"
+
 type AddFolderMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -100,5 +102,5 @@ func validate(folder folder.Folder) error {
 }
 
 func (e *AddFolderMgr) Register() {
-	e.Router.HandleFunc("/folder", e.AddFolder()).Methods("POST")
+	e.Router.HandleFunc(route, e.AddFolder()).Methods("POST")
 }

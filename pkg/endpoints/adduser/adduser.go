@@ -11,6 +11,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/user"
+
 type AddUserMgr struct {
 	Router    *mux.Router
 	Responder responder.Responder
@@ -47,5 +49,5 @@ func (e *AddUserMgr) AddUser() func(w http.ResponseWriter, req *http.Request) {
 }
 
 func (e *AddUserMgr) Register() {
-	e.Router.HandleFunc("/user", e.AddUser()).Methods("POST")
+	e.Router.HandleFunc(route, e.AddUser()).Methods("POST")
 }

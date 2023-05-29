@@ -1,7 +1,15 @@
-<script>
+<script lang="ts">
+    import ActionButton from "$lib/components/ActionButton.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
 
     let tabSelected = "help";
+    let feedbackTxt: HTMLTextAreaElement;
+
+    $: if (tabSelected == "features") {
+        if (feedbackTxt) {
+            feedbackTxt.focus();
+        }
+    }
 </script>
 
 <svelte:head>
@@ -516,6 +524,14 @@
                 </li>
             </ul>
         </div>
+    {:else}
+        <textarea
+            bind:this={feedbackTxt}
+            class="w-96 h-40 resize-none outline-none rounded-sm px-6 py-4 shadow-md"
+            placeholder="Send some feedback to us!"
+        />
+        <p class="text-gray-500 text-sm">This currently does not work :)</p>
+        <ActionButton class="mt-4">Send Feedback</ActionButton>
     {/if}
 </div>
 
