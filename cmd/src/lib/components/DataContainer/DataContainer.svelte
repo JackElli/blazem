@@ -39,6 +39,6 @@
             {/if}
         </div>
     {:else}
-        <p class="mt-2">No data found</p>
+        <p class="mt-5">No data found</p>
     {/if}
 {/if}

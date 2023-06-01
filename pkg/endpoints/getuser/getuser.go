@@ -4,7 +4,6 @@ import (
 	"blazem/pkg/domain/endpoint"
 	"blazem/pkg/domain/responder"
 	"blazem/pkg/domain/users"
-	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -29,14 +28,10 @@ func NewGetUserMgr(router *mux.Router, responder responder.Responder, userStore 
 func (e *GetUserMgr) GetUser() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		userId := mux.Vars(req)["id"]
-		if userId == "" {
-			e.Responder.Error(w, 500, errors.New("Doc key not provided"))
-			return
-		}
 
 		user, err := e.UserStore.Get(userId)
 		if err != nil {
-			e.Responder.Error(w, 500, err)
+			e.Responder.Error(w, 404, err)
 			return
 		}
 

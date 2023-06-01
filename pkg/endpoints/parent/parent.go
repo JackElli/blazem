@@ -10,6 +10,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/parents/{id:[a-zA-Z0-9-]+}"
+
 type ParentMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -73,5 +75,5 @@ func reverse(lst []folder.Folder) []folder.Folder {
 }
 
 func (e *ParentMgr) Register() {
-	e.Router.HandleFunc("/parents/{id:[a-zA-Z0-9-]+}", e.Parent()).Methods("GET")
+	e.Router.HandleFunc(route, e.Parent()).Methods("GET")
 }

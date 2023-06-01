@@ -530,8 +530,7 @@
             class="w-96 h-40 resize-none outline-none rounded-sm px-6 py-4 shadow-md"
             placeholder="Send some feedback to us!"
         />
-        <p class="text-gray-500 text-sm">This currently does not work :)</p>
-        <ActionButton class="mt-4">Send Feedback</ActionButton>
+        <ActionButton class="mt-2">Send Feedback</ActionButton>
     {/if}
 </div>
 

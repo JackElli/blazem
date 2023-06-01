@@ -49,7 +49,6 @@ func TestFolder(t *testing.T) {
 		"testuser",
 	)
 	folderMap, _ := folder.FolderToMap(*folderMock)
-
 	nodeMock.Data.Store("testdoc", folderMap)
 	nodeMock.Data.Store("testdoc2", map[string]interface{}{
 		"type":   "text",

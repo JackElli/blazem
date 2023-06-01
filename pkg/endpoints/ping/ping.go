@@ -11,6 +11,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -57,7 +58,7 @@ func (e *PingMgr) Ping() func(w http.ResponseWriter, req *http.Request) {
 			e.Node.Rank = global.FOLLOWER
 		}
 
-		if types.LenOfSyncMap(localnm[0].Data) == 0 {
+		if lenOfSyncMap(&localnm[0].Data) == 0 {
 			e.Node.NodeMap[0].Data = currentMasterData
 			e.Responder.Respond(w, 200, types.EndpointResponse{
 				Msg: "Successful ping",
@@ -85,6 +86,16 @@ func (e *PingMgr) UpdateData(localnm []*node.Node) {
 		}
 		return true
 	})
+}
+
+// We want to get the length of a sync map
+func lenOfSyncMap(mp *sync.Map) int {
+	var i int
+	mp.Range(func(key any, value any) bool {
+		i++
+		return true
+	})
+	return i
 }
 
 func (e *PingMgr) Register() {

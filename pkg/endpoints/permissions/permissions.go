@@ -41,7 +41,6 @@ func (e *PermissionsMgr) Permissions(h http.Handler) http.Handler {
 			return
 		}
 		if user.Role == "admin" {
-			logger.Logger.Info(userId + " tried to do something which needs special permissions and they are admin.")
 			h.ServeHTTP(w, req)
 			return
 		}

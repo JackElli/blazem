@@ -20,7 +20,7 @@ func TestGetDoc(t *testing.T) {
 
 	type testcase struct {
 		desc           string
-		expectedResult interface{}
+		expectedResult []endpoint.WebNodeMap
 		expectedStatus int
 	}
 

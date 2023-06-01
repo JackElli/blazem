@@ -7,13 +7,14 @@ import (
 	"blazem/pkg/domain/node"
 	blazem_node "blazem/pkg/domain/node"
 	"blazem/pkg/domain/responder"
-	"errors"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
 )
+
+var route = "/connect/{ip:[a-zA-Z0-9-.-]+}"
 
 type ConnectMgr struct {
 	Router    *mux.Router
@@ -51,30 +52,29 @@ func (e *ConnectMgr) Connect() func(w http.ResponseWriter, req *http.Request) {
 // We need to append a node to the nodemap or, if the node is already in
 // the nodemap, we can activate it again
 func updateNodeMap(node *blazem_node.Node, ip string) error {
-	if ip == "" {
-		return errors.New("IP not entered")
-	}
-	if !node.AlreadyInNodeMap(ip) {
-		node.NodeMap = append(node.NodeMap, &blazem_node.Node{
-			Ip:            ip,
-			Pinged:        time.Now(),
-			PingCount:     0,
-			Rank:          global.FOLLOWER,
-			Data:          sync.Map{},
-			Active:        true,
-			RecentQueries: map[string]string{},
-			Rules:         map[string]global.Rule{},
-			NodeMap:       node.NodeMap,
-		})
-		logger.Logger.Info(ip + " has connected")
+	if node.AlreadyInNodeMap(ip) {
+		indexOfNode := node.IndexOfNodeIpInNodeMap(ip)
+		node.NodeMap[indexOfNode].Active = true
+		node.NodeMap[indexOfNode].PingCount = 0
 		return nil
+
 	}
-	indexOfNode := node.IndexOfNodeIpInNodeMap(ip)
-	node.NodeMap[indexOfNode].Active = true
-	node.NodeMap[indexOfNode].PingCount = 0
+	newNode := &blazem_node.Node{
+		Ip:            ip,
+		Pinged:        time.Now(),
+		PingCount:     0,
+		Rank:          global.FOLLOWER,
+		Data:          sync.Map{},
+		Active:        true,
+		RecentQueries: map[string]string{},
+		Rules:         map[string]global.Rule{},
+		NodeMap:       node.NodeMap,
+	}
+	node.NodeMap = append(node.NodeMap, newNode)
+	logger.Logger.Info(ip + " has connected")
 	return nil
 }
 
 func (e *ConnectMgr) Register() {
-	e.Router.HandleFunc("/connect/{ip:[a-zA-Z0-9-.-]+}", e.Connect()).Methods("POST")
+	e.Router.HandleFunc(route, e.Connect()).Methods("POST")
 }

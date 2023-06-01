@@ -9,6 +9,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/recentQueries"
+
 type RecentQueryMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -27,14 +29,6 @@ func NewRecentQueryMgr(router *mux.Router, node *node.Node, responder responder.
 func (e *RecentQueryMgr) RecentQuery() func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		dataToSend := e.Node.RecentQueries
-		// if len(dataToSend) == 0 {
-		// 	e.Responder.Respond(w, types.EndpointResponse{
-		// 		Code: 200,
-		// 		Msg:  "Successfully retrieved recent queries",
-		// 		Data: []uint8{},
-		// 	})
-		// 	return
-		// }
 		e.Responder.Respond(w, 200, types.EndpointResponse{
 			Msg:  "Successfully retrieved recent queries",
 			Data: dataToSend,
@@ -43,5 +37,5 @@ func (e *RecentQueryMgr) RecentQuery() func(w http.ResponseWriter, req *http.Req
 }
 
 func (e *RecentQueryMgr) Register() {
-	e.Router.HandleFunc("/recentQueries", e.RecentQuery()).Methods("GET")
+	e.Router.HandleFunc(route, e.RecentQuery()).Methods("GET")
 }
