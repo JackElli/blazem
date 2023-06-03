@@ -1,9 +1,7 @@
 package main
 
 import (
-	"blazem/pkg/domain/global"
-	blazem_node "blazem/pkg/domain/node"
-	"sync"
+	"blazem/pkg/domain/node"
 	"time"
 )
 
@@ -15,17 +13,7 @@ import (
 //
 // If we are the master, we set master attributes. We also want to load from disk to fetch any data saved locally.
 func main() {
-	node := &blazem_node.Node{
-		Ip:            "",
-		Pinged:        time.Now(),
-		PingCount:     0,
-		Rank:          global.FOLLOWER,
-		Data:          sync.Map{},
-		Active:        true,
-		RecentQueries: map[string]string{},
-		Rules:         map[string]global.Rule{},
-	}
-
+	node := node.NewNode()
 	RunSetup(node)
 
 	for true {

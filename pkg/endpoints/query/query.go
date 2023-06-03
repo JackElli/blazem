@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var route = "/query"
+
 type QueryMgr struct {
 	Router    *mux.Router
 	Node      *node.Node
@@ -86,5 +88,5 @@ func (e *QueryMgr) Query() func(w http.ResponseWriter, req *http.Request) {
 }
 
 func (e *QueryMgr) Register() {
-	e.Router.HandleFunc("/query", e.Query()).Methods("POST")
+	e.Router.HandleFunc(route, e.Query()).Methods("POST")
 }

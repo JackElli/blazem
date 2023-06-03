@@ -11,7 +11,6 @@ import (
 	"blazem/pkg/endpoints/addfolder"
 	"blazem/pkg/endpoints/adduser"
 	"blazem/pkg/endpoints/auth"
-	"blazem/pkg/endpoints/connect"
 	"blazem/pkg/endpoints/deletedoc"
 	"blazem/pkg/endpoints/folder"
 	"blazem/pkg/endpoints/folders"
@@ -21,10 +20,8 @@ import (
 	"blazem/pkg/endpoints/nodemap"
 	"blazem/pkg/endpoints/parent"
 	"blazem/pkg/endpoints/permissions"
-	"blazem/pkg/endpoints/ping"
 	"blazem/pkg/endpoints/query"
 	"blazem/pkg/endpoints/recentquery"
-	"blazem/pkg/endpoints/removenode"
 	"blazem/pkg/endpoints/stats"
 	"blazem/pkg/endpoints/users"
 	blazem_query "blazem/pkg/query"
@@ -78,8 +75,6 @@ func SetupEndpoints(node *node.Node) error {
 	queryMgr.Register()
 	recentQueryMgr := recentquery.NewRecentQueryMgr(protected, node, responder)
 	recentQueryMgr.Register()
-	pingMgr := ping.NewPingMgr(protected, node, responder)
-	pingMgr.Register()
 	getUsersMgr := users.NewUsersMgr(protected, responder, userStore)
 	getUsersMgr.Register()
 	getUserMgr := getuser.NewGetUserMgr(protected, responder, userStore)
@@ -88,12 +83,8 @@ func SetupEndpoints(node *node.Node) error {
 	admin := r.PathPrefix("/").Subrouter()
 	admin.Use(middlewareMgr.Middleware)
 	admin.Use(permissionsMgr.Permissions)
-	connectMgr := connect.NewConnectMgr(admin, node, responder)
-	connectMgr.Register()
 	deleteDocMgr := deletedoc.NewDeleteDocMgr(admin, responder, dataStore)
 	deleteDocMgr.Register()
-	removeNodeMgr := removenode.NewRemoveNodeMgr(admin, node, responder)
-	removeNodeMgr.Register()
 	addUserMgr := adduser.NewAddUserMgr(admin, responder, userStore)
 	addUserMgr.Register()
 

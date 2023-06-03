@@ -105,15 +105,14 @@ func (query *Query) executeQuery(queryType QueryType, whereParams []string,
 
 	var newMap []map[string]interface{}
 	var whereJson []map[string]interface{}
-	newJsonData := query.Node.Data
 
 	if len(whereParams) <= 0 {
-		newJsonData.Range(func(key, doc any) bool {
+		query.Node.Data.Range(func(key, doc any) bool {
 			whereJson = append(whereJson, doc.(map[string]interface{}))
 			return true
 		})
 	} else {
-		newJsonData.Range(func(key, doc any) bool {
+		query.Node.Data.Range(func(key, doc any) bool {
 			holds := 1
 			getObj := doc.(map[string]interface{})
 

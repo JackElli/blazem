@@ -41,9 +41,7 @@ func (mgr *SetupManager) RunSteps() {
 // Run the setup process by creating a setup mgr and running each
 // step
 func RunSetup(node *blazem_node.Node) {
-	masterip := ""
 	localip := node.GetLocalIp()
-
 	_, err := node.SetupLogger()
 	if err != nil {
 		fmt.Println("Cannot set up logger")
@@ -55,15 +53,6 @@ func RunSetup(node *blazem_node.Node) {
 			Description: "Picks port for blazem to start on",
 			Fn: func() error {
 				go node.PickPort(localip)
-				return nil
-			},
-		},
-		{
-			Description: "If this node is the master, set master attrs",
-			Fn: func() error {
-				if masterip == node.Ip {
-					node.SetNodeMasterAttrs()
-				}
 				return nil
 			},
 		},
@@ -88,13 +77,6 @@ func RunSetup(node *blazem_node.Node) {
 			Description: "Read from local storage",
 			Fn: func() error {
 				node.ReadFromLocal()
-				return nil
-			},
-		},
-		{
-			Description: "First ping and ping either the master or followers",
-			Fn: func() error {
-				go node.Ping()
 				return nil
 			},
 		},
