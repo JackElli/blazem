@@ -5,7 +5,7 @@
 ## Clone the repo
 
 ```
-git clone git@github.com:jack-ellis123/blazem.git
+git clone git@github.com:JackElli/blazem.git
 ```
 ### We use `Docker` for our builds.
 ## To run blazem for development, run:
