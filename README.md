@@ -5,12 +5,12 @@
 ## Clone the repo
 
 ```
-git clone git@github.com:JackElli/blazem.git
+git clone https://github.com/JackElli/blazem.git
 ```
 ### We use `Docker` for our builds.
 ## To run blazem for development, run:
 ```
-docker-compose dev up --build -d
+docker-compose up dev --build -d
 ```
 - This will create a blazem instance, you can access it on any browser at address `localhost:5173`
 - Once you are at the login screen, use username `JackTest` and password `test123` to log in.
@@ -19,8 +19,18 @@ docker-compose dev up --build -d
 (If an error occurs saying that the blazem_default network doesn't exist, just run the following:)
 
 ```
-docker network create blazem_default
+docker network create blazem-combined_default
 ```
+
+### To add a document
+First, add a folder, then click on the folder, then `Add data` and type in your value. (The key should automatically be generated for you)
+
+###  To query
+Go to the `Advanced search` tab and use 
+```
+SELECT all WHERE value LIKE 'a'
+``` 
+to select all documents that include the letter 'a'
 
 ## Functionality that isn't currently implemented
 
@@ -29,18 +39,3 @@ docker network create blazem_default
 - Import and export of data
 - Multi-node deployment (was removed to focus on core product)
 - Proper privated folders for multiple users
-
-## Make a change
-
-Any improvements/bug fixes are welcome. 
-
-## Once you finished your change
-
-```
-git checkout -b YOUR_AMAZING_FEATURE
-git add .
-git commit -m "COMMIT MESSAGE"
-git push origin YOUR_AMAZING_FEATURE
-```
-
-Create your Pull Request and we'll get back to you.

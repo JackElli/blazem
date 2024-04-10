@@ -132,9 +132,9 @@ func (node *Node) PingEachConnection(jsonNodeMap []byte) {
 	node.PingCount++
 }
 
-// Every for seconds, we want to ping each connection
+// Every four seconds, we want to ping each connection
 func (node *Node) Ping() {
-	for true {
+	for {
 		time.Sleep(4 * time.Second)
 		if node.Rank == global.FOLLOWER {
 			return

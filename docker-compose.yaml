@@ -37,8 +37,3 @@ services:
     links:
       - blazem
     command: node build/index.js
-
-networks:
-  blazem-combined_default:
-    name: blazem-combined_default
-    external: true
